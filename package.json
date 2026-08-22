@@ -1,0 +1,20 @@
+{
+  "name": "orientation2026",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Amity University Patna — Orientation 2026 platform",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "engines": {
+    "node": ">=20.11"
+  },
+  "scripts": {
+    "dev": "npm run dev --workspace=@orientation/web",
+    "build": "npm run build --workspace=@orientation/web",
+    "start": "npm run start --workspace=@orientation/web",
+    "lint": "npm run lint --workspace=@orientation/web",
+    "typecheck": "npm run typecheck --workspace=@orientation/web"
+  }
+}
