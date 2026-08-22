@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { useMemo, useState } from 'react'
+import { Reveal } from '@/components/motion/Reveal'
 import { Icon } from '@/components/ui/Icon'
 import { Container, Section, SectionHeading } from '@/components/ui/atoms'
 import { FAQS } from '@/lib/event'
@@ -25,26 +26,33 @@ export function Faq() {
   return (
     <Section id="faq" className="bg-card border-rule/40 border-y">
       <Container className="max-w-3xl">
-        <SectionHeading
-          eyebrow="Straight answers"
-          title="The questions we get asked most"
-          className="mb-9"
-        />
-
-        <div className="relative mb-7">
-          <span className="text-ink-faint pointer-events-none absolute top-1/2 left-4 -translate-y-1/2">
-            <Icon name="compass" size={20} />
-          </span>
-          <input
-            type="search"
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder="Search — try “selfie”, “guest”, “lunch”"
-            aria-label="Search the questions"
-            className="bg-paper ring-rule/60 placeholder:text-ink-faint focus:bg-card focus:ring-violet h-14 w-full rounded-full pr-5 pl-12 text-[0.9375rem] ring-1 transition-all duration-300 focus:ring-2 focus:outline-none"
+        {/* The heading carries `data-reveal`, so it needs a Reveal boundary or
+            the CSS gate leaves it hidden for good. */}
+        <Reveal>
+          <SectionHeading
+            eyebrow="Straight answers"
+            title="The questions we get asked most"
+            className="mb-9"
           />
-        </div>
 
+          <div data-reveal className="relative mb-7">
+            <span className="text-ink-faint pointer-events-none absolute top-1/2 left-4 -translate-y-1/2">
+              <Icon name="search" size={20} />
+            </span>
+            <input
+              type="search"
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder="Search — “selfie”, “guest”, “lunch”"
+              aria-label="Search the questions"
+              className="bg-paper ring-rule/60 placeholder:text-ink-faint focus:bg-card focus:ring-violet h-14 w-full rounded-full pr-5 pl-12 text-base ring-1 transition-all duration-300 focus:ring-2 focus:outline-none sm:text-[0.9375rem]"
+            />
+          </div>
+        </Reveal>
+
+        {/* Deliberately outside the Reveal boundary: this subtree is swapped by
+            the search filter, and a fresh node inheriting the hidden gate would
+            have no animation left to run. */}
         {results.length === 0 ? (
           <p className="text-ink-soft bg-paper rounded-2xl px-6 py-8 text-center">
             Nothing matches “{q.trim()}”.{' '}

@@ -55,8 +55,15 @@ export function ScheduleBoard({
 
   return (
     <div className={className}>
-      {/* ---- day tabs ---------------------------------------------------- */}
-      <div role="tablist" aria-label="Choose a day" className="flex flex-wrap gap-2.5">
+      {/* ---- day tabs ----------------------------------------------------
+          Three equal cards on a phone with the date stacked under the label:
+          the inline pills need ~145px each, so on a 375px screen the third
+          one wrapped onto a line of its own and stopped reading as a set. */}
+      <div
+        role="tablist"
+        aria-label="Choose a day"
+        className="grid grid-cols-3 gap-2 sm:flex sm:flex-wrap sm:gap-2.5"
+      >
         {days.map((d, i) => {
           const on = i === active
           return (
@@ -69,7 +76,7 @@ export function ScheduleBoard({
               id={`tab-${d.id}`}
               onClick={() => setActive(i)}
               className={cn(
-                'flex items-baseline gap-2 rounded-full px-5 py-3 text-[0.9375rem] font-bold transition-all duration-300 ease-[var(--ease-out-soft)]',
+                'flex flex-col items-center rounded-2xl px-3 py-2.5 text-[0.9375rem] font-bold transition-all duration-300 ease-[var(--ease-out-soft)] sm:flex-row sm:items-baseline sm:gap-2 sm:rounded-full sm:px-5 sm:py-3',
                 on
                   ? 'grad-pair shadow-card text-white'
                   : 'bg-card text-navy ring-rule/50 hover:ring-violet/60 ring-1',

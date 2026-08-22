@@ -99,6 +99,36 @@
   --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
+/* ============================================================================
+   Edge treatments.
+
+   These are `@utility` rather than plain classes so they take variants — the
+   hero art is a framed picture on a phone and dissolves into the paper on a
+   wide screen (`lg:feather-l`), which is a different shape, not a different
+   image.
+
+   An earlier pass masked the art with a torn organic outline. It was dropped:
+   the subject of every picture here is people, they stand at the bottom of the
+   frame, and a curved bottom edge cut their legs off. A signature that eats the
+   subject is not a signature.
+   ========================================================================== */
+
+/* Left edge dissolving into the page — the wide-screen hero slab. */
+@utility feather-l {
+  mask-image: linear-gradient(to right, transparent 0%, rgba(0, 0, 0, 0.55) 16%, black 38%);
+  mask-size: 100% 100%;
+  mask-repeat: no-repeat;
+}
+
+/* Bottom edge doing the same, so the illustration never lands on a hard line.
+   Short on purpose — the students stand at the bottom of the frame and must not
+   be faded out. */
+@utility feather-b {
+  mask-image: linear-gradient(to bottom, black 92%, transparent 100%);
+  mask-size: 100% 100%;
+  mask-repeat: no-repeat;
+}
+
 @layer base {
   html {
     scroll-behavior: smooth;
@@ -163,8 +193,10 @@
     content: '';
     position: absolute;
     inset-inline: -0.14em;
-    bottom: -0.02em;
-    height: 0.4em;
+    /* Below the descenders — the hand faces are loopy and an underline sitting
+       on the baseline reads as a strikethrough through every 'g'. */
+    bottom: -0.16em;
+    height: 0.34em;
     background-color: currentColor;
     mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 240 16' preserveAspectRatio='none'%3E%3Cpath d='M4 11C46 4 92 12 136 6c30-4 68 1 100 5' fill='none' stroke='black' stroke-width='4.5' stroke-linecap='round'/%3E%3C/svg%3E");
     mask-size: 100% 100%;
@@ -180,19 +212,6 @@
     background-color: currentColor;
     mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 1.5l2.3 6.6L21 10.5l-6.7 2.4L12 19.5l-2.3-6.6L3 10.5l6.7-2.4z' fill='black'/%3E%3C/svg%3E");
     mask-size: contain;
-    mask-repeat: no-repeat;
-  }
-
-  /* ---- torn / painted edges: no photo on this site is a rectangle ---- */
-  .brush {
-    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1000 800' preserveAspectRatio='none'%3E%3Cpath d='M46 118Q150 34 306 116T704 76Q906 96 954 300T898 706Q702 764 396 704T96 498Q14 302 46 118Z' fill='black'/%3E%3C/svg%3E");
-    mask-size: 100% 100%;
-    mask-repeat: no-repeat;
-  }
-
-  .brush-alt {
-    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 800 1000' preserveAspectRatio='none'%3E%3Cpath d='M64 140Q90 40 260 52T612 92Q742 130 746 350T716 720Q700 906 470 942T140 878Q42 812 58 566T64 140Z' fill='black'/%3E%3C/svg%3E");
-    mask-size: 100% 100%;
     mask-repeat: no-repeat;
   }
 
@@ -246,6 +265,78 @@
   .tnum {
     font-variant-numeric: tabular-nums;
     font-feature-settings: 'tnum' 1;
+  }
+
+  /* ---- long-form text ------------------------------------------------
+     Used by the three policy pages. Hand-rolled rather than pulled in via
+     @tailwindcss/typography: this is the only long-form text on the site, it
+     needs to match the display scale above, and the plugin's defaults fight
+     the navy headings set in the base layer. */
+  .prose-page {
+    max-width: 44rem;
+    color: var(--color-ink-soft);
+  }
+  .prose-page > * + * {
+    margin-top: 1.15em;
+  }
+  .prose-page h2 {
+    margin-top: 2.75em;
+    font-size: 1.375rem;
+    font-weight: 700;
+    line-height: 1.3;
+    letter-spacing: -0.01em;
+  }
+  .prose-page h2:first-child {
+    margin-top: 0;
+  }
+  .prose-page h3 {
+    margin-top: 1.9em;
+    font-size: 1.0625rem;
+    font-weight: 700;
+  }
+  .prose-page ul {
+    padding-left: 1.15rem;
+    list-style: none;
+  }
+  .prose-page li + li {
+    margin-top: 0.5em;
+  }
+  .prose-page ul > li {
+    position: relative;
+  }
+  .prose-page ul > li::before {
+    content: '';
+    position: absolute;
+    top: 0.7em;
+    left: -1.15rem;
+    width: 0.34rem;
+    height: 0.34rem;
+    border-radius: 999px;
+    background-color: var(--color-flame-bright);
+  }
+  .prose-page strong {
+    color: var(--color-navy);
+    font-weight: 700;
+  }
+  .prose-page a {
+    color: var(--color-violet-deep);
+    font-weight: 600;
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 3px;
+  }
+  .prose-page a:hover {
+    color: var(--color-violet);
+  }
+  /* An unresolved question, marked in the text rather than left to be found. */
+  .prose-page .todo {
+    display: block;
+    border-left: 3px solid var(--color-flame-bright);
+    background-color: var(--color-paper-tint);
+    border-radius: 0 var(--radius-md) var(--radius-md) 0;
+    padding: 0.9rem 1.15rem;
+    font-size: 0.875rem;
+    line-height: 1.6;
   }
 }
 

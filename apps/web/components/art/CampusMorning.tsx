@@ -8,7 +8,7 @@
  *
  * Drawn in the brand palette only — navy shield, amber flame, violet, sky.
  * When Communications supplies real photography, swap this component for an
- * <Image> inside the same `.brush` frame; nothing else needs to change.
+ * <Image> in the same frame; nothing else needs to change.
  */
 
 /** One student, seen from behind. Origin is between the feet. */
@@ -48,9 +48,11 @@ function Student({
 export function CampusMorning({ className }: { className?: string }) {
   return (
     <svg
-      viewBox="0 0 800 620"
+      viewBox="0 0 800 780"
       className={className}
-      preserveAspectRatio="xMidYMid slice"
+      // `slice` behaves like object-fit: cover. YMax pins the *bottom* of the
+      // drawing, so whatever gets cropped is sky — never the students.
+      preserveAspectRatio="xMidYMax slice"
       role="img"
       aria-label="Five students walking a tree-lined path toward the Amity University Patna academic block at sunrise."
     >
@@ -66,21 +68,21 @@ export function CampusMorning({ className }: { className?: string }) {
           <stop offset="100%" stopColor="#ff8a00" stopOpacity="0" />
         </radialGradient>
         <linearGradient id="cm-lawn" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#cfe4d6" />
-          <stop offset="100%" stopColor="#eef3ee" />
+          <stop offset="0%" stopColor="#c6e2d2" />
+          <stop offset="100%" stopColor="#e4efe7" />
         </linearGradient>
         <linearGradient id="cm-block" x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor="#0d2a5c" />
           <stop offset="100%" stopColor="#001b44" />
         </linearGradient>
         <linearGradient id="cm-path" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#e8eaf2" />
-          <stop offset="100%" stopColor="#f8f9fd" />
+          <stop offset="0%" stopColor="#dfe3ee" />
+          <stop offset="100%" stopColor="#eef0f7" />
         </linearGradient>
       </defs>
 
       {/* ---- sky ---------------------------------------------------------- */}
-      <rect width="800" height="620" fill="url(#cm-sky)" />
+      <rect width="800" height="780" fill="url(#cm-sky)" />
       <circle cx="612" cy="132" r="150" fill="url(#cm-sun)" />
       <circle cx="612" cy="132" r="46" fill="#ffb77f" opacity="0.85" />
 
@@ -112,8 +114,8 @@ export function CampusMorning({ className }: { className?: string }) {
       <rect x="368" y="158" width="392" height="186" fill="url(#cm-block)" />
       {/* roof line + flag */}
       <rect x="360" y="150" width="408" height="12" rx="4" fill="#001b44" />
-      <path d="M556 150v-52" stroke="#001b44" strokeWidth="4" strokeLinecap="round" />
-      <path d="M558 100h44l-10 12 10 12h-44z" fill="#ff8a00" />
+      <path d="M556 150v-38" stroke="#001b44" strokeWidth="3.5" strokeLinecap="round" />
+      <path d="M558 112h32l-8 9 8 9h-32z" fill="#ff8a00" />
       {/* windows */}
       <g fill="#ffdcc4" opacity="0.78">
         {[0, 1, 2, 3, 4].map((r) =>
@@ -129,15 +131,19 @@ export function CampusMorning({ className }: { className?: string }) {
       <rect x="410" y="122" width="112" height="18" rx="4" fill="#001b44" opacity="0.55" />
 
       {/* ---- ground ------------------------------------------------------- */}
-      <rect y="344" width="800" height="276" fill="url(#cm-lawn)" />
-      <path d="M338 344h124l204 276H140z" fill="url(#cm-path)" />
+      <rect y="344" width="800" height="436" fill="url(#cm-lawn)" />
+      <path d="M338 344h124l178 436H160z" fill="url(#cm-path)" />
       <path
-        d="M338 344h124l204 276H140z"
+        d="M338 344h124l178 436H160z"
         fill="none"
         stroke="#c5c6d0"
         strokeWidth="2"
         opacity="0.7"
       />
+
+      {/* morning haze on the horizon, so the blocks are seated in the ground
+          rather than pasted on top of it */}
+      <ellipse cx="400" cy="346" rx="440" ry="24" fill="#ffdcc4" opacity="0.5" />
 
       {/* ---- trees -------------------------------------------------------- */}
       <g>
@@ -157,16 +163,16 @@ export function CampusMorning({ className }: { className?: string }) {
       </g>
 
       {/* planter beds either side of the path */}
-      <ellipse cx="250" cy="470" rx="86" ry="18" fill="#0d7a4f" opacity="0.16" />
-      <ellipse cx="576" cy="500" rx="104" ry="20" fill="#0d7a4f" opacity="0.14" />
+      <ellipse cx="212" cy="512" rx="104" ry="20" fill="#0d7a4f" opacity="0.16" />
+      <ellipse cx="604" cy="588" rx="128" ry="24" fill="#0d7a4f" opacity="0.14" />
 
       {/* ---- the batch, walking in ---------------------------------------- */}
-      <g transform="translate(0 604)">
-        <Student x={252} scale={0.82} coat="#5b3cdd" bag="#ffb77f" />
-        <Student x={330} scale={0.9} coat="#001b44" bag="#e5deff" />
-        <Student x={412} scale={1} coat="#ca6c00" bag="#d8e2ff" />
-        <Student x={498} scale={0.94} coat="#0d2a5c" bag="#ffdcc4" />
-        <Student x={572} scale={0.84} coat="#7459f7" bag="#ffb77f" />
+      <g transform="translate(0 762)">
+        <Student x={210} scale={1.31} coat="#5b3cdd" bag="#ffb77f" />
+        <Student x={300} scale={1.44} coat="#001b44" bag="#e5deff" />
+        <Student x={400} scale={1.6} coat="#ca6c00" bag="#d8e2ff" />
+        <Student x={508} scale={1.5} coat="#0d2a5c" bag="#ffdcc4" />
+        <Student x={604} scale={1.34} coat="#7459f7" bag="#ffb77f" />
       </g>
     </svg>
   )

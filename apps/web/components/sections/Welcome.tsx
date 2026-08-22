@@ -18,6 +18,11 @@ export function Welcome() {
         stagger={0.09}
         className="grad-pair relative mx-auto w-full max-w-[var(--container-page)] overflow-hidden rounded-3xl px-8 py-14 md:px-16 md:py-20"
       >
+        {/* Navy scrim. The flame end of `grad-pair` is #ca6c00, and pure white
+            on it is only 3.7:1 — fine for the 26px headline, a fail for the
+            14px signature. Deepening the whole card toward the shield navy
+            fixes the contrast and stops the gradient reading as a wrapper. */}
+        <div aria-hidden className="bg-navy/25 pointer-events-none absolute inset-0" />
         {/* soft light to keep the gradient from reading as flat vinyl */}
         <div
           aria-hidden
@@ -44,13 +49,15 @@ export function Welcome() {
             </HandNote>
           </p>
 
-          <p data-reveal className="mt-6 text-sm font-semibold tracking-wide text-white/75">
+          <p data-reveal className="mt-6 text-sm font-semibold tracking-wide text-white/90">
             — The Orientation Team, {EVENT.institution}
           </p>
 
           <div data-reveal className="mt-10">
+            {/* Not "get your pass". This is the closing emotional beat, and the
+                pass is the receipt, not the reason. */}
             <LinkButton href="/register" variant="onNavy" size="lg" arrow>
-              Get your pass
+              Save your place
             </LinkButton>
           </div>
         </div>

@@ -33,21 +33,33 @@ export const ACCENT: Record<Tint, string> = {
   sky: 'bg-navy-line',
 }
 
+/**
+ * A tinted square holding one icon. Every icon-in-a-tint on the site should come
+ * from here rather than being hand-rolled, so the shape is decided once.
+ *
+ * On the radius: `rounded-2xl` is 32px in this project (the scale in globals.css
+ * is shifted up so cards can be generous), and CSS clamps a radius to half the
+ * shorter side. So at every size used here except 72 the chip renders as a
+ * circle, and swapping `rounded-2xl` for `xl` or `lg` changes nothing you can
+ * see. Change the number, not the class, if you want a visible squircle.
+ */
 export function IconChip({
   name,
   tint = 'violet',
   size = 48,
   className,
+  ...rest
 }: {
   name: IconName
   tint?: Tint
   size?: number
   className?: string
-}) {
+} & Omit<ComponentPropsWithoutRef<'span'>, 'className' | 'style'>) {
   return (
     <span
       className={cn('inline-grid shrink-0 place-items-center rounded-2xl', CHIP[tint], className)}
       style={{ width: size, height: size }}
+      {...rest}
     >
       <Icon name={name} size={Math.round(size * 0.5)} />
     </span>
@@ -99,7 +111,10 @@ export function HandNote({
 } & Omit<ComponentPropsWithoutRef<'span'>, 'className'>) {
   return (
     <span
-      className={cn('hand inline-block', underline && 'swoosh', className)}
+      // A rotated inline-block keeps its upright layout box, so the tilted
+      // glyphs overhang it. The tiny inline margin stops a mid-sentence note
+      // from colliding with the word after it.
+      className={cn('hand mx-[0.14em] inline-block', underline && 'swoosh', className)}
       style={{ rotate: `${tilt}deg` }}
       {...rest}
     >

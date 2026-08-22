@@ -81,9 +81,14 @@ export function SiteHeader() {
         </nav>
 
         <div className="flex items-center gap-2">
-          <LinkButton href="/register" size="sm" arrow className="hidden sm:inline-flex">
-            Register now
-          </LinkButton>
+          {/* The display utility lives on a wrapper, not on the button: Button's
+              own `inline-flex` and a `hidden` passed through className have the
+              same specificity, so stylesheet order decides and `hidden` loses. */}
+          <div className="hidden sm:block">
+            <LinkButton href="/register" size="sm" arrow>
+              Register now
+            </LinkButton>
+          </div>
 
           <button
             type="button"
@@ -105,7 +110,7 @@ export function SiteHeader() {
         className="bg-card/97 border-rule/50 supports-[backdrop-filter]:backdrop-blur-xl h-[calc(100dvh-5rem)] overflow-y-auto border-t px-6 pt-6 pb-10 lg:hidden"
       >
         <nav aria-label="Main" className="flex flex-col">
-          {NAV.map((item, i) => {
+          {NAV.map((item) => {
             const active = item.href === '/' ? pathname === '/' : pathname.startsWith(item.href)
             return (
               <Link
@@ -113,14 +118,12 @@ export function SiteHeader() {
                 href={item.href}
                 aria-current={active ? 'page' : undefined}
                 className={cn(
-                  'border-rule/40 flex items-center justify-between border-b py-4 text-xl font-bold',
+                  'border-rule/40 flex items-baseline justify-between gap-4 border-b py-4 text-xl font-bold',
                   active ? 'text-violet-deep' : 'text-navy',
                 )}
               >
                 <span>{item.label}</span>
-                <span className="text-ink-faint text-label tabular-nums">
-                  {String(i + 1).padStart(2, '0')}
-                </span>
+                <span className="hand text-ink-faint shrink-0 text-lg font-normal">{item.hint}</span>
               </Link>
             )
           })}

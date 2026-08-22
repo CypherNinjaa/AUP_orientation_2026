@@ -14,7 +14,7 @@ gsap.registerPlugin(useGSAP, SplitText)
 
 const FACTS: { icon: 'calendar' | 'pin' | 'people'; tint: Tint; head: string; sub: string }[] = [
   { icon: 'calendar', tint: 'violet', head: EVENT.dateRange, sub: EVENT.timeNote },
-  { icon: 'pin', tint: 'flame', head: EVENT.venue.name, sub: `${EVENT.venue.street}, ${EVENT.venue.city}` },
+  { icon: 'pin', tint: 'flame', head: EVENT.venue.name, sub: EVENT.venue.street },
   { icon: 'people', tint: 'sky', head: EVENT.audience.headline, sub: EVENT.audience.detail },
 ]
 
@@ -43,8 +43,15 @@ export function Hero() {
             tl.from(split.lines, { yPercent: 118, duration: 1.05, stagger: 0.1 }, 0)
           }
 
-          tl.from('[data-hero-eyebrow]', { opacity: 0, y: 14, duration: 0.7 }, 0.05)
-            .to('[data-hero-eyebrow]', { opacity: 1, duration: 0.01 }, 0.05)
+          // `from` would animate to the element's *current* opacity, which the
+          // CSS reveal gate has already set to 0 — so every one of these is a
+          // `fromTo` with an explicit end value.
+          tl.fromTo(
+            '[data-hero-eyebrow]',
+            { opacity: 0, y: 14 },
+            { opacity: 1, y: 0, duration: 0.7 },
+            0.05,
+          )
             .fromTo(
               '[data-hero-note]',
               { opacity: 0, scale: 0.86, rotate: -14 },
@@ -85,7 +92,10 @@ export function Hero() {
   )
 
   return (
-    <div ref={scope} className="relative overflow-hidden pt-28 pb-16 md:pt-36 md:pb-24">
+    <section
+      ref={scope}
+      className="relative isolate overflow-hidden pt-28 pb-16 md:pt-32 lg:min-h-[38rem] lg:pt-36 lg:pb-20"
+    >
       {/* ---- ambient decor ------------------------------------------------ */}
       <div
         aria-hidden
@@ -100,9 +110,9 @@ export function Hero() {
         className="bg-flame-tint float-slow float-delay pointer-events-none absolute top-1/3 -right-24 size-80 rounded-full opacity-50 blur-3xl"
       />
 
-      <Container className="relative grid items-center gap-14 lg:grid-cols-[1.05fr_1fr] lg:gap-10">
-        {/* ---- copy ------------------------------------------------------- */}
-        <div>
+      {/* ---- copy ---------------------------------------------------------- */}
+      <Container className="relative z-10">
+        <div className="lg:max-w-[47%]">
           <p
             data-hero
             data-hero-eyebrow
@@ -135,15 +145,15 @@ export function Hero() {
             Three days later you will know both. That is what orientation is for.
           </p>
 
-          <ul data-hero-facts className="mt-9 grid gap-3 sm:grid-cols-3">
+          {/* Flat, not boxed: these are three facts, not three products. */}
+          <ul
+            data-hero-facts
+            className="mt-8 flex flex-col gap-5 sm:flex-row sm:flex-wrap sm:gap-x-8"
+          >
             {FACTS.map((f) => (
-              <li
-                key={f.head}
-                data-hero
-                className="bg-card ring-rule/25 shadow-soft flex items-center gap-3.5 rounded-2xl p-4 ring-1"
-              >
-                <IconChip name={f.icon} tint={f.tint} size={44} />
-                <span className="min-w-0">
+              <li key={f.head} data-hero className="flex items-center gap-3">
+                <IconChip name={f.icon} tint={f.tint} size={42} />
+                <span>
                   <span className="text-navy block text-[0.9375rem] leading-tight font-bold">
                     {f.head}
                   </span>
@@ -153,35 +163,55 @@ export function Hero() {
             ))}
           </ul>
 
-          <div data-hero data-hero-cta className="mt-9 flex flex-wrap items-center gap-3">
-            <LinkButton href="/register" size="lg" arrow>
+          <div data-hero data-hero-cta className="mt-9 flex flex-col gap-3 sm:flex-row sm:items-center">
+            <LinkButton href="/register" size="lg" arrow className="w-full sm:w-auto">
               Register now
             </LinkButton>
-            <LinkButton href="/schedule" size="lg" variant="secondary">
+            <LinkButton
+              href="/schedule"
+              size="lg"
+              variant="secondary"
+              className="w-full sm:w-auto"
+            >
               See the three days
             </LinkButton>
           </div>
         </div>
+      </Container>
 
-        {/* ---- art -------------------------------------------------------- */}
-        <div className="relative">
+      {/* ---- art ----------------------------------------------------------
+          On a phone this is a torn-edge picture below the copy. On a wide
+          screen it becomes the right half of the page, running to the very
+          edge with its left side dissolved into the paper — the campus is the
+          background you are standing in, not a thumbnail of it. */}
+      <div className="relative mt-14 px-6 sm:mt-16 lg:absolute lg:inset-y-0 lg:right-0 lg:z-0 lg:mt-0 lg:w-[53%] lg:px-0">
+        <div
+          data-hero
+          data-hero-art
+          className="relative mx-auto w-full max-w-xl lg:h-full lg:max-w-none"
+        >
           <div
             aria-hidden
-            className="wash absolute -inset-6 -z-10 opacity-70 sm:-inset-10"
+            className="wash absolute -inset-8 -z-10 opacity-70 lg:hidden"
             style={{ maskImage: 'radial-gradient(70% 70% at 50% 45%, black, transparent)' }}
           />
-          <div data-hero data-hero-art className="brush overflow-hidden">
-            <CampusMorning className="aspect-4/3 w-full" />
+          <div className="h-full overflow-hidden max-lg:rounded-3xl lg:feather-l">
+            <div className="h-full lg:feather-b">
+              <CampusMorning className="aspect-square w-full lg:h-full lg:aspect-auto" />
+            </div>
           </div>
-
-          <Countdown
-            target={EVENT.startsAt}
-            data-hero
-            data-hero-timer
-            className="relative z-10 mx-auto -mt-12 w-[min(100%,26rem)] sm:-mt-14 lg:absolute lg:right-0 lg:-bottom-8 lg:mx-0 lg:mt-0 lg:w-[22rem]"
-          />
         </div>
-      </Container>
-    </div>
+
+        {/* Overlapping the art is a wide-screen move only. On a phone the
+            students stand at the bottom of the picture and the timer would sit
+            on their heads. */}
+        <Countdown
+          target={EVENT.startsAt}
+          data-hero
+          data-hero-timer
+          className="relative z-20 mx-auto mt-6 w-[min(100%,26rem)] lg:absolute lg:right-8 lg:bottom-14 lg:mx-0 lg:mt-0 lg:w-[21rem]"
+        />
+      </div>
+    </section>
   )
 }

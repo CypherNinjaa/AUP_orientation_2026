@@ -23,7 +23,7 @@ export function Highlights() {
               <li
                 key={h.title}
                 data-reveal
-                className="group bg-card ring-rule/25 shadow-soft hover:shadow-lift relative flex flex-col overflow-hidden rounded-2xl p-6 ring-1 transition-all duration-400 ease-[var(--ease-out-soft)] hover:-translate-y-1.5"
+                className="bg-card ring-rule/25 shadow-soft hover:shadow-lift relative flex flex-col overflow-hidden rounded-2xl p-6 ring-1 transition-all duration-400 ease-[var(--ease-out-soft)] hover:-translate-y-1.5"
               >
                 <p className="text-flame text-[0.75rem] font-bold tracking-[0.1em] uppercase">
                   {h.kicker}
@@ -32,10 +32,9 @@ export function Highlights() {
                 <p className="text-ink-soft text-[0.9375rem] leading-relaxed">{h.body}</p>
                 <span
                   aria-hidden
-                  className={cn(
-                    'absolute inset-x-0 bottom-0 h-1 origin-left scale-x-0 transition-transform duration-400 ease-[var(--ease-out-soft)] group-hover:scale-x-100',
-                    ACCENT[h.tint as Tint],
-                  )}
+                  // Always visible, not hover-only: a phone never hovers, and
+                  // without it these are five identical white rectangles.
+                  className={cn('absolute inset-x-0 bottom-0 h-1', ACCENT[h.tint as Tint])}
                 />
               </li>
             ))}
