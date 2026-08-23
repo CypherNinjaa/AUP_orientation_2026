@@ -27,12 +27,19 @@ const caveat = Caveat({
  * production. The default is the GitHub Pages origin for this repository's
  * remote, matching the basePath in next.config.ts; set NEXT_PUBLIC_SITE_URL when
  * a custom domain is issued.
+ *
+ * `metadataBase` is the bare origin, deliberately: Next has already prefixed the
+ * convention image's path with basePath by the time it resolves it against this,
+ * so a base that also carried the basePath emitted
+ * `…/AUP_orientation_2026/AUP_orientation_2026/opengraph-image.png`. `og:url` is
+ * the full site URL and is set separately below.
  */
 const SITE_URL =
   process.env.NEXT_PUBLIC_SITE_URL ?? 'https://cypherninjaa.github.io/AUP_orientation_2026'
+const SITE_ORIGIN = new URL(SITE_URL).origin
 
 export const metadata: Metadata = {
-  metadataBase: new URL(SITE_URL),
+  metadataBase: new URL(SITE_ORIGIN),
   title: {
     default: `${EVENT.programme} ${EVENT.year} — ${EVENT.institution}`,
     template: `%s — Orientation ${EVENT.year}`,

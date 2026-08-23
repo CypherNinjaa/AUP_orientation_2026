@@ -2,6 +2,7 @@ import Image from 'next/image'
 import { Container } from '@/components/ui/atoms'
 import { Reveal } from '@/components/motion/Reveal'
 import { LinkButton } from '@/components/ui/Button'
+import { asset } from '@/lib/asset'
 import { SOCIALS } from '@/lib/developer'
 import { TechMark } from './TechMark'
 
@@ -27,7 +28,7 @@ export function DeveloperCTA() {
             Hidden below md, where there is no gutter at all. */}
         <div className="absolute bottom-0 left-0 hidden h-[85%] opacity-55 md:block lg:h-[95%]">
           <Image
-            src="/assets/developer/cta-figure.webp"
+            src={asset('/assets/developer/cta-figure.webp')}
             width={720}
             height={803}
             alt=""

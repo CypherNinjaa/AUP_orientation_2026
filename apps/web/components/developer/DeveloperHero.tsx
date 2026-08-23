@@ -1,6 +1,7 @@
 import Image from 'next/image'
 import { Container } from '@/components/ui/atoms'
 import { Reveal } from '@/components/motion/Reveal'
+import { asset } from '@/lib/asset'
 import { DEVELOPER, SOCIALS } from '@/lib/developer'
 import { DevEyebrow } from './DevHeading'
 import { TechMark } from './TechMark'
@@ -79,7 +80,7 @@ export function DeveloperHero() {
                 decoration left is the section wash above, which it sits in. */}
             <div className="relative mx-auto w-full max-w-[27rem] lg:max-w-[34rem]">
               <Image
-                src={DEVELOPER.heroArt}
+                src={asset(DEVELOPER.heroArt)}
                 width={DEVELOPER.heroArtSize.width}
                 height={DEVELOPER.heroArtSize.height}
                 alt=""

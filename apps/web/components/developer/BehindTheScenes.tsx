@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { Container, Section } from '@/components/ui/atoms'
 import { LinkButton } from '@/components/ui/Button'
 import { Icon } from '@/components/ui/Icon'
+import { asset } from '@/lib/asset'
 import { GALLERY } from '@/lib/developer'
 import { DevHeading } from './DevHeading'
 
@@ -109,7 +110,7 @@ export function BehindTheScenes() {
             >
               <figure className="ring-rule/25 shadow-soft group-hover:shadow-lift relative aspect-4/3 overflow-hidden rounded-2xl ring-1 transition-shadow duration-400">
                 <Image
-                  src={shot.src}
+                  src={asset(shot.src)}
                   /* Describes the photograph, which the hover caption does not:
                      the caption is a title for the moment, this is the picture. */
                   alt={shot.alt}
