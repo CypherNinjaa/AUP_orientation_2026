@@ -67,20 +67,26 @@ export function DeveloperHero() {
 
           {/* ---- art ------------------------------------------------------- */}
           <div className="relative lg:py-14">
-            <div
-              aria-hidden
-              className="pointer-events-none absolute inset-x-4 -top-6 -bottom-6 -z-10"
-            >
-              {/* The blob the portrait sits on, plus two offset frames behind it
-                  so the picture reads as the top layer of a stack. The filled
-                  one is faint on purpose: at any real weight it competes with
-                  the portrait instead of seating it. */}
-              <div className="wash-dev absolute inset-0 rounded-[45%]" />
-              <div className="grad-dev absolute inset-x-14 top-10 bottom-10 rotate-[7deg] rounded-[2.5rem] opacity-[0.14]" />
-              <div className="ring-berry/25 absolute inset-x-16 top-14 bottom-14 -rotate-3 rounded-[2.25rem] ring-1" />
-            </div>
-
+            {/* The portrait and its decoration are one unit. Anchoring the
+                decoration to the art column instead stretched it to cover the
+                card group as well once the cards left the absolute layer below
+                `lg` — 725×971 of wash behind a 320×400 picture, with the two
+                offset frames sticking out as stray panels. Bled off the portrait
+                it tracks the picture at every width. */}
             <div className="relative mx-auto w-[78%] max-w-[20rem] lg:max-w-[23.5rem]">
+              <div
+                aria-hidden
+                className="pointer-events-none absolute -inset-x-[23%] -inset-y-[13%] -z-10"
+              >
+                {/* The blob the portrait sits on, plus two offset frames behind
+                    it so the picture reads as the top layer of a stack. The
+                    filled one is faint on purpose: at any real weight it
+                    competes with the portrait instead of seating it. */}
+                <div className="wash-dev absolute inset-0 rounded-[45%]" />
+                <div className="grad-dev absolute inset-x-14 top-10 bottom-10 rotate-[7deg] rounded-[2.5rem] opacity-[0.14]" />
+                <div className="ring-berry/25 absolute inset-x-16 top-14 bottom-14 -rotate-3 rounded-[2.25rem] ring-1" />
+              </div>
+
               {/* The frame owns the ratio, the image is object-cover inside it:
                   dropping in a real photograph of any size moves nothing. The
                   ring is opaque white — over the wash a translucent one takes
@@ -118,7 +124,10 @@ export function DeveloperHero() {
               />
               <TerminalCard
                 data-reveal
-                className="sm:col-span-2 lg:absolute lg:bottom-1 lg:-left-5 lg:z-10 lg:w-[16.5rem]"
+                /* Capped and centred rather than stretched across both columns:
+                   the terminal is a fixed eight-row block about 235px wide, so a
+                   full-width card just adds empty dark space to its right. */
+                className="sm:col-span-2 sm:mx-auto sm:max-w-md lg:absolute lg:bottom-1 lg:-left-5 lg:z-10 lg:w-[16.5rem] lg:max-w-none"
               />
             </div>
           </div>

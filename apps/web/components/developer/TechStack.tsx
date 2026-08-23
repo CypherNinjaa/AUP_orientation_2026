@@ -36,7 +36,10 @@ export function TechStack() {
         />
 
         <Reveal className="mt-14" stagger={0.05}>
-          <ul className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
+          {/* 2 then 5, skipping 3: there are ten cards, so a three-across grid
+              leaves the tenth alone in a row of its own. Both of these divide
+              evenly. */}
+          <ul className="grid grid-cols-2 gap-4 md:grid-cols-5">
             {TECH.map((tech) => (
               <li
                 key={tech.key}

@@ -131,7 +131,14 @@ export function ArchitectureSection() {
               <>
                 Built for Scale
                 <br />
-                <span className="grad-dev-text">Designed for Reliability</span>{' '}
+                {/* Non-breaking space, not a plain one. At 375 the second line
+                    is 362px against a 327px column, so it has to break — and
+                    with a normal space the only break point after "Reliability"
+                    is before the ⚡, which then sits alone on a third line. The
+                    NBSP makes "Reliability ⚡" one run, so the break falls at
+                    "Designed for" instead. Nothing changes from `lg` up, where
+                    the whole line fits. */}
+                <span className="grad-dev-text">Designed for Reliability</span>&nbsp;
                 <span aria-hidden>⚡</span>
               </>
             }

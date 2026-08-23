@@ -24,9 +24,20 @@ export function DeveloperStats() {
         <DevHeading tone="white" eyebrow="The numbers" title="Turning Ideas into Reality" />
 
         <Reveal className="mt-14" stagger={0.08}>
-          <dl className="grid grid-cols-2 gap-x-6 gap-y-10 md:grid-cols-3 lg:grid-cols-5">
+          {/* Centred flex-wrap rather than a column grid. Five items never divide
+              evenly into two, three or four columns, and a grid leaves the
+              remainder left-aligned under a full row, which reads as a mistake.
+              Wrapping centres whatever is left over at every width. The basis is
+              8px clear of the widest label ("Technologies", 112px), so all five
+              sit on one row from 768 up; at `lg` they switch to equal fifths and
+              span the band as they do in the design. */}
+          <dl className="flex flex-wrap justify-center gap-x-5 gap-y-10">
             {developerStats.map((stat) => (
-              <div key={stat.label} data-reveal className="flex flex-col items-center text-center">
+              <div
+                key={stat.label}
+                data-reveal
+                className="flex basis-30 flex-col items-center text-center lg:basis-0 lg:grow"
+              >
                 <span className="ring-navy-line/40 grid size-12 place-items-center rounded-full bg-white/10 ring-1">
                   <Icon name={stat.icon} size={20} className="text-sky" />
                 </span>

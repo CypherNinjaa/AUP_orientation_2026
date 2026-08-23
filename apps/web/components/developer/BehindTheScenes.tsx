@@ -93,7 +93,13 @@ export function BehindTheScenes() {
           onScroll={sync}
           tabIndex={0}
           aria-label="Photos from the build"
-          className="scrollbar-none flex snap-x snap-mandatory gap-4 overflow-x-auto scroll-smooth px-6 pb-2 motion-reduce:scroll-auto"
+          /* `scroll-pl-6` is what makes the `px-6` gutter survive snapping.
+             Without it the browser snaps the first frame's edge flush to the
+             scrollport on load, which both swallows the left gutter — the strip
+             stops lining up with the heading above it — and parks `scrollLeft`
+             at 24, so `atStart` never reads true and the back arrow shows with
+             nothing behind it. */
+          className="scrollbar-none flex snap-x snap-mandatory scroll-pl-6 gap-4 overflow-x-auto scroll-smooth px-6 pb-2 motion-reduce:scroll-auto"
         >
           {GALLERY.map((shot, i) => (
             <li

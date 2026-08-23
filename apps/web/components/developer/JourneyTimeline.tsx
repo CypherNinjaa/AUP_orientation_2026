@@ -45,11 +45,14 @@ export function JourneyTimeline() {
                    down out of line with its neighbours. */
                 className="group relative grid grid-cols-[3.5rem_1fr] content-start items-start gap-x-5 lg:grid-cols-1 lg:justify-items-center lg:gap-x-0 lg:text-center"
               >
-                {/* Vertical rail, mobile and tablet only. */}
+                {/* Vertical rail, single-column only. At `md` the list is three
+                    across, so a rail down each column would join 01→04 and
+                    02→05 — the wrong order. Between `md` and `lg` the 01–06
+                    numbers carry the sequence on their own. */}
                 {i !== last ? (
                   <span
                     aria-hidden
-                    className="bg-rule/55 absolute top-16 -bottom-11 left-7 w-px lg:hidden"
+                    className="bg-rule/55 absolute top-16 -bottom-11 left-7 w-px md:hidden"
                   />
                 ) : null}
 

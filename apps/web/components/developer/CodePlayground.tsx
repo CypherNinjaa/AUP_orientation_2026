@@ -154,9 +154,19 @@ export function CodePlayground() {
               id="pg-panel"
               role="tabpanel"
               aria-labelledby={`pg-tab-${current.file}`}
-              className="p-4"
+              className="p-3 sm:p-4"
             >
-              <CodeBlock code={current.code} numbered className="text-[0.8125rem]" />
+              {/* A step down below `sm`. At 13px the longest line —
+                  `return "Something People Remember";` — is 338px against a
+                  294px panel at 375, and `CodeBlock` hides its scrollbar, so the
+                  payoff line of the snippet was clipped with nothing to say so.
+                  11px fits it whole and matches the architecture.json panel.
+                  From 418px up 13px fits, so `sm` is a safe switch. */}
+              <CodeBlock
+                code={current.code}
+                numbered
+                className="text-[0.6875rem] sm:text-[0.8125rem]"
+              />
             </div>
           </div>
 
