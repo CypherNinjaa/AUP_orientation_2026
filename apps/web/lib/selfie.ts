@@ -1,20 +1,28 @@
 /**
- * Judging a captured frame without downloading a model.
+ * Judging a frame before it is captured.
  *
  * The point of the selfie (decision D6) is that a volunteer at the gate can
- * match a face to a pass in seconds. That needs a photo a human can read — not
- * a machine-verified one — so the checks here are the ones that catch the
- * failures a human cannot work around: a frame that is nearly black, blown out,
- * or blank because a thumb is over the lens. Anything subtler is left as advice,
+ * match a face to a pass in seconds. So the test a frame has to pass is a human
+ * one, and the checks here are the failures a human at a gate cannot work
+ * around: a frame that is nearly black, blown out, blank because a thumb is over
+ * the lens, or — once ../lib/faceDetect has a model loaded — one with no face in
+ * it, or somebody else's face beside it. Anything subtler is left as advice,
  * because a form that refuses a usable photo sends a student to the help desk
  * for nothing.
  *
- * ⚠️ TODO(R1) — decision D6 named face-api.js for this. It is not installed, and
- * it is a real cost to add: roughly 1.5 MB of JavaScript plus about 2 MB of model
- * weights, downloaded over a mobile connection, to gate a photo that a person
- * checks by eye anyway. `verdict()` is the seam — swapping in a detector means
- * adding "no face found" and "more than one face" to the levels below and
- * nothing else changes. Worth raising before paying for it.
+ * Two kinds of evidence, deliberately separated:
+ *
+ *   - `sampleFrame()` reads pixel statistics. No download, a fraction of a
+ *     millisecond, works everywhere.
+ *   - `FaceReading` comes from ./faceDetect, which loads face-api.js on demand.
+ *     It answers the questions statistics cannot: how many faces, how large,
+ *     how central.
+ *
+ * `verdict()` takes the second as optional, and that is the load-bearing part of
+ * the design rather than a convenience. Absent face information means the
+ * detector could not be downloaded, could not run, or has not read a frame yet;
+ * in every one of those cases the statistics still stand on their own and the
+ * student still registers. No student is stopped by a model that did not arrive.
  *
  * One property worth stating: a frame drawn to a canvas and exported has no EXIF
  * block at all, so there is no orientation tag, no timestamp and no GPS to strip
@@ -38,6 +46,20 @@ export interface FrameStats {
   spread: number
   /** Variance of a Laplacian response. Higher is sharper. Scale is arbitrary. */
   detail: number
+}
+
+/**
+ * What the detector saw in one frame. Produced by ./faceDetect, consumed by
+ * `verdict()` below — the two numbers are fractions rather than pixels so that
+ * thresholds mean the same thing on a 480p webcam and a 4K phone.
+ */
+export interface FaceReading {
+  /** How many faces were found. Anything other than 1 is a problem here. */
+  count: number
+  /** The largest face's box area as a fraction of the square that gets stored. */
+  fill: number
+  /** How far that box's centre sits from the frame's, as a fraction of the square's edge. */
+  offset: number
 }
 
 export type Level = 'good' | 'advice' | 'block'
@@ -134,10 +156,17 @@ export function sampleFrame(source: HTMLVideoElement | HTMLCanvasElement): Frame
  * Thresholds are deliberately generous. Every one of them is a reason to stop a
  * student, so each has to be a case where the photo is genuinely unusable rather
  * than merely imperfect.
+ *
+ * `faces` is optional on purpose — see the note at the top of the file. Omitted
+ * or null means there is no face information for this frame, and the light and
+ * focus checks answer alone.
  */
-export function verdict(stats: FrameStats | null): Verdict {
+export function verdict(stats: FrameStats | null, faces?: FaceReading | null): Verdict {
   if (!stats) return { level: 'advice', hint: 'Getting a look at the picture…' }
 
+  // Light and lens first, before anything about faces. In a frame this dark or
+  // this flat there is no face to find, so "no face" would be true and useless:
+  // the light is the thing the student can actually do something about.
   if (stats.spread < 10) {
     return { level: 'block', hint: 'The camera cannot see much. Check nothing is covering it.' }
   }
@@ -147,11 +176,42 @@ export function verdict(stats: FrameStats | null): Verdict {
   if (stats.luma > 235) {
     return { level: 'block', hint: 'Too bright — the light is behind you. Turn around so it is on your face.' }
   }
+
+  if (faces) {
+    if (faces.count === 0) {
+      return { level: 'block', hint: 'No face in the circle yet. Move so yours is inside it.' }
+    }
+    if (faces.count > 1) {
+      // Not pedantry. A volunteer holding two faces and one name has to guess,
+      // and the whole point of the photo is that they never have to.
+      return { level: 'block', hint: 'More than one face in shot. This photo has to be just you.' }
+    }
+    // A box under 3.5% of the stored square is a face about a fifth as wide as
+    // the crop — too small to recognise on a phone in daylight.
+    if (faces.fill < 0.035) {
+      return { level: 'block', hint: 'Too far away to recognise. Bring the camera closer.' }
+    }
+    if (faces.offset > 0.22) {
+      return { level: 'advice', hint: 'Almost — move so your face is in the middle of the circle.' }
+    }
+    if (faces.fill < 0.1) {
+      return { level: 'advice', hint: 'A little closer, so your face fills more of the circle.' }
+    }
+    if (faces.fill > 0.8) {
+      return { level: 'advice', hint: 'That is very close. Move back a little.' }
+    }
+  }
+
   if (stats.luma < 70) {
     return { level: 'advice', hint: 'A little more light on your face would help.' }
   }
   if (stats.detail < 40) {
     return { level: 'advice', hint: 'Looks slightly soft. Hold still for a moment before you tap.' }
+  }
+  // Once a face has been found and placed, telling somebody to fill the circle
+  // is instructing them to do what they have just done.
+  if (faces?.count === 1) {
+    return { level: 'good', hint: 'That looks good. Tap to take it.' }
   }
   return { level: 'good', hint: 'That looks good. Fill the circle with your face and tap.' }
 }

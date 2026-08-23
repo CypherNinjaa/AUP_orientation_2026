@@ -65,8 +65,8 @@ problem, not a CPU problem. Handled by:
 
 | Effort | Concern | Document |
 | :--- | :--- | :--- |
-| 🔴 **High** | Offline scan + multi-device sync correctness | [05](05-offline-sync.md) |
-| 🔴 **High** | Selfie handling / DPDP compliance | [06](06-security-compliance.md) |
+| 🔴 **High** | Offline scan + multi-device sync correctness | 05 — Offline Sync Engine |
+| 🔴 **High** | Selfie handling / DPDP compliance | 06 — Security & Compliance |
 | 🟡 Medium | SSE connection scaling | this doc, §1.4 |
 | 🟢 Low | Request throughput, DB write volume | Redis cache + 3 indexes |
 
@@ -81,19 +81,19 @@ sufficient. Revisit only if the connection count in Railway metrics approaches t
 | :--- | :--- | :--- |
 | Framework | **Next.js 15**, App Router, React 19 | UI + API in one deployable ([D1](01-decisions.md#1-decision-log)) |
 | Language | **TypeScript**, `strict: true`, `noUncheckedIndexedAccess` | |
-| Styling | **Tailwind CSS v4** + CSS custom properties for tokens | Two themes, one token set ([07](07-design-system.md)) |
-| Components | **shadcn/ui** (owned source, not a dependency) | Restyled to Amity tokens |
-| Animation | **Framer Motion** — public/student only, never on the scanner verdict path | |
+| Styling | **Tailwind CSS v4** + CSS custom properties for tokens | Two themes, one token set (07) |
+| Components | **Hand-written primitives** in `apps/web/components/ui/` — owned source, no component dependency | ⚠️ shadcn/ui was planned and **not used**. Radix, `cva` and `tailwind-merge` earned nothing on this surface, and `cn()` is six lines |
+| Animation | **GSAP 3** + `@gsap/react` (`useGSAP`) — public/student only, never on the scanner verdict path | ScrollTrigger for reveals. `prefers-reduced-motion` is honoured in unlayered CSS, so it wins before any JS runs |
 | Auth | **Clerk** behind `packages/core/auth` adapter | ([D13](01-decisions.md#1-decision-log)) |
 | Validation | **Zod** — one schema per boundary, shared client/server | `packages/contracts` |
 | ORM | **Prisma 6** + PostgreSQL 16 | |
 | Cache / pub-sub / locks | **Redis 7** (`ioredis`) | |
 | Jobs | **BullMQ** in `apps/worker` | Exports, retention sweep, metric rollups |
 | Object storage | **Cloudflare R2** (S3 API) | Private bucket + signed URLs ([D14](01-decisions.md#1-decision-log)) |
-| Client-side face detect | **`face-api.js`** — lazy-loaded on the selfie step only | ~6 MB of weights, never on first paint |
+| Client-side face detect | **`@vladmandic/face-api`** — TinyFaceDetector only, behind a dynamic `import()` on the selfie step | 193 KB of weights committed to `public/models/`; the 1.24 MB library is its own chunk, in no first-load bundle ([D4](01-decisions.md#1-decision-log)) |
 | QR generate / read | `qrcode` (server, SVG) · `@zxing/browser` (camera, QR **and** Code128) | One decoder for both formats |
 | Barcode | `bwip-js` server-side Code128 render | |
-| Offline store | **IndexedDB** via `idb` | Manifest + outbox ([05](05-offline-sync.md)) |
+| Offline store | **IndexedDB** via `idb` | Manifest + outbox (05) |
 | PDF | `@react-pdf/renderer` in the worker | |
 | Excel | `exceljs` in the worker | |
 | Testing | Vitest (unit) · Playwright (E2E, incl. offline) · k6 (load) | |
@@ -145,7 +145,7 @@ cross-service auth handshake.
                     │  │  source of      │   │  cache             │  │
                     │  │  truth          │   │  pub/sub (SSE)     │  │
                     │  │                 │   │  scan mutex        │  │
-                    │  │  daily backup   │   │  rate-limit counts  │  │
+                    │  │  daily backup   │   │  rate-limit counts │  │
                     │  └───────▲─────────┘   │  BullMQ queues     │  │
                     │          │             └─────────▲──────────┘  │
                     │  ┌───────┴───────────────────────┴──────────┐  │
@@ -181,7 +181,11 @@ Staging must never hold real PII. Load tests and destructive chaos drills run th
 
 ## 4. Repository layout
 
-Monorepo, pnpm workspaces + Turborepo.
+Monorepo, **npm workspaces** (`apps/*`, `packages/*`). No Turborepo — there is one buildable app, and a task
+graph over a single node is a dependency doing no work. Revisit if `packages/*` grows its own build steps.
+
+> ⚠️ The tree below is the **target** layout. Only `apps/web` exists today, and within it only the public and
+> student routes. Directories are created when the phase that needs them starts.
 
 ```
 orientation2026/
@@ -231,11 +235,10 @@ orientation2026/
 │   └── ui/                           # design tokens + primitives shared across skins
 │
 ├── docs/                             # you are here
-├── ops/
-│   ├── railway/                      # service config
-│   ├── loadtest/                     # k6 scripts
-│   └── RUNBOOK.md                    # day-of operations
-└── turbo.json
+└── ops/
+    ├── railway/                      # service config
+    ├── loadtest/                     # k6 scripts
+    └── RUNBOOK.md                    # day-of operations
 ```
 
 ### The single most important file in the repo

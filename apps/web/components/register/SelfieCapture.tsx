@@ -5,7 +5,15 @@ import { Button } from '@/components/ui/Button'
 import { Icon } from '@/components/ui/Icon'
 import { cn } from '@/lib/cn'
 import { EVENT } from '@/lib/event'
-import { type Level, captureSquare, dataUrlKb, sampleFrame, verdict } from '@/lib/selfie'
+import { loadDetector } from '@/lib/faceDetect'
+import {
+  type FaceReading,
+  type Level,
+  captureSquare,
+  dataUrlKb,
+  sampleFrame,
+  verdict,
+} from '@/lib/selfie'
 
 /**
  * The camera step.
@@ -44,6 +52,14 @@ export function SelfieCapture({
 }) {
   const videoRef = useRef<HTMLVideoElement>(null)
   const streamRef = useRef<MediaStream | null>(null)
+  /**
+   * The most recent thing the detector saw, in a ref rather than state: it is
+   * read by the guidance timer below, and putting four re-renders a second
+   * through a component with a live video in it buys nothing.
+   */
+  const facesRef = useRef<FaceReading | null>(null)
+  /** Set once the detector has proved too slow or too broken to keep asking. */
+  const detectorDropped = useRef(false)
 
   const [phase, setPhase] = useState<Phase>('idle')
   /** A frame that has been taken but not yet approved. */
@@ -67,6 +83,10 @@ export function SelfieCapture({
       return
     }
     setPhase('opening')
+    // Fire and forget: this is the same memoised promise the detection loop
+    // awaits below, so starting it here spends the seconds the browser is asking
+    // for permission on the download instead of spending them after.
+    void loadDetector()
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         // A square-ish request so the centre crop throws away as little as
@@ -99,9 +119,76 @@ export function SelfieCapture({
     if (phase !== 'live') return
     const id = window.setInterval(() => {
       const video = videoRef.current
-      if (video) setLive(verdict(sampleFrame(video)))
+      if (video) setLive(verdict(sampleFrame(video), facesRef.current))
     }, 250)
     return () => window.clearInterval(id)
+  }, [phase])
+
+  // The detector gets its own loop rather than riding the timer above. A read
+  // can take longer than the interval on a cheap phone, and a timer would stack
+  // them up until the page stopped responding; here each read schedules the next
+  // one only once it has finished.
+  useEffect(() => {
+    if (phase !== 'live') return
+    let stopped = false
+
+    const drop = (why: string) => {
+      facesRef.current = null
+      detectorDropped.current = true
+      // Deliberately noisy. This is a feature that switches itself off, and a
+      // silent degradation is one nobody will ever know to look at.
+      console.warn(`[selfie] face detection off — ${why}. Light and focus checks continue.`)
+    }
+
+    void (async () => {
+      if (detectorDropped.current) return
+      const detector = await loadDetector()
+      if (!detector || stopped) return
+
+      let reads = 0
+      let slow = 0
+
+      while (!stopped) {
+        const video = videoRef.current
+        if (!video) return
+
+        const began = performance.now()
+        try {
+          facesRef.current = await detector.read(video)
+        } catch (err) {
+          // A lost WebGL context, or a frame it could not read.
+          drop(err instanceof Error ? err.message : 'a read threw')
+          return
+        }
+        const cost = performance.now() - began
+
+        // The first read is not representative of the rest: TensorFlow compiles
+        // its shaders on the way through it, which is a second or two even on a
+        // good GPU. Judging the detector by its warm-up would switch it off on
+        // every device there is.
+        const budget = reads === 0 ? 8000 : 1800
+        reads++
+        slow = cost > budget ? slow + 1 : 0
+
+        // Two consecutive slow reads before giving up, so that one garbage
+        // collection, or one moment spent in a background tab, does not cost a
+        // student the guidance for the rest of the step. A device that really is
+        // this slow would spend the whole step blocked, so it stops being asked
+        // and the form behaves as if the model had never loaded.
+        if (slow >= 2) {
+          drop(`two reads over ${budget} ms — the last took ${Math.round(cost)} ms`)
+          return
+        }
+
+        await new Promise((resolve) => window.setTimeout(resolve, Math.max(0, 250 - cost)))
+      }
+    })()
+
+    return () => {
+      stopped = true
+      // Nothing stale survives into the next camera session.
+      facesRef.current = null
+    }
   }, [phase])
 
   function take() {

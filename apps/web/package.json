@@ -7,10 +7,12 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "models:sync": "node scripts/sync-models.mjs"
   },
   "dependencies": {
     "@gsap/react": "^2.1.2",
+    "@vladmandic/face-api": "^1.7.15",
     "gsap": "^3.13.0",
     "next": "15.5.23",
     "react": "19.2.0",

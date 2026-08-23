@@ -3,7 +3,6 @@ import { CtaBand } from '@/components/sections/CtaBand'
 import { Reveal } from '@/components/motion/Reveal'
 import { PageHeader } from '@/components/site/PageHeader'
 import { LinkButton } from '@/components/ui/Button'
-import { Icon } from '@/components/ui/Icon'
 import { QuoteCard } from '@/components/ui/QuoteCard'
 import {
   Container,
