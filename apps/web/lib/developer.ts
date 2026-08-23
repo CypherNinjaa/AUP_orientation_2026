@@ -8,20 +8,27 @@ import type { TechKey } from '@/components/developer/TechMark'
    so the page components stay layout-only and a real developer can take this
    over by editing one file.
 
-   ⚠️ EVERY personal value below is a bracketed placeholder or a
-   placeholder.example URL. Nothing here describes a real person, and nothing
-   here should be published as-is. Replace, do not decorate.
+   ⚠️ The four names below — name, role, specialisation, location — are still
+   bracketed placeholders and render literally. The photographs and the profile
+   links are real. Replace the brackets, do not decorate them.
    ========================================================================== */
 
 /** The person. Bracketed on purpose — these render literally until replaced. */
 export const DEVELOPER = {
-  name: '[Developer Name]',
-  role: '[Developer Role]',
-  specialisation: '[Specialization]',
-  location: '[Location]',
-  bio: '[Developer Bio]',
-  /** Swap the file at this path; the frame owns the 4:5 ratio, so nothing moves. */
-  portrait: '/assets/developer/developer-placeholder.jpg',
+  name: '[Vikash]',
+  role: '[Full Stack Developer]',
+  specialisation: '[Web Development]',
+  location: '[Patna]',
+  bio: 'I build fast, scalable and user-centric web applications. With a strong foundation in modern technologies and a passion for problem-solving, I create seamless digital experiences.',
+  /**
+   * The hero artwork: a transparent cut-out of the subject on their own
+   * gradient blob, with the `</>` chip, paper plane and dot grid that belong to
+   * the composition. It is placed, not framed — see DeveloperHero.
+   */
+  heroArt: '/assets/developer/hero-art.webp',
+  heroArtSize: { width: 1200, height: 800 },
+  /** A square head-and-shoulders crop of the same photograph, for the 44px circle. */
+  avatar: '/assets/developer/avatar.webp',
   project: 'Orientation 2026',
   campus: 'Amity University Patna',
 } as const
@@ -38,38 +45,37 @@ export interface Social {
   readonly href: string
 }
 
-/**
- * ⚠️ Every href is a placeholder host that resolves nowhere. Real profile URLs
- * go in here — do not leave these live.
- */
+/** Real profiles. The handle is the one shown on the card, so it has to agree
+ *  with the href — a card reading `@yourusername` beside a live link is worse
+ *  than one that goes nowhere. */
 export const SOCIALS: readonly Social[] = [
   {
     key: 'github',
     label: 'GitHub',
     blurb: 'Check out my code',
-    handle: '@yourusername',
-    href: 'https://placeholder.example/github',
+    handle: '@CypherNinjaa',
+    href: 'https://github.com/CypherNinjaa',
   },
   {
     key: 'linkedin',
     label: 'LinkedIn',
     blurb: "Let's connect",
-    handle: 'Your Profile',
-    href: 'https://placeholder.example/linkedin',
+    handle: 'in/vikashintech',
+    href: 'https://www.linkedin.com/in/vikashintech/',
   },
   {
     key: 'instagram',
     label: 'Instagram',
     blurb: 'Behind the scenes',
-    handle: '@yourusername',
-    href: 'https://placeholder.example/instagram',
+    handle: '@vikashintech',
+    href: 'https://www.instagram.com/vikashintech',
   },
   {
     key: 'hashnode',
     label: 'Hashnode',
     blurb: 'I write sometimes',
-    handle: 'yourname.hashnode.dev',
-    href: 'https://placeholder.example/hashnode',
+    handle: '@vikashintech',
+    href: 'https://hashnode.com/@vikashintech',
   },
 ] as const
 
@@ -277,16 +283,45 @@ export const developerStats: readonly {
 /* -------------------------------------------------------------------------- */
 
 /**
- * Five 4:3 frames. The `src` files exist as abstract placeholders; overwrite
- * them in place and the layout is untouched, because the frame sets the ratio
- * and the image is object-cover inside it.
+ * Five 4:3 frames, in the order the work happened rather than the order the
+ * files were named: plan, wireframe, build, the late nights, and finally the
+ * page you are reading. `caption` is the line that slides up on hover; `alt`
+ * describes the photograph for anyone who cannot see it, so the two say
+ * different things on purpose.
+ *
+ * Derived from `design/source-images/` by `scripts/build-assets.mjs` — replace a
+ * source and re-run it rather than editing these files by hand.
  */
-export const GALLERY: readonly { readonly src: string; readonly caption: string }[] = [
-  { src: '/assets/developer/gallery-01.jpg', caption: 'First wireframe' },
-  { src: '/assets/developer/gallery-02.jpg', caption: 'Choosing the palette' },
-  { src: '/assets/developer/gallery-03.jpg', caption: 'Wiring the wizard' },
-  { src: '/assets/developer/gallery-04.jpg', caption: 'Scanner on a real phone' },
-  { src: '/assets/developer/gallery-05.jpg', caption: 'Ship day' },
+export const GALLERY: readonly {
+  readonly src: string
+  readonly caption: string
+  readonly alt: string
+}[] = [
+  {
+    src: '/assets/developer/gallery-01.jpg',
+    caption: 'Mapping the page on paper',
+    alt: 'A notebook open to hand-drawn wireframes of the landing page, beside a laptop and a coffee mug.',
+  },
+  {
+    src: '/assets/developer/gallery-02.jpg',
+    caption: 'Wireframing the journey',
+    alt: "Sketching the site's screen flow on a tablet with a stylus, next to a page of notes.",
+  },
+  {
+    src: '/assets/developer/gallery-03.jpg',
+    caption: 'Building it, one component at a time',
+    alt: 'Working at a two-monitor desk with the project code open across both screens.',
+  },
+  {
+    src: '/assets/developer/gallery-04.jpg',
+    caption: 'The late shift',
+    alt: 'A desk lit by a single lamp at night, the code for this site on the monitor.',
+  },
+  {
+    src: '/assets/developer/gallery-05.jpg',
+    caption: 'This very page, in the editor',
+    alt: 'A close-up of a laptop screen showing the source of the developer page in a code editor.',
+  },
 ] as const
 
 /** The floating card over the hero portrait. */

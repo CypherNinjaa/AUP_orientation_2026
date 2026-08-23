@@ -11,7 +11,7 @@ import { TerminalCard } from './TerminalCard'
 /**
  * The hero.
  *
- * On a wide screen the three cards float over the portrait, as in the design. On
+ * On a wide screen the three cards float over the artwork, as in the design. On
  * anything narrower they are not shrunk or dropped — they become a normal
  * stacked group underneath it, which is the only honest way to show three
  * information-carrying cards on a 375px screen.
@@ -26,7 +26,7 @@ export function DeveloperHero() {
       </div>
 
       <Container>
-        {/* The art column is the wider of the two: it carries a 4:5 portrait and
+        {/* The art column is the wider of the two: it carries the artwork and
             three cards ringing it, and at an even split the cards covered most
             of the picture. */}
         <Reveal className="grid items-center gap-14 lg:grid-cols-[1fr_1.18fr] lg:gap-10">
@@ -67,51 +67,31 @@ export function DeveloperHero() {
 
           {/* ---- art ------------------------------------------------------- */}
           <div className="relative lg:py-14">
-            {/* The portrait and its decoration are one unit. Anchoring the
-                decoration to the art column instead stretched it to cover the
-                card group as well once the cards left the absolute layer below
-                `lg` — 725×971 of wash behind a 320×400 picture, with the two
-                offset frames sticking out as stray panels. Bled off the portrait
-                it tracks the picture at every width. */}
-            <div className="relative mx-auto w-[78%] max-w-[20rem] lg:max-w-[23.5rem]">
-              <div
-                aria-hidden
-                className="pointer-events-none absolute -inset-x-[23%] -inset-y-[13%] -z-10"
-              >
-                {/* The blob the portrait sits on, plus two offset frames behind
-                    it so the picture reads as the top layer of a stack. The
-                    filled one is faint on purpose: at any real weight it
-                    competes with the portrait instead of seating it. */}
-                <div className="wash-dev absolute inset-0 rounded-[45%]" />
-                <div className="grad-dev absolute inset-x-14 top-10 bottom-10 rotate-[7deg] rounded-[2.5rem] opacity-[0.14]" />
-                <div className="ring-berry/25 absolute inset-x-16 top-14 bottom-14 -rotate-3 rounded-[2.25rem] ring-1" />
-              </div>
-
-              {/* The frame owns the ratio, the image is object-cover inside it:
-                  dropping in a real photograph of any size moves nothing. The
-                  ring is opaque white — over the wash a translucent one takes
-                  the violet underneath and the portrait loses its edge. */}
-              <div className="shadow-glass relative aspect-4/5 overflow-hidden rounded-[2.25rem] ring-8 ring-white">
-                <Image
-                  src={DEVELOPER.portrait}
-                  alt=""
-                  fill
-                  priority
-                  sizes="(min-width: 1024px) 22rem, 78vw"
-                  className="object-cover"
-                />
-              </div>
-              {/* Glow along the bottom edge, so the portrait is lit by the wash. */}
-              <div
-                aria-hidden
-                className="grad-dev absolute -bottom-3 left-1/2 h-8 w-3/4 -translate-x-1/2 rounded-full opacity-45 blur-xl"
+            {/* No frame, no ring, no offset panels.
+                The supplied artwork is a transparent cut-out: the subject
+                already sits on their own gradient blob, with a `</>` chip, a
+                paper plane and a dot grid arranged around them. A rounded
+                white frame over that would crop the paper plane and the dots
+                off the composition and cut a hard edge through the blob, and
+                the two offset panels that used to sit behind the picture were
+                there to seat an opaque rectangle — there is no rectangle now.
+                So the artwork is placed rather than framed, and the only
+                decoration left is the section wash above, which it sits in. */}
+            <div className="relative mx-auto w-full max-w-[27rem] lg:max-w-[34rem]">
+              <Image
+                src={DEVELOPER.heroArt}
+                width={DEVELOPER.heroArtSize.width}
+                height={DEVELOPER.heroArtSize.height}
+                alt=""
+                priority
+                className="h-auto w-full"
               />
             </div>
 
             {/* Static below lg, floated at lg. The wrapper is not a positioned
                 ancestor, so the absolute children resolve against the art box.
                 Each card is pushed outward past the column edge so it clips one
-                corner of the portrait rather than sitting on top of it — the
+                corner of the artwork rather than sitting on top of it — the
                 picture is the subject here, the cards are annotations on it. */}
             <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:mt-0 lg:block">
               <CodeCard

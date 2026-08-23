@@ -17,7 +17,22 @@ const caveat = Caveat({
   display: 'swap',
 })
 
+/**
+ * Absolute origin for share metadata.
+ *
+ * `app/opengraph-image.png` is picked up by file convention, but Next can only
+ * turn it into the absolute URL that scrapers require if it knows the site's
+ * base — without this it warns at build time and emits
+ * `http://localhost:3000/opengraph-image.png`, i.e. a broken share preview in
+ * production. The default is the GitHub Pages origin for this repository's
+ * remote, matching the basePath in next.config.ts; set NEXT_PUBLIC_SITE_URL when
+ * a custom domain is issued.
+ */
+const SITE_URL =
+  process.env.NEXT_PUBLIC_SITE_URL ?? 'https://cypherninjaa.github.io/AUP_orientation_2026'
+
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
   title: {
     default: `${EVENT.programme} ${EVENT.year} — ${EVENT.institution}`,
     template: `%s — Orientation ${EVENT.year}`,
@@ -29,6 +44,7 @@ export const metadata: Metadata = {
   authors: [{ name: EVENT.institution }],
   openGraph: {
     type: 'website',
+    url: SITE_URL,
     siteName: `${EVENT.institution} — Orientation ${EVENT.year}`,
     title: `Orientation ${EVENT.year}`,
     description: `Your journey, our community. ${EVENT.dateRange} at ${EVENT.institution}.`,

@@ -1,13 +1,20 @@
+import Image from 'next/image'
 import { cn } from '@/lib/cn'
 
 /**
- * Amity University Patna lock-up: navy shield carrying the flame, with the
- * wordmark set in the site's own display face.
+ * Amity University Patna lock-up: the official crest beside the campus wordmark.
  *
- * ⚠️ The shield here is a placeholder drawn to the proportions of the official
- * mark. Replace it with the vector supplied by the Communications office before
- * launch — drop the file at `public/brand/amity-patna.svg` and swap the <svg>
- * below for an <Image>. Do not redraw the crest by hand for production.
+ * The crest is the supplied artwork, unaltered and unrecoloured — it carries its
+ * own 2px white keyline, which is what lets the same file sit on the header's
+ * clear background and on the navy footer without a plate behind it. `tone` only
+ * switches the wordmark's colours.
+ *
+ * The crest also contains "AMITY UNIVERSITY" in its top band, which is why the
+ * wordmark is not a duplication: at 40px tall that text is around 3px and reads
+ * as texture, so the line beside it is the only legible one.
+ *
+ * Derived at 170x200 from `design/source-images/amity-small-logo.png` by
+ * `scripts/build-assets.mjs`.
  */
 export function BrandMark({
   className,
@@ -20,36 +27,14 @@ export function BrandMark({
 
   return (
     <span className={cn('flex items-center gap-2.5', className)}>
-      <svg viewBox="0 0 40 44" className="h-10 w-9 shrink-0" aria-hidden="true">
-        <path
-          d="M20 1.6 2.6 7.3v14.4C2.6 31.6 9.7 39.4 20 42.4c10.3-3 17.4-10.8 17.4-20.7V7.3Z"
-          fill={onWhite ? '#ffffff' : '#001b44'}
-        />
-        <path
-          d="M20 5.4 6.2 9.9v11.8c0 8 5.6 14.4 13.8 17 8.2-2.6 13.8-9 13.8-17V9.9Z"
-          fill="none"
-          stroke={onWhite ? '#001b44' : '#ffb77f'}
-          strokeWidth="1.1"
-          opacity={onWhite ? 0.35 : 0.5}
-        />
-        {/* the flame */}
-        <path
-          d="M20 12.2c-3.9 4.6-5.8 8.1-5.8 11.2a5.8 5.8 0 0 0 11.6 0c0-3.1-1.9-6.6-5.8-11.2Z"
-          fill="#ff8a00"
-        />
-        <path
-          d="M20 17.8c-1.9 2.5-2.9 4.4-2.9 6a2.9 2.9 0 0 0 5.8 0c0-1.6-1-3.5-2.9-6Z"
-          fill={onWhite ? '#001b44' : '#001b44'}
-          opacity="0.55"
-        />
-        <path
-          d="M12.4 31.2h15.2"
-          stroke={onWhite ? '#001b44' : '#ffb77f'}
-          strokeWidth="1.4"
-          strokeLinecap="round"
-          opacity="0.7"
-        />
-      </svg>
+      <Image
+        src="/brand/amity-shield.png"
+        width={170}
+        height={200}
+        alt=""
+        priority
+        className="h-10 w-auto shrink-0"
+      />
 
       <span className="flex flex-col leading-none">
         <span

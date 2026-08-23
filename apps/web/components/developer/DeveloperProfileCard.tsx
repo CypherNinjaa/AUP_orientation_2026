@@ -5,10 +5,11 @@ import { DEVELOPER } from '@/lib/developer'
 import { Icon } from '@/components/ui/Icon'
 
 /**
- * The identity card floating beside the hero portrait.
+ * The identity card floating beside the hero artwork.
  *
- * Every string it renders is a bracketed placeholder from lib/developer.ts, and
- * it renders them literally on purpose — a card that says "[Developer Name]" is
+ * The avatar is real — a square head-and-shoulders crop of the hero photograph.
+ * The four strings are still bracketed placeholders from lib/developer.ts, and
+ * it renders them literally on purpose: a card that says "[Developer Name]" is
  * obviously unfinished, where an invented name would not be.
  */
 export function DeveloperProfileCard({ className, ...rest }: ComponentPropsWithoutRef<'div'>) {
@@ -19,13 +20,7 @@ export function DeveloperProfileCard({ className, ...rest }: ComponentPropsWitho
     >
       <div className="flex items-center gap-3">
         <span className="ring-violet-tint relative size-11 shrink-0 overflow-hidden rounded-full ring-2">
-          <Image
-            src={DEVELOPER.portrait}
-            alt=""
-            fill
-            sizes="44px"
-            className="object-cover"
-          />
+          <Image src={DEVELOPER.avatar} alt="" fill sizes="44px" className="object-cover" />
         </span>
         <span className="min-w-0">
           <span className="text-navy block truncate text-sm font-bold">{DEVELOPER.name}</span>

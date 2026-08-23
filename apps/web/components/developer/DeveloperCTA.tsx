@@ -1,3 +1,4 @@
+import Image from 'next/image'
 import { Container } from '@/components/ui/atoms'
 import { Reveal } from '@/components/motion/Reveal'
 import { LinkButton } from '@/components/ui/Button'
@@ -8,36 +9,30 @@ import { TechMark } from './TechMark'
  * The closing band.
  *
  * "View My Work" points at the site itself, because on this page the work is
- * Orientation 2026. The GitHub button uses the placeholder profile URL from
- * lib/developer.ts and resolves nowhere until that is replaced.
+ * Orientation 2026. The GitHub button goes to the real profile.
  */
-
-/** An unnamed figure. No face, no features — a shape, not a person. */
-function Silhouette() {
-  return (
-    <svg
-      viewBox="0 0 160 260"
-      aria-hidden
-      className="h-full w-auto fill-white/20"
-      preserveAspectRatio="xMinYMax meet"
-    >
-      <circle cx="78" cy="42" r="30" />
-      <path d="M78 80c34 0 58 22 62 54l8 126H8l8-126c4-32 28-54 62-54Z" />
-      <path d="M18 150 0 210l10 4 20-56Z" />
-      <path d="M138 150l18 60-10 4-20-56Z" />
-    </svg>
-  )
-}
-
 export function DeveloperCTA() {
   const github = SOCIALS.find((s) => s.key === 'github')
 
   return (
     <section className="grad-dev relative overflow-hidden py-20 md:py-24">
-      {/* Decoration. Both layers are behind the copy and neither is read out. */}
+      {/* Decoration. Every layer is behind the copy and none is read out. */}
       <div aria-hidden className="pointer-events-none absolute inset-0">
-        <div className="absolute bottom-0 left-0 hidden h-[85%] md:block lg:h-[95%]">
-          <Silhouette />
+        {/* The figure the drawn silhouette stood in for: a back view, no face,
+            already cut out against transparency — so it needs no plate and no
+            mask to sit on the gradient. Held at 55% because the copy above it is
+            centred and on a 768px screen there is barely a gutter to clear; at
+            full strength the hoodie reads as a second subject competing with the
+            heading, and at the old 20% ghost the violet rim light disappears.
+            Hidden below md, where there is no gutter at all. */}
+        <div className="absolute bottom-0 left-0 hidden h-[85%] opacity-55 md:block lg:h-[95%]">
+          <Image
+            src="/assets/developer/cta-figure.webp"
+            width={720}
+            height={803}
+            alt=""
+            className="h-full w-auto"
+          />
         </div>
         <span className="absolute top-8 right-6 font-mono text-[6rem] leading-none font-bold text-white/15 select-none md:text-[9rem] lg:right-16">
           {'</>'}

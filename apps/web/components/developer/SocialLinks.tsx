@@ -8,9 +8,9 @@ import { TechMark, techBrand } from './TechMark'
 /**
  * The four profile cards.
  *
- * Every href points at placeholder.example, which resolves nowhere — that is
- * deliberate. A card that goes nowhere is obviously unfinished; a card pointing
- * at a real stranger's profile would not be.
+ * Live profiles, opened in a new tab. The handle under each label is the same
+ * one the href resolves to, so the card can be read without following it — see
+ * the SOCIALS note in lib/developer.ts.
  */
 export function SocialLinks() {
   return (

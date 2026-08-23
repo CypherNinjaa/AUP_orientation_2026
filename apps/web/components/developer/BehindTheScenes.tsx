@@ -16,8 +16,9 @@ import { DevHeading } from './DevHeading'
  * frames are in the document whether or not any script runs. The buttons only
  * nudge `scrollLeft`.
  *
- * Images are abstract placeholders. Each frame owns its 4:3 ratio and the image is
- * object-cover inside it, so overwriting the files changes nothing but the picture.
+ * Each frame owns its 4:3 ratio and the image is object-cover inside it, so the
+ * strip holds its shape whatever the source photographs are. The files are
+ * derived from `design/source-images/` by `scripts/build-assets.mjs`.
  */
 export function BehindTheScenes() {
   const track = useRef<HTMLUListElement>(null)
@@ -109,7 +110,9 @@ export function BehindTheScenes() {
               <figure className="ring-rule/25 shadow-soft group-hover:shadow-lift relative aspect-4/3 overflow-hidden rounded-2xl ring-1 transition-shadow duration-400">
                 <Image
                   src={shot.src}
-                  alt=""
+                  /* Describes the photograph, which the hover caption does not:
+                     the caption is a title for the moment, this is the picture. */
+                  alt={shot.alt}
                   fill
                   sizes="(min-width: 1280px) 23vw, (min-width: 1024px) 31vw, (min-width: 640px) 46vw, 78vw"
                   loading={i < 2 ? 'eager' : 'lazy'}
