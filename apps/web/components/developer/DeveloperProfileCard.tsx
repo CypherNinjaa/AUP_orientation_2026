@@ -7,10 +7,10 @@ import { Icon } from '@/components/ui/Icon'
 /**
  * The identity card floating beside the hero artwork.
  *
- * The avatar is real — a square head-and-shoulders crop of the hero photograph.
- * The four strings are still bracketed placeholders from lib/developer.ts, and
- * it renders them literally on purpose: a card that says "[Developer Name]" is
- * obviously unfinished, where an invented name would not be.
+ * Everything on it is real: the avatar is a square head-and-shoulders crop of
+ * the hero photograph, and the four strings come from DEVELOPER in
+ * lib/developer.ts. Name and role are `truncate`d because the card is 216px wide
+ * at `lg` — a longer title is clipped rather than allowed to reflow the card.
  */
 export function DeveloperProfileCard({ className, ...rest }: ComponentPropsWithoutRef<'div'>) {
   return (

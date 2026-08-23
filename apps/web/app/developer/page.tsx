@@ -13,8 +13,10 @@ export const metadata: Metadata = {
   title: 'Developer',
   description:
     'The build behind Orientation 2026 — the journey, the stack, the architecture and the code.',
-  /* Every name, link and figure on this page is still a placeholder. Keep it out
-     of search results until they are replaced. */
+  /* The name, links and photographs are real now; the five figures in
+     DeveloperStats are still invented. Kept out of search results until those are
+     measured or the section goes — publishing made-up counts as facts is the one
+     thing left on this page that would be worth indexing and shouldn't be. */
   robots: { index: false, follow: false },
 }
 

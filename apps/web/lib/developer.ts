@@ -8,17 +8,16 @@ import type { TechKey } from '@/components/developer/TechMark'
    so the page components stay layout-only and a real developer can take this
    over by editing one file.
 
-   ⚠️ The four names below — name, role, specialisation, location — are still
-   bracketed placeholders and render literally. The photographs and the profile
-   links are real. Replace the brackets, do not decorate them.
+   The person, the photographs and the profile links are all real. The figures
+   under "Statistics" are not — see the warning there.
    ========================================================================== */
 
-/** The person. Bracketed on purpose — these render literally until replaced. */
+/** The person. */
 export const DEVELOPER = {
-  name: '[Vikash]',
-  role: '[Full Stack Developer]',
-  specialisation: '[Web Development]',
-  location: '[Patna]',
+  name: 'Vikash',
+  role: 'Full Stack Developer',
+  specialisation: 'Web Development',
+  location: 'Patna',
   bio: 'I build fast, scalable and user-centric web applications. With a strong foundation in modern technologies and a passion for problem-solving, I create seamless digital experiences.',
   /**
    * The hero artwork: a transparent cut-out of the subject on their own

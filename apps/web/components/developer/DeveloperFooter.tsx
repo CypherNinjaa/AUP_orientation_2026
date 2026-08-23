@@ -10,8 +10,8 @@ import { DEVELOPER } from '@/lib/developer'
  * line of credit, and this route sits outside the (public) group so it can have
  * that without forking anything shared. Every other page still gets SiteFooter.
  *
- * The name is DEVELOPER.name — the same bracketed placeholder used everywhere
- * else on the page, so there is exactly one string to replace.
+ * The credit reads DEVELOPER.name, the same source the profile card uses, so the
+ * name is written down once.
  */
 export function DeveloperFooter() {
   return (
