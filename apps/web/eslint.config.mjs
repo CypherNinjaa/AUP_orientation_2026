@@ -17,7 +17,9 @@ import { FlatCompat } from '@eslint/eslintrc'
 const compat = new FlatCompat({ baseDirectory: dirname(fileURLToPath(import.meta.url)) })
 
 const config = [
-  { ignores: ['.next/**', 'node_modules/**', 'next-env.d.ts'] },
+  // `out/**` is the static-export bundle. Linting minified chunks produces
+  // thousands of no-unused-expressions hits and buries every real finding.
+  { ignores: ['.next/**', 'out/**', 'node_modules/**', 'next-env.d.ts'] },
   ...compat.extends('next/core-web-vitals', 'next/typescript'),
 ]
 

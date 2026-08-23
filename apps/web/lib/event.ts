@@ -434,6 +434,8 @@ export const NAV = [
   { href: '/highlights', label: 'Highlights', hint: 'the good bits' },
   { href: '/information', label: 'Information', hint: 'what to bring' },
   { href: '/contact', label: 'Contact', hint: 'ask a person' },
+  { href: '/register', label: 'Registration', hint: 'get your pass' },
+  { href: '/developer', label: 'Developer', hint: 'who built this' },
 ] as const
 
 /* -------------------------------------------------------------------------- */

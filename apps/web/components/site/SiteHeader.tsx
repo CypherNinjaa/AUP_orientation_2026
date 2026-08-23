@@ -63,7 +63,9 @@ export function SiteHeader() {
                 href={item.href}
                 aria-current={active ? 'page' : undefined}
                 className={cn(
-                  'relative rounded-full px-4 py-2 text-[0.9375rem] font-semibold transition-colors duration-300',
+                  // Eight items plus the lock-up and the CTA is a tight fit at
+                  // 1280px, so the padding and size step up only at xl.
+                  'relative rounded-full px-2.5 py-2 text-sm font-semibold transition-colors duration-300 xl:px-4 xl:text-[0.9375rem]',
                   active ? 'text-violet-deep' : 'text-ink-soft hover:text-navy',
                 )}
               >
@@ -71,7 +73,7 @@ export function SiteHeader() {
                 <span
                   aria-hidden
                   className={cn(
-                    'grad-pair absolute inset-x-4 -bottom-0.5 h-[3px] origin-left rounded-full transition-transform duration-400 ease-[var(--ease-out-soft)]',
+                    'grad-pair absolute inset-x-2.5 -bottom-0.5 h-[3px] origin-left rounded-full transition-transform duration-400 ease-[var(--ease-out-soft)] xl:inset-x-4',
                     active ? 'scale-x-100' : 'scale-x-0',
                   )}
                 />

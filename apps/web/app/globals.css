@@ -46,9 +46,43 @@
   --color-danger: #ba1a1a;
   --color-danger-tint: #ffdad6;
 
+  /* ---- berry & coral -------------------------------------------------
+     The warm tail of the /developer gradient. Scoped to that page: the rest
+     of the site pairs violet with flame and must keep doing so. Violet is
+     shared — it is the hinge both gradients turn on. */
+  --color-berry: #e0479b;
+  --color-berry-deep: #c2247e;
+  --color-berry-tint: #ffe1ef;
+  --color-coral: #fb7185;
+  --color-coral-tint: #ffe4e6;
+
+  /* ---- code surfaces -------------------------------------------------
+     The terminal, the editor, the JSON panel and the stat strip. Bluer and
+     lighter than --color-navy, because navy at 100% behind syntax colour
+     kills the greens. */
+  --color-code: #101c38;
+  --color-code-soft: #1a2846;
+  --color-code-line: #2e3f68;
+  --color-code-ink: #ccd8f5;
+  --color-code-faint: #8496c2;
+
+  /* ---- syntax --------------------------------------------------------
+     Tuned against --color-code for ≥4.5:1 on every token except the
+     comment colour, which is decoration and never carries meaning. */
+  --color-syn-key: #cba6ff;
+  --color-syn-fn: #8ab8ff;
+  --color-syn-str: #a9e07f;
+  --color-syn-num: #ffb27a;
+  --color-syn-comment: #7488b3;
+  --color-syn-punct: #8fdcff;
+
   /* ---- type ---------------------------------------------------------- */
   --font-sans: var(--font-jakarta), ui-sans-serif, system-ui, sans-serif;
   --font-hand: var(--font-caveat), 'Segoe Script', cursive;
+  /* --font-mono-dev is set on the /developer subtree only, so every other
+     route falls through to the platform face and pays for no extra request. */
+  --font-mono:
+    var(--font-mono-dev, ui-monospace), 'Cascadia Mono', Consolas, 'SF Mono', Menlo, monospace;
 
   /* Fluid display sizes: mobile floor → desktop ceiling, no breakpoints. */
   --text-display: clamp(2.875rem, 8.4vw, 5.25rem);
@@ -60,6 +94,16 @@
   --text-title--line-height: 1.06;
   --text-title--letter-spacing: -0.03em;
   --text-title--font-weight: 800;
+
+  /* /developer's hero heading. Smaller than --text-display because it shares its
+     row with the portrait instead of spanning the page: at the display scale
+     "The mind behind" breaks after "mind" and the two-line lock-up in the design
+     becomes four. Ceiling picked so both lines still fit the narrower column at
+     1280px, where the grid is tightest. */
+  --text-dev-display: clamp(2.25rem, 4.6vw, 3.85rem);
+  --text-dev-display--line-height: 1.02;
+  --text-dev-display--letter-spacing: -0.035em;
+  --text-dev-display--font-weight: 800;
 
   --text-headline: clamp(1.5rem, 2.7vw, 2rem);
   --text-headline--line-height: 1.2;
@@ -127,6 +171,18 @@
   mask-image: linear-gradient(to bottom, black 92%, transparent 100%);
   mask-size: 100% 100%;
   mask-repeat: no-repeat;
+}
+
+/* Hides the scrollbar on a horizontal snap track. The track keeps its arrow
+   buttons, snap points and keyboard focus, so nothing is lost with the bar gone —
+   a visible one across a photo strip reads as a rendering fault. */
+@utility scrollbar-none {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
 }
 
 @layer base {
@@ -259,6 +315,89 @@
     backdrop-filter: blur(18px) saturate(140%);
     -webkit-backdrop-filter: blur(18px) saturate(140%);
     border: 1px solid rgba(216, 226, 255, 0.16);
+  }
+
+  /* ========================================================================
+     /developer only.
+
+     A second gradient exists on this site for exactly one reason: the page is
+     about the build, not the event, and reusing the flame pair would have made
+     it read as another Orientation section. Violet is the hinge — shared with
+     the site pair — so the two never look unrelated.
+     ====================================================================== */
+
+  .grad-dev {
+    background-image: linear-gradient(
+      112deg,
+      var(--color-violet-deep) 0%,
+      var(--color-violet) 24%,
+      var(--color-berry) 68%,
+      var(--color-coral) 100%
+    );
+  }
+
+  .grad-dev-text {
+    color: var(--color-berry-deep);
+  }
+  @supports (background-clip: text) {
+    .grad-dev-text {
+      background-image: linear-gradient(
+        100deg,
+        var(--color-violet) 2%,
+        var(--color-berry) 52%,
+        var(--color-coral) 96%
+      );
+      background-clip: text;
+      -webkit-background-clip: text;
+      color: transparent;
+    }
+  }
+
+  /* The blob the portrait sits on. Larger and softer than .wash — it is the
+     background of a whole hero column, not a splash behind one photo. */
+  .wash-dev {
+    background-image:
+      radial-gradient(44% 40% at 30% 22%, rgba(116, 89, 247, 0.55) 0%, transparent 72%),
+      radial-gradient(46% 44% at 76% 40%, rgba(224, 71, 155, 0.48) 0%, transparent 74%),
+      radial-gradient(52% 46% at 50% 84%, rgba(251, 113, 133, 0.42) 0%, transparent 72%);
+    filter: blur(28px);
+  }
+
+  /* Dark surface shared by the terminal, the editor, the JSON panel and the
+     stat strip, so all four read as the same material. */
+  .code-panel {
+    background-color: var(--color-code);
+    color: var(--color-code-ink);
+    font-family: var(--font-mono);
+    border: 1px solid var(--color-code-line);
+  }
+
+  /* Faint blueprint grid, used behind the architecture diagram and the stats. */
+  .grid-fine {
+    background-image:
+      linear-gradient(to right, rgba(216, 226, 255, 0.07) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(216, 226, 255, 0.07) 1px, transparent 1px);
+    background-size: 44px 44px;
+  }
+
+  /* Line numbers in the editor gutter, drawn by CSS so the code stays as one
+     copyable text node instead of a table of spans. */
+  .code-lines {
+    counter-reset: ln;
+  }
+  .code-lines > span {
+    display: block;
+    counter-increment: ln;
+  }
+  .code-lines > span::before {
+    content: counter(ln);
+    display: inline-block;
+    width: 2.25rem;
+    margin-right: 1.25rem;
+    text-align: right;
+    color: var(--color-code-faint);
+    opacity: 0.55;
+    user-select: none;
   }
 
   /* ---- numerals that do not jitter while counting -------------------- */
