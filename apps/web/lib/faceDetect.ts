@@ -38,7 +38,7 @@ import type { FaceReading } from './selfie'
  * see scripts/sync-models.mjs for why they are copied and why only two of the
  * eight models the package ships are.
  */
-const MODEL_URI = '/models'
+const MODEL_URI = `${process.env.NEXT_PUBLIC_BASE_PATH ?? ''}/models`
 
 /**
  * TinyYolov2 requires a multiple of 32. The default is 416; 224 is a quarter of
