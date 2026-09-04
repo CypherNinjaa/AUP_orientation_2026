@@ -11,22 +11,35 @@
     "models:sync": "node scripts/sync-models.mjs"
   },
   "dependencies": {
+    "@clerk/nextjs": "^7.9.1",
     "@gsap/react": "^2.1.2",
+    "@orientation/core": "*",
+    "@orientation/db": "*",
     "@vladmandic/face-api": "^1.7.15",
+    "@zxing/browser": "^0.2.1",
+    "bwip-js": "^4.11.4",
+    "cloudinary": "^2.11.0",
     "gsap": "^3.13.0",
+    "idb": "^8.0.3",
+    "ioredis": "^5.11.1",
     "next": "15.5.23",
-    "react": "19.2.0",
-    "react-dom": "19.2.0"
+    "pdf-lib": "^1.17.1",
+    "qrcode": "^1.5.4",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "svix": "^2.3.0",
+    "zod": "^4.5.4"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.6",
     "@tailwindcss/postcss": "^4.1.14",
-    "@types/node": "^22.18.0",
-    "@types/react": "^19.2.0",
-    "@types/react-dom": "^19.2.0",
+    "@types/node": "^22.20.1",
+    "@types/qrcode": "^1.5.6",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.7",
     "eslint": "^9.36.0",
     "eslint-config-next": "15.5.23",
     "tailwindcss": "^4.1.14",
-    "typescript": "^5.9.2"
+    "typescript": "^5.9.3"
   }
 }

@@ -15,6 +15,22 @@ dist/
 .env
 .env*.local
 
+# admissions spreadsheets — never committed.
+#
+# The roster the seed reads (`Emrolled student Details 2026.xlsx`, spelling the
+# admissions office's) holds 830 students' names and mobile numbers, and the real
+# file will hold ~15,000. That is personal data under the DPDP Act 2023: it lives
+# on the machine that runs the import and nowhere else. Committing it once puts it
+# in the history forever, and `git add -A` is one keystroke away from doing that.
+#
+# Blanket rather than by name, because the next file will be called something
+# else. No spreadsheet in this repository is source: the workbook tests build
+# their fixtures in memory (`packages/core/src/roster/workbook.test.ts`) for
+# exactly this reason. If one ever does need committing, un-ignore it explicitly.
+*.xlsx
+*.xls
+*.csv
+
 # logs
 *.log
 npm-debug.log*
@@ -29,3 +45,7 @@ Thumbs.db
 
 # typescript
 *.tsbuildinfo
+
+# prisma — the client is generated from schema.prisma on install and on migrate,
+# so it is a build artefact, not source. `packages/db/generated/`.
+packages/*/generated/

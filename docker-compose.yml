@@ -1,0 +1,75 @@
+# Local infrastructure for Orientation 2026.
+#
+#   docker compose up -d          start Postgres + Redis
+#   docker compose ps             confirm both are `healthy` before migrating
+#   docker compose down           stop, keep data
+#   docker compose down -v        stop and wipe data (re-seed afterwards)
+#
+# Staging and production run managed Postgres and Redis on Railway; this file is
+# only ever the developer's machine. Credentials come from the root `.env`, with
+# defaults so a fresh clone comes up without one.
+#
+# The published ports are deliberately NOT 5432 and 6379. A developer machine very
+# often already runs a native PostgreSQL or Redis on those, and on Windows the
+# second bind succeeds instead of failing — so `docker compose ps` reports
+# `healthy` while the app silently talks to the wrong server. That failure looks
+# like "authentication failed for user orientation" and wastes an afternoon.
+# Shifting to 5433/6380 makes the container the only thing on its port.
+#
+# They are bound to 127.0.0.1 rather than 0.0.0.0 so an unauthenticated dev
+# database is not reachable from the rest of the network.
+name: orientation2026
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: orientation2026-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-orientation}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-orientation_local_dev}
+      POSTGRES_DB: ${POSTGRES_DB:-orientation2026}
+      # Deterministic collation, so ORDER BY on names sorts the same here as on
+      # Railway regardless of the host locale.
+      POSTGRES_INITDB_ARGS: '--encoding=UTF8 --locale=C'
+    ports:
+      - '127.0.0.1:${POSTGRES_PORT:-5433}:5432'
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      # -d matters: without it pg_isready reports ready while the seed database
+      # is still being created, and the first migration races it.
+      test:
+        ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-orientation} -d ${POSTGRES_DB:-orientation2026}']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  redis:
+    image: redis:7-alpine
+    container_name: orientation2026-redis
+    restart: unless-stopped
+    # Redis holds check-in locks. Losing one mid-event could let a duplicate
+    # scan through, so persist: AOF every second, plus an RDB snapshot after
+    # 1000 writes in 60s.
+    command: >
+      redis-server
+      --appendonly yes
+      --appendfsync everysec
+      --save 60 1000
+      --maxmemory-policy noeviction
+    ports:
+      - '127.0.0.1:${REDIS_PORT:-6380}:6379'
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+
+volumes:
+  postgres-data:
+  redis-data:

@@ -7,6 +7,12 @@
 The original roadmap targeted *"15,000 concurrent users, 100,000+ daily requests."* Let's do the arithmetic,
 because it changes what you build.
 
+> **On 830 vs 15,000.** The admissions sheet in hand holds **830 pre-admitted students, and it is a sample** —
+> the real export lands later and the admin can upload further files after that. Every number below stays sized
+> for **15,000**, because that is what the system is being built for; 830 is only what the seed happens to load
+> today. Nothing in the import path treats 830 as a limit: it reads the table once, diffs in memory, and writes
+> in 1,000-row batches inside a single transaction ([D24](01-decisions.md#1-decision-log)).
+
 ### 1.1 Registration window (3 weeks before the event)
 
 | Quantity | Calculation | Result |
@@ -89,7 +95,7 @@ sufficient. Revisit only if the connection count in Railway metrics approaches t
 | ORM | **Prisma 6** + PostgreSQL 16 | |
 | Cache / pub-sub / locks | **Redis 7** (`ioredis`) | |
 | Jobs | **BullMQ** in `apps/worker` | Exports, retention sweep, metric rollups |
-| Object storage | **Cloudflare R2** (S3 API) | Private bucket + signed URLs ([D14](01-decisions.md#1-decision-log)) |
+| Object storage | **Cloudinary**, `type: 'authenticated'` | No public URL exists; reads are short-lived signed URLs. Transformation replaces a `sharp` step ([D14](01-decisions.md#1-decision-log)) |
 | Client-side face detect | **`@vladmandic/face-api`** — TinyFaceDetector only, behind a dynamic `import()` on the selfie step | 193 KB of weights committed to `public/models/`; the 1.24 MB library is its own chunk, in no first-load bundle ([D4](01-decisions.md#1-decision-log)) |
 | QR generate / read | `qrcode` (server, SVG) · `@zxing/browser` (camera, QR **and** Code128) | One decoder for both formats |
 | Barcode | `bwip-js` server-side Code128 render | |
@@ -155,27 +161,35 @@ cross-service auth handshake.
                     │  │   metric rollups ·  retention sweep      │  │
                     │  └──────────────────────────────────────────┘  │
                     └────────────────────────┬───────────────────────┘
-                                             │  S3 API
+                                             │  signed upload / URL
                                  ┌───────────▼────────────┐
-                                 │  Cloudflare R2         │
+                                 │  Cloudinary            │
                                  │  ────────────────────  │
-                                 │  selfies/  (private)   │
-                                 │  gallery/  (public)    │
-                                 │  exports/  (private)   │
+                                 │  selfies/  (signed)    │
+                                 │  gallery/  public      │
                                  └────────────────────────┘
 ```
 
 **Four Railway services.** `web` is the only one exposed. The worker has no ingress at all.
 
+`Excel` and `PDF` exports are generated on demand and streamed to the requesting admin rather than parked in
+object storage, so the only thing Cloudinary holds is imagery. Selfies are `type: 'authenticated'`: no URL for
+them works without a signature, which is what keeps a leaked link from becoming a leaked face
+([D14](01-decisions.md#1-decision-log)).
+
 ### Environments
 
 | Env | Branch | Data | Purpose |
 | :--- | :--- | :--- | :--- |
-| `local` | any | seeded fixtures (500 fake students) | Development |
+| `local` | any | the 830-row admissions sample, seeded from the sheet | Development |
 | `staging` | `main` | **synthetic only — never real student data** | Rehearsal, load tests, chaos drills |
 | `production` | tagged release | real | The event |
 
 Staging must never hold real PII. Load tests and destructive chaos drills run there.
+
+The local roster is real names and real mobile numbers, so the sheet is **gitignored** (`*.xlsx`) and lives only
+on the machine that runs the import. Docker publishes Postgres and Redis on `127.0.0.1:5433` / `127.0.0.1:6380`
+rather than the default ports, for the reason in [D25](01-decisions.md#1-decision-log).
 
 ---
 
@@ -184,8 +198,9 @@ Staging must never hold real PII. Load tests and destructive chaos drills run th
 Monorepo, **npm workspaces** (`apps/*`, `packages/*`). No Turborepo — there is one buildable app, and a task
 graph over a single node is a dependency doing no work. Revisit if `packages/*` grows its own build steps.
 
-> ⚠️ The tree below is the **target** layout. Only `apps/web` exists today, and within it only the public and
-> student routes. Directories are created when the phase that needs them starts.
+> ⚠️ The tree below is the **target** layout. As of Phase 1, `apps/web` (public + student routes),
+> `packages/core` (`roster/`) and `packages/db` (schema, migrations, client, seed, ingestion) exist. The rest is
+> created when the phase that needs it starts.
 
 ```
 orientation2026/
@@ -222,6 +237,7 @@ orientation2026/
 │
 ├── packages/
 │   ├── db/                           # Prisma schema, migrations, client singleton, seed
+│   │   └── src/roster/ingest.ts      # shared by the CLI seed and the admin upload (D24)
 │   ├── contracts/                    # Zod schemas + inferred types (the API contract)
 │   ├── core/                         # ★ ALL DOMAIN LOGIC — framework-free, heavily tested
 │   │   ├── auth/                     # Clerk adapter (the swap seam)

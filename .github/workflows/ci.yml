@@ -1,0 +1,85 @@
+# Typecheck, lint, build, and unit tests on every push and pull request.
+#
+# Replaces the GitHub Pages deploy workflow: this app is no longer a static
+# export (D21) and deploys from Railway, which builds from the repository itself.
+# CI's job here is to fail fast, not to publish.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    # The same images as docker-compose.yml, so a migration that applies locally
+    # applies here. Redis is present because the SSE and lock code paths connect
+    # eagerly once they exist.
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: orientation
+          POSTGRES_PASSWORD: orientation_ci
+          POSTGRES_DB: orientation2026
+        options: >-
+          --health-cmd "pg_isready -U orientation -d orientation2026"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+        ports:
+          - 5432:5432
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+        ports:
+          - 6379:6379
+
+    env:
+      DATABASE_URL: postgresql://orientation:orientation_ci@localhost:5432/orientation2026?schema=public
+      REDIS_URL: redis://localhost:6379
+      # Placeholders: enough for the build to resolve modules and prerender, not
+      # enough to reach any real service. Real keys are Railway variables and are
+      # never needed in CI.
+      NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: pk_test_Y2ktcGxhY2Vob2xkZXIuY2xlcmsuYWNjb3VudHMuZGV2JA
+      CLERK_SECRET_KEY: sk_test_ci_placeholder
+      SECRETS_KEY: Y2ktb25seS1wbGFjZWhvbGRlci1rZXktMzJieXRlcy0=
+      NEXT_PUBLIC_SITE_URL: http://localhost:3000
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Apply migrations
+        run: npm run db:deploy
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Build
+        run: npm run build

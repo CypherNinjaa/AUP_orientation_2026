@@ -22,21 +22,20 @@ const caveat = Caveat({
  *
  * `app/opengraph-image.png` is picked up by file convention, but Next can only
  * turn it into the absolute URL that scrapers require if it knows the site's
- * base — without this it warns at build time and emits
+ * origin — without this it warns at build time and emits
  * `http://localhost:3000/opengraph-image.png`, i.e. a broken share preview in
- * production. The default is the GitHub Pages origin for this repository's
- * remote, matching the basePath in next.config.ts; set NEXT_PUBLIC_SITE_URL when
- * a custom domain is issued.
+ * production.
  *
- * `metadataBase` is the bare origin, deliberately: Next has already prefixed the
- * convention image's path with basePath by the time it resolves it against this,
- * so a base that also carried the basePath emitted
- * `…/AUP_orientation_2026/AUP_orientation_2026/opengraph-image.png`. `og:url` is
- * the full site URL and is set separately below.
+ * Set `NEXT_PUBLIC_SITE_URL` per environment. On Railway, `RAILWAY_PUBLIC_DOMAIN`
+ * is injected automatically and covers preview deployments where the generated
+ * subdomain is not known ahead of time; a custom domain overrides it explicitly.
  */
-const SITE_URL =
-  process.env.NEXT_PUBLIC_SITE_URL ?? 'https://cypherninjaa.github.io/AUP_orientation_2026'
-const SITE_ORIGIN = new URL(SITE_URL).origin
+const SITE_ORIGIN = new URL(
+  process.env.NEXT_PUBLIC_SITE_URL ??
+    (process.env.RAILWAY_PUBLIC_DOMAIN !== undefined
+      ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}`
+      : 'http://localhost:3000'),
+).origin
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_ORIGIN),
@@ -51,7 +50,7 @@ export const metadata: Metadata = {
   authors: [{ name: EVENT.institution }],
   openGraph: {
     type: 'website',
-    url: SITE_URL,
+    url: SITE_ORIGIN,
     siteName: `${EVENT.institution} — Orientation ${EVENT.year}`,
     title: `Orientation ${EVENT.year}`,
     description: `Your journey, our community. ${EVENT.dateRange} at ${EVENT.institution}.`,

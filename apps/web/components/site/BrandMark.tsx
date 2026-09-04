@@ -1,5 +1,4 @@
 import Image from 'next/image'
-import { asset } from '@/lib/asset'
 import { cn } from '@/lib/cn'
 
 /**
@@ -29,7 +28,7 @@ export function BrandMark({
   return (
     <span className={cn('flex items-center gap-2.5', className)}>
       <Image
-        src={asset('/brand/amity-shield.png')}
+        src={'/brand/amity-shield.png'}
         width={170}
         height={200}
         alt=""

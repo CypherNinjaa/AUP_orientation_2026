@@ -1,0 +1,19 @@
+{
+  "name": "@orientation/contracts",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Zod schemas for every request that crosses the network boundary, plus the response shapes both sides agree on",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "zod": "^4.5.4"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.1",
+    "typescript": "^5.9.3"
+  }
+}

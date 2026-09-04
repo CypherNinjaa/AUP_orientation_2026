@@ -1,0 +1,819 @@
+// Orientation 2026 — data model.
+//
+// Read docs/01-decisions.md before changing anything here; the constraints below
+// are the enforcement mechanism for those decisions and the comments cite them.
+// The three that shape the whole schema:
+//
+//   D2  One check-in per pass, ever. `CheckIn.passId` is UNIQUE — the guarantee
+//       lives in Postgres, not in application code, because the gate has many
+//       concurrent volunteers and an application-level check has a race window.
+//   D9  Write-order-wins with no destructive updates. The first scan to reach
+//       the server becomes the CheckIn; every later one is an appended
+//       ScanEvent pointing at it. Nothing is overwritten, nothing is deleted.
+//   D20 Every write is audited. AuditLog is append-only, enforced by a trigger.
+//
+// Conventions: cuid ids, `createdAt`/`updatedAt` on mutable rows, event tables
+// carry both a device clock and a server clock because volunteer phones drift.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Enums
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Clerk's `publicMetadata.role` holds these lowercased. Only
+/// packages/core/auth translates between the two (D13) — nothing else should
+/// read Clerk metadata directly.
+enum Role {
+  STUDENT
+  VOLUNTEER
+  ADMIN
+}
+
+enum RegistrationStatus {
+  /// Started the wizard, not submitted. Lives in RegistrationDraft until
+  /// submit; this value exists so a Registration can be re-opened for edits.
+  DRAFT
+  PENDING_REVIEW
+  APPROVED
+  /// Fixable — the student is told what to change and resubmits. Carries
+  /// `reviewNote`.
+  REVISION_REQUESTED
+  /// Terminal. Not the same as REVISION_REQUESTED: no resubmission path.
+  REJECTED
+}
+
+/// The sheet gives no relationship data, so this is student-declared at step 2.
+enum CompanionRelationship {
+  FATHER
+  MOTHER
+  GUARDIAN
+}
+
+enum PassStatus {
+  ACTIVE
+  REVOKED
+}
+
+enum BroadcastPriority {
+  INFO
+  WARNING
+  EMERGENCY
+}
+
+enum BroadcastAudience {
+  STUDENTS
+  VOLUNTEERS
+  ALL
+}
+
+/// The verdicts packages/core/scan/decide.ts can return (D8), plus the one the
+/// server can reach and a device cannot.
+///
+/// This enum is a superset of `ScanOutcome` in decide.ts, not a parallel list.
+/// The device's own verdict and the server's recomputed verdict are both stored
+/// on a ScanEvent, so any value either side can produce has to be representable
+/// here — otherwise a disagreement becomes an insert failure at the gate.
+enum ScanOutcome {
+  ADMITTED
+  /// Pass is valid but already checked in. The gate turns this away and the
+  /// event records which CheckIn it collided with.
+  DUPLICATE
+  /// Signature failed, malformed payload, or wrong event.
+  INVALID
+  REVOKED
+  /// Registration is not APPROVED — send them to the help desk. Distinct from
+  /// INVALID: the pass is genuine, the registration is not cleared.
+  NOT_APPROVED
+  /// Outside the gate's open window. The one overridable verdict.
+  OUT_OF_WINDOW
+  /// The device's manifest was too old for "not on the list" to be trustworthy.
+  /// Only ever a `clientDecision` — the server always knows.
+  STALE_MANIFEST
+  /// Well-formed code that matches no pass. Server-only, for the same reason:
+  /// a device says STALE_MANIFEST where the server can say NOT_FOUND.
+  NOT_FOUND
+}
+
+enum ScanMethod {
+  QR
+  BARCODE
+  /// The 10-digit keypad fallback (D6).
+  MANUAL_CODE
+}
+
+enum RosterImportStatus {
+  /// Parsed and validated, nothing written. What the admin previews.
+  DRY_RUN
+  COMMITTED
+  ROLLED_BACK
+  FAILED
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Identity
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Local mirror of a Clerk user.
+///
+/// Clerk remains the source of truth for credentials and for `role`; this row
+/// exists so other tables can hold foreign keys and so admin screens can join
+/// and sort without paging Clerk's API 15,000 times. `email` and `name` are a
+/// cached convenience and may lag Clerk by a session.
+model User {
+  id          String    @id @default(cuid())
+  clerkUserId String    @unique
+  email       String?
+  name        String?
+  role        Role      @default(STUDENT)
+  /// Set false instead of deleting: check-in history must survive the account.
+  isActive    Boolean   @default(true)
+  lastSeenAt  DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  registration          Registration?      @relation("RegistrationOwner")
+  draft                 RegistrationDraft?
+  claimedStudent        AdmittedStudent?
+  reviewedRegistrations Registration[]     @relation("RegistrationReviewer")
+  checkInsScanned       CheckIn[]
+  scanEvents            ScanEvent[]
+  scannerDevices        ScannerDevice[]
+  revokedPasses         Pass[]             @relation("PassRevoker")
+  broadcasts            Broadcast[]
+  rosterImports         RosterImport[]
+  cloudinaryConfigs     CloudinaryConfig[]
+  systemConfigUpdates   SystemConfig[]
+
+  @@index([role, isActive])
+  @@index([email])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Admissions roster
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// One pre-admitted student, from the admissions spreadsheet.
+///
+/// `formNumber` is the only trustworthy identifier in the source data. Profiling
+/// the 830-row demo sheet found 64 duplicate names — `ANJALI KUMARI` appears 8
+/// times, `AYUSH KUMAR` 8 times — and 0 duplicate form numbers. That is exactly
+/// why the gate needs the selfie (D3): a name proves nothing.
+///
+/// The sheet's `E-Mail ID` column is deliberately NOT stored. Identity comes from
+/// the Clerk account the student signs in with, and holding a second unverified
+/// email invites someone to treat it as an auth factor.
+model AdmittedStudent {
+  id String @id @default(cuid())
+
+  /// The sheet's `Si.No`, kept only so a row can be traced back to a line in the
+  /// file an admin uploaded. Not unique across imports.
+  serialNo Int?
+
+  /// The sheet header is `From No.` (sic). 8 digits in the demo data.
+  formNumber String @unique
+
+  name String
+
+  /// Verbatim from the sheet, and the only programme string the system uses. The
+  /// demo file has 35 spellings of what are really about a dozen programmes —
+  /// `B.Tech (CSE)`, `B.Tech CSE (AI & ML)`, `B.A.,LL.B (H)`, `M.C.A.`, `B.SC IT`.
+  /// Kept unmodified so the student sees what their admission letter says, and
+  /// admin charts group by it directly. A derived `programGroup` bucket column was
+  /// dropped on instruction: a grouped label is not the student's programme.
+  program String
+
+  /// UG, PG, or PHD, derived by packages/core/roster. Not a renaming of the
+  /// programme — a separate fact about it, so mission control can show
+  /// "830 UG arrivals" without every screen re-parsing a degree abbreviation.
+  programLevel String
+
+  /// Normalised to 10 digits. 3 of 830 demo rows held two numbers joined by "/"
+  /// and 425 alt-contact cells did; the first goes here, the rest into
+  /// `extraContacts`.
+  contactNo    String?
+  altContactNo String?
+  extraContacts String[] @default([])
+
+  /// From the sheet's `payment status` column. Admin-only: never returned by
+  /// `/api/registration/lookup` and never rendered in the student wizard.
+  paymentStatus String?
+
+  /// Denormalised from Registration so the claim check is one indexed read with
+  /// no join — the lookup endpoint is the hottest path in the wizard.
+  isClaimed       Boolean   @default(false)
+  claimedByUserId String?   @unique
+  claimedAt       DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  /// The import that first created this row. Never reassigned, so an import can
+  /// be rolled back by deleting exactly what it created.
+  createdByImportId String?
+
+  claimedBy       User?         @relation(fields: [claimedByUserId], references: [id], onDelete: SetNull)
+  createdByImport RosterImport? @relation(fields: [createdByImportId], references: [id], onDelete: SetNull)
+  registration    Registration?
+
+  @@index([name])
+  /// Admin charts group arrivals by the verbatim programme string, so it is
+  /// indexed for the `GROUP BY`.
+  @@index([program])
+  @@index([programLevel])
+  @@index([isClaimed])
+  @@index([createdByImportId])
+}
+
+/// One admin upload of a roster file.
+///
+/// Rollback safety: `AdmittedStudent.createdByImportId` identifies rows this
+/// import created, and `snapshot` holds the previous values of rows it updated.
+/// Only the most recent COMMITTED import may be rolled back, and rows that have
+/// been claimed by a student are never deleted — both rules are enforced in
+/// packages/core/roster, not here, because they need to produce a readable
+/// refusal rather than a constraint violation.
+model RosterImport {
+  id       String @id @default(cuid())
+  filename String
+
+  /// SHA-256 of the uploaded bytes. Catches the "did I already commit this
+  /// file?" mistake, which is the easy way to double a roster.
+  fileHash String
+
+  status    RosterImportStatus
+  totalRows Int                @default(0)
+  created   Int                @default(0)
+  updated   Int                @default(0)
+  skipped   Int                @default(0)
+  errored   Int                @default(0)
+
+  /// Resolved header → field mapping, exactly as the admin inspected it in the
+  /// preview. Stored so a bad mapping is diagnosable after the fact.
+  columnMap Json
+
+  /// Per-row problems, capped by the parser so one pathological file cannot
+  /// write an unbounded blob.
+  report Json?
+
+  /// Previous values of rows this import updated, for rollback.
+  snapshot Json?
+
+  /// The admin who uploaded it. Null for the CLI seed (`npm run db:seed`), which
+  /// runs before any admin account exists and has no authenticated actor.
+  /// Inventing a User row for it would put an administrator who does not exist
+  /// into the admin console's activity list.
+  uploadedById String?
+  committedAt  DateTime?
+  rolledBackAt DateTime?
+  createdAt    DateTime  @default(now())
+
+  uploadedBy User?             @relation(fields: [uploadedById], references: [id], onDelete: SetNull)
+  students   AdmittedStudent[]
+
+  @@index([status, createdAt])
+  @@index([fileHash])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Registration
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Wizard state between steps.
+///
+/// Separate from Registration because a half-finished form is not a
+/// registration: it has no reference, claims no roster row, and must not appear
+/// in any count. The selfie is never stored here — see `data`.
+model RegistrationDraft {
+  id     String @id @default(cuid())
+  userId String @unique
+
+  /// The wizard payload minus the selfie image. A selfie is sensitive personal
+  /// data under the DPDP Act and is only ever persisted once, to Cloudinary,
+  /// after the student has given consent at step 4. Until then it lives in
+  /// browser memory only — the same reason lib/register.ts omits it from
+  /// localStorage.
+  data Json
+
+  /// Furthest step reached, so the student resumes where they left off.
+  step Int @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([updatedAt])
+}
+
+/// A submitted registration. One per student, one per roster row.
+model Registration {
+  id String @id @default(cuid())
+
+  /// Short human-quotable code for the help desk, e.g. `AUP26-7F3K2Q`. Distinct
+  /// from `Pass.code10`, which is a gate credential — this one is safe to read
+  /// aloud over a phone because it admits nobody.
+  reference String @unique
+
+  userId            String @unique
+  admittedStudentId String @unique
+
+  status RegistrationStatus @default(PENDING_REVIEW)
+
+  /// Identity as it stood at submit time. Copied rather than joined because a
+  /// later roster import may correct the spelling of a name, and the pass in the
+  /// student's hand must keep matching what the gate sees.
+  name      String
+  program   String
+  contactNo String
+
+  /// Cloudinary coordinates for the selfie.
+  ///
+  /// Deliberately not a URL. Selfies upload as `type: authenticated`, so no
+  /// durable public URL exists — every view is a freshly signed URL valid for
+  /// ~60 seconds (D14 as revised). Storing a "secure URL" would mean either
+  /// persisting a link that expires, or making the asset public, which is the
+  /// thing the authenticated type exists to prevent. The URL is derived from
+  /// these fields at read time by packages/core/media.
+  selfiePublicId   String?
+  selfieVersion    String?
+  selfieBytes      Int?
+  selfieWidth      Int?
+  selfieHeight     Int?
+  selfieUploadedAt DateTime?
+
+  /// Whether the client-side detector saw a face. Advisory only — D4 is explicit
+  /// that it warns, it does not refuse. Admin moderation uses it to sort the
+  /// queue, never to auto-reject.
+  faceDetected Boolean?
+
+  /// DPDP consent record. The version pins which wording was agreed to, so a
+  /// later revision of the text does not silently reinterpret old consent.
+  consentVersion String
+  consentedAt    DateTime
+
+  /// Moderation. `reviewNote` is student-visible on REVISION_REQUESTED and is
+  /// the only field here that is.
+  reviewedById  String?
+  reviewedAt    DateTime?
+  reviewNote    String?
+  revisionCount Int       @default(0)
+
+  submittedAt DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user            User            @relation("RegistrationOwner", fields: [userId], references: [id], onDelete: Cascade)
+  admittedStudent AdmittedStudent @relation(fields: [admittedStudentId], references: [id], onDelete: Restrict)
+  reviewedBy      User?           @relation("RegistrationReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
+  companions      Companion[]
+  pass            Pass?
+
+  @@index([status, submittedAt])
+  @@index([submittedAt])
+  /// Drives the retention sweep: find registrations whose selfie is older than
+  /// SystemConfig.selfieRetentionDays.
+  @@index([selfieUploadedAt])
+}
+
+/// A parent or guardian attending with the student.
+///
+/// Guests do not get their own pass (D11) — they ride on the student's, counted
+/// by `Pass.guestCount`. The cap of two is `SystemConfig.maxCompanions` and is
+/// enforced by a check constraint on `position` plus validation in the API.
+model Companion {
+  id             String                @id @default(cuid())
+  registrationId String
+  relationship   CompanionRelationship
+  name           String
+
+  /// 1 or 2. Gives the two rows a stable order so the pass always lists them the
+  /// same way, and makes the two-guest cap a database constraint.
+  position Int
+
+  createdAt DateTime @default(now())
+
+  registration Registration @relation(fields: [registrationId], references: [id], onDelete: Cascade)
+
+  @@unique([registrationId, position])
+  @@index([registrationId])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Pass and gate
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// A configurable entry point (D18). One gate for 2026, but the volunteer app,
+/// the arrival charts, and the open/close windows all key off this rather than a
+/// hardcoded constant.
+model Gate {
+  id       String  @id @default(cuid())
+  /// Short code shown on the volunteer device, e.g. `MAIN`.
+  code     String  @unique
+  name     String
+  isActive Boolean @default(true)
+
+  /// Scans outside this window return OUT_OF_WINDOW. Null means unbounded.
+  opensAt  DateTime?
+  closesAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  checkIns   CheckIn[]
+  scanEvents ScanEvent[]
+  devices    ScannerDevice[]
+
+  @@index([isActive])
+}
+
+/// The credential a student presents at the gate.
+///
+/// Carries three interchangeable representations of the same identity, because
+/// the gate cannot assume a working camera or a working network: a signed QR
+/// payload, the same payload as a Code128 barcode, and a 10-digit code the
+/// volunteer can type (D6).
+model Pass {
+  id             String @id @default(cuid())
+  registrationId String @unique
+
+  /// 10 digits, displayed `XXX-XXX-XXXX`. At 15,000 passes the birthday
+  /// probability of a collision in a 10-digit space is about 1%, so issuance
+  /// retries on the unique violation rather than assuming randomness is enough.
+  code10 String @unique
+
+  /// The exact string encoded into the QR and the barcode, payload and signature
+  /// together. Stored verbatim so a regenerated image is byte-identical to the
+  /// one the student already downloaded.
+  qrPayload String
+
+  /// Canonical bytes that were signed, and the ECDSA P-256 signature over them,
+  /// base64url. P-256 rather than HMAC because verification has to work offline:
+  /// an HMAC scheme would require shipping the signing secret to every volunteer
+  /// phone, where one rooted device forges every pass (D5).
+  signedPayload String
+  signature     String
+
+  /// Which signing key produced `signature`, so a key can be rotated without
+  /// invalidating passes already in students' hands. Devices carry the matching
+  /// public keys in the offline manifest.
+  keyId String
+
+  status PassStatus @default(ACTIVE)
+
+  /// Companions admitted alongside the student. Denormalised from Companion so
+  /// the offline manifest can show the volunteer a head count without a join.
+  ///
+  /// The manifest carries names too — a volunteer has to be able to say the
+  /// student's name and to notice three people on a two-guest pass — but never a
+  /// selfie (D7). Names are already printed on the student's own pass; a face
+  /// database on ten phones is a different category of loss.
+  guestCount Int @default(0)
+
+  issuedAt      DateTime  @default(now())
+  revokedAt     DateTime?
+  revokedById   String?
+  revokedReason String?
+
+  registration Registration @relation(fields: [registrationId], references: [id], onDelete: Cascade)
+  revokedBy    User?        @relation("PassRevoker", fields: [revokedById], references: [id], onDelete: SetNull)
+  checkIn      CheckIn?
+  scanEvents   ScanEvent[]
+
+  @@index([status])
+  @@index([issuedAt])
+}
+
+/// The one time a pass was used.
+///
+/// `passId` is UNIQUE and that is the entire point (D2). Two volunteers scanning
+/// the same pass in the same second both attempt this insert; Postgres lets one
+/// through and the loser becomes a DUPLICATE ScanEvent. No advisory lock, no
+/// read-then-write, no window.
+model CheckIn {
+  id     String @id @default(cuid())
+  passId String @unique
+
+  gateId      String
+  scannedById String
+  method      ScanMethod
+
+  /// Companions actually let in, which can be fewer than `Pass.guestCount` if
+  /// someone did not turn up.
+  guestsAdmitted Int @default(0)
+
+  /// Device clock, reported by the volunteer app. Useful for forensics, never
+  /// for ordering — phones drift and some are hours out.
+  scannedAt DateTime
+
+  /// Server clock. This is the authority for write-order-wins (D9).
+  recordedAt DateTime @default(now())
+
+  deviceId  String?
+  /// True when the verdict was reached offline and reconciled later.
+  wasOffline Boolean @default(false)
+
+  /// The ScanEvent that won the race and produced this row.
+  scanEventId String? @unique
+
+  pass       Pass       @relation(fields: [passId], references: [id], onDelete: Restrict)
+  gate       Gate       @relation(fields: [gateId], references: [id], onDelete: Restrict)
+  scannedBy  User       @relation(fields: [scannedById], references: [id], onDelete: Restrict)
+  wonByEvent ScanEvent? @relation("WinningScan", fields: [scanEventId], references: [id], onDelete: SetNull)
+
+  duplicateAttempts ScanEvent[] @relation("DuplicateOf")
+
+  @@index([recordedAt])
+  @@index([gateId, recordedAt])
+  @@index([scannedById])
+}
+
+/// Every scan attempt, including the ones that failed.
+///
+/// Insert-only by convention: D9 forbids rewriting history, so a late-arriving
+/// offline scan appends a row referencing the CheckIn it lost to rather than
+/// updating anything. This is also the table that catches abuse — a device whose
+/// `clientDecision` disagrees with `outcome` was working from a stale manifest,
+/// or is being replayed.
+model ScanEvent {
+  id String @id @default(cuid())
+
+  /// Idempotency key, generated on the device before the scan is queued.
+  ///
+  /// The outbox retries on every network flap, so the same event arrives two or
+  /// three times as a matter of routine. This is UNIQUE so the second arrival
+  /// collides instead of inserting, and the endpoint returns the original verdict.
+  /// Without it, one lost HTTP response becomes two check-ins for one student.
+  /// Null for a scan the server originated — an admin's manual check-in.
+  clientEventId String? @unique
+
+  /// Null when the scanned code matched no pass at all.
+  passId String?
+
+  /// Exactly what the device read or the volunteer typed, before parsing. The
+  /// only way to diagnose a bad printer or a confusing keypad.
+  rawCode String
+
+  method  ScanMethod
+  outcome ScanOutcome
+
+  /// Machine-readable detail from decideScan, e.g. `signature_mismatch`.
+  reason String?
+
+  gateId      String?
+  scannedById String?
+  deviceId    String?
+
+  scannedAt  DateTime
+  recordedAt DateTime @default(now())
+  wasOffline Boolean  @default(false)
+
+  /// What the device decided on its own, before the server saw it. When this
+  /// differs from `outcome` the manifest was stale — the admin console surfaces
+  /// the count per device.
+  clientDecision ScanOutcome?
+  clientReason   String?
+
+  /// The device's manifest at scan time, so staleness is attributable to a
+  /// snapshot rather than guessed at from timestamps.
+  clientManifestVersion     Int?
+  clientManifestGeneratedAt DateTime?
+
+  /// True when the volunteer admitted someone against an OUT_OF_WINDOW verdict.
+  /// The only sanctioned override, and it is recorded rather than hidden.
+  overridden Boolean @default(false)
+
+  /// True when the device clock failed the sanity check in decideScan and window
+  /// rules were therefore not enforced.
+  clockSuspect Boolean @default(false)
+
+  /// For DUPLICATE: the check-in this attempt collided with.
+  duplicateOfId String?
+
+  /// Groups the events that arrived in one `/api/scanner/sync` call.
+  syncBatchId String?
+
+  pass        Pass?    @relation(fields: [passId], references: [id], onDelete: SetNull)
+  gate        Gate?    @relation(fields: [gateId], references: [id], onDelete: SetNull)
+  scannedBy   User?    @relation(fields: [scannedById], references: [id], onDelete: SetNull)
+  duplicateOf CheckIn? @relation("DuplicateOf", fields: [duplicateOfId], references: [id], onDelete: SetNull)
+  wonCheckIn  CheckIn? @relation("WinningScan")
+
+  @@index([passId])
+  @@index([recordedAt])
+  @@index([outcome, recordedAt])
+  @@index([gateId, recordedAt])
+  @@index([deviceId, recordedAt])
+  @@index([syncBatchId])
+}
+
+/// A volunteer's phone or tablet.
+///
+/// Exists so "device 4f2a is forty minutes stale" names something an operator can
+/// walk over to. Everything here could be derived by aggregating ScanEvent, but
+/// that is a scan of millions of rows to answer a question mission control asks
+/// every few seconds.
+///
+/// `deviceId` is generated by the client on first run and stored in IndexedDB. It
+/// is not authentication — Clerk does that — and it is not a fingerprint. It only
+/// has to be stable and unique enough to name a phone.
+model ScannerDevice {
+  id       String  @id @default(cuid())
+  deviceId String  @unique
+  /// Set by the volunteer: "Gate A – red lanyard".
+  label    String?
+
+  gateId String?
+
+  /// Whoever most recently signed in on it. Devices are shared across shifts.
+  lastSeenById String?
+
+  /// The manifest this device last reported holding.
+  manifestVersion     Int?
+  manifestGeneratedAt DateTime?
+
+  /// Device clock minus server clock, milliseconds, from the last sync. A phone
+  /// that is hours out produces `scannedAt` values that are hours out with it.
+  clockOffsetMs Int?
+
+  lastHelloAt DateTime?
+  lastSyncAt  DateTime?
+  lastScanAt  DateTime?
+
+  scanCount     Int @default(0)
+  /// Scans whose offline verdict the server disagreed with.
+  conflictCount Int @default(0)
+
+  /// Set by an admin to stop accepting sync from a lost or compromised device.
+  /// Scans already recorded are kept — D9 forbids rewriting history — but nothing
+  /// further is accepted.
+  isBlocked     Boolean   @default(false)
+  blockedReason String?
+  blockedAt     DateTime?
+
+  userAgent String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  gate       Gate? @relation(fields: [gateId], references: [id], onDelete: SetNull)
+  lastSeenBy User? @relation(fields: [lastSeenById], references: [id], onDelete: SetNull)
+
+  @@index([gateId, lastSyncAt])
+  @@index([isBlocked])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Operations
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// An additional Cloudinary account, added by an admin when the primary fills up.
+///
+/// The primary credentials stay in the environment at implicit priority 0 and are
+/// never written here; the upload service walks env first, then these rows by
+/// `priority`. One code path, and the main secret never enters the database.
+///
+/// `apiSecretCipher` is AES-256-GCM under `SECRETS_KEY`. Nothing in the codebase
+/// selects it into a response — the admin UI shows only `cloudName`, a masked
+/// `apiKey`, and usage.
+model CloudinaryConfig {
+  id String @id @default(cuid())
+
+  /// Admin-chosen label, e.g. `overflow-1`.
+  label     String
+  cloudName String
+  apiKey    String
+
+  apiSecretCipher String
+
+  /// Lower is tried first. Env credentials are effectively 0.
+  priority Int     @default(100)
+  isActive Boolean @default(true)
+
+  storageUsedBytes  BigInt    @default(0)
+  storageLimitBytes BigInt?
+  usageCheckedAt    DateTime?
+  uploadCount       Int       @default(0)
+
+  /// Set when an upload through this account fails, so a bad key stops being
+  /// retried on every registration.
+  lastErrorAt DateTime?
+  lastError   String?
+
+  createdById String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  createdBy User @relation(fields: [createdById], references: [id], onDelete: Restrict)
+
+  @@unique([cloudName, apiKey])
+  @@index([isActive, priority])
+}
+
+/// An announcement pushed to the live feed.
+///
+/// Persisted as well as published over Redis pub/sub (D10) because SSE only
+/// reaches clients that are currently connected; a student who opens the app
+/// after the announcement still needs to see it.
+model Broadcast {
+  id       String            @id @default(cuid())
+  priority BroadcastPriority @default(INFO)
+  audience BroadcastAudience @default(ALL)
+  title    String
+  body     String
+
+  /// Null while a draft. Set when it goes out.
+  publishedAt DateTime?
+  expiresAt   DateTime?
+
+  createdById String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  createdBy User @relation(fields: [createdById], references: [id], onDelete: Restrict)
+
+  @@index([audience, publishedAt])
+  @@index([publishedAt])
+}
+
+/// Runtime switches, one row.
+///
+/// `id` is fixed to `singleton` and a check constraint in the migration keeps it
+/// that way — a second row would mean two answers to "is registration open".
+model SystemConfig {
+  id String @id @default("singleton")
+
+  registrationOpen     Boolean   @default(false)
+  registrationOpensAt  DateTime?
+  registrationClosesAt DateTime?
+
+  /// D22: when true a submitted registration goes straight to APPROVED and a
+  /// pass is issued. When false it waits in PENDING_REVIEW for moderation.
+  /// Default true — with 15,000 students, manual review is the bottleneck, and
+  /// the selfie can still be moderated after the fact.
+  autoApprove Boolean @default(true)
+
+  /// Which consent wording is current. Must match CONSENT_VERSION in
+  /// apps/web/lib/register.ts; the submit endpoint refuses a mismatch rather
+  /// than recording consent to text the student never saw.
+  consentVersion String @default("2026-01-v1")
+
+  /// DPDP retention. The sweep deletes Cloudinary assets this many days after
+  /// upload and clears the selfie columns, leaving the registration intact.
+  selfieRetentionDays Int @default(30)
+
+  maxCompanions Int @default(2)
+
+  /// Bumped to invalidate every volunteer device's cached offline manifest.
+  manifestVersion Int @default(1)
+
+  /// Above this many concurrent SSE connections per process the ticker degrades
+  /// to polling rather than refusing connections (see docs/02-architecture.md).
+  sseDegradeThreshold Int @default(2500)
+
+  updatedById String?
+  updatedAt   DateTime @updatedAt
+
+  updatedBy User? @relation(fields: [updatedById], references: [id], onDelete: SetNull)
+}
+
+/// Append-only record of every write (D20).
+///
+/// Intentionally has no foreign keys. A trigger blocks UPDATE and DELETE on this
+/// table, and `ON DELETE SET NULL` is an UPDATE — so an FK to User would make
+/// deleting a user fail against the audit trigger. The actor is stored as a bare
+/// id plus a label captured at write time, which also keeps the log readable
+/// after an account is gone.
+model AuditLog {
+  id String @id @default(cuid())
+
+  actorId    String?
+  actorLabel String?
+  actorRole  Role?
+
+  /// Dotted verb, e.g. `registration.approve`, `selfie.view`, `roster.commit`.
+  action String
+
+  entityType String
+  entityId   String?
+
+  /// Previous and next state of the changed fields only, not whole rows. Selfie
+  /// bytes, Cloudinary secrets, and consent text never go in here.
+  before Json?
+  after  Json?
+
+  ip        String?
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([actorId, createdAt])
+  @@index([entityType, entityId])
+  @@index([action, createdAt])
+}

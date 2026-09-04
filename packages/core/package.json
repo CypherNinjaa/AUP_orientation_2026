@@ -1,0 +1,26 @@
+{
+  "name": "@orientation/core",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Domain logic shared by the web app, the seed CLI, and the offline scanner",
+  "exports": {
+    "./roster": "./src/roster/index.ts",
+    "./roster/workbook": "./src/roster/workbook.ts",
+    "./pass": "./src/pass/index.ts",
+    "./pass/verify-web": "./src/pass/verify-web.ts",
+    "./scan": "./src/scan/index.ts",
+    "./crypto/secrets": "./src/crypto/secrets.ts",
+    "./realtime": "./src/realtime/channels.ts",
+    "./audit": "./src/audit/actions.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "exceljs": "^4.4.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.1",
+    "typescript": "^5.9.3"
+  }
+}

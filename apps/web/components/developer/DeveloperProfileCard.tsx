@@ -1,6 +1,5 @@
 import Image from 'next/image'
 import type { ComponentPropsWithoutRef } from 'react'
-import { asset } from '@/lib/asset'
 import { cn } from '@/lib/cn'
 import { DEVELOPER } from '@/lib/developer'
 import { Icon } from '@/components/ui/Icon'
@@ -21,7 +20,7 @@ export function DeveloperProfileCard({ className, ...rest }: ComponentPropsWitho
     >
       <div className="flex items-center gap-3">
         <span className="ring-violet-tint relative size-11 shrink-0 overflow-hidden rounded-full ring-2">
-          <Image src={asset(DEVELOPER.avatar)} alt="" fill sizes="44px" className="object-cover" />
+          <Image src={DEVELOPER.avatar} alt="" fill sizes="44px" className="object-cover" />
         </span>
         <span className="min-w-0">
           <span className="text-navy block truncate text-sm font-bold">{DEVELOPER.name}</span>

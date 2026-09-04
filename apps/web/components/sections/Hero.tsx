@@ -4,7 +4,7 @@ import { useGSAP } from '@gsap/react'
 import gsap from 'gsap'
 import { SplitText } from 'gsap/SplitText'
 import { useRef } from 'react'
-import { CampusMorning } from '@/components/art/CampusMorning'
+import { CampusPhoto } from '@/components/art/CampusPhoto'
 import { Countdown } from '@/components/motion/Countdown'
 import { LinkButton } from '@/components/ui/Button'
 import { Container, HandNote, IconChip, type Tint } from '@/components/ui/atoms'
@@ -122,7 +122,18 @@ export function Hero() {
             <span className="text-flame">Our</span> <span className="text-navy">community.</span>
           </p>
 
-          <h1 data-hero data-hero-title className="text-display uppercase">
+          {/* The `lg:` size cap is load-bearing, not a tweak. `--text-display`
+              reaches its 5.25rem ceiling at a 1000px viewport, but at `lg` this
+              column narrows to 47% — so between 1024px and ~1290px the word
+              ORIENTATION is wider than the box that holds it. SplitText's line
+              mask is `overflow: clip`, so the overflow is not a ragged edge, it
+              is a missing N. Capping at 6.5vw keeps the word at ~93% of the
+              column all the way up, then hands back to the ceiling. */}
+          <h1
+            data-hero
+            data-hero-title
+            className="text-display uppercase lg:text-[min(5.25rem,6.5vw)]"
+          >
             Orientation
             <br />
             <span className="grad-text">2026</span>
@@ -180,10 +191,10 @@ export function Hero() {
       </Container>
 
       {/* ---- art ----------------------------------------------------------
-          On a phone this is a torn-edge picture below the copy. On a wide
-          screen it becomes the right half of the page, running to the very
-          edge with its left side dissolved into the paper — the campus is the
-          background you are standing in, not a thumbnail of it. */}
+          On a phone this is a rounded picture below the copy. On a wide screen
+          it becomes the right half of the page, running to the very edge with
+          its left side dissolved into the paper — the campus is the background
+          you are standing in, not a thumbnail of it. */}
       <div className="relative mt-14 px-6 sm:mt-16 lg:absolute lg:inset-y-0 lg:right-0 lg:z-0 lg:mt-0 lg:w-[53%] lg:px-0">
         <div
           data-hero
@@ -197,14 +208,13 @@ export function Hero() {
           />
           <div className="h-full overflow-hidden max-lg:rounded-3xl lg:feather-l">
             <div className="h-full lg:feather-b">
-              <CampusMorning className="aspect-square w-full lg:h-full lg:aspect-auto" />
+              <CampusPhoto className="aspect-square w-full lg:h-full lg:aspect-auto" />
             </div>
           </div>
         </div>
 
         {/* Overlapping the art is a wide-screen move only. On a phone the
-            students stand at the bottom of the picture and the timer would sit
-            on their heads. */}
+            timer sits below the picture rather than on top of the building. */}
         <Countdown
           target={EVENT.startsAt}
           data-hero

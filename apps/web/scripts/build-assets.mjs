@@ -3,12 +3,14 @@
  *
  *   node scripts/build-assets.mjs
  *
- * Why this exists: next.config.ts sets `output: 'export'` with
- * `images.unoptimized`, so Next never touches an image — whatever sits in
- * `public/` is copied byte-for-byte into `out/` and served as-is. The originals
- * are 1.3–2.4 MB PNGs each, ~14 MB in total, which is why they live outside
- * `public/` and are committed as *sources*. This script is the optimisation step
- * Next would normally perform.
+ * Why this exists: the originals are 1.3–2.7 MB PNGs each, ~17 MB in total, and
+ * anything inside `public/` is copied byte-for-byte into the build whether a page
+ * references it or not. So the originals are committed as *sources* outside
+ * `public/`, and this script produces the derived files that ship.
+ *
+ * `next/image` optimises at request time now that the static export is gone
+ * (D21), so the outputs here only need to be a sensible upper bound for it to
+ * resize from — not one file per breakpoint.
  *
  * Formats: WebP for the two cut-outs (lossy alpha, ~15× smaller than PNG),
  * JPEG for the opaque photographs, PNG only for the small logo marks where the
@@ -117,11 +119,27 @@ for (const [i, name] of GALLERY.entries()) {
   )
 }
 
+/* ---- campus photograph ---------------------------------------------------
+   The real building, supplied by the university: the glass tower with the
+   AMITY UNIVERSITY sign, seen down the tree-lined walk. This is the homepage
+   hero, replacing the drawn illustration that stood in for it.
+
+   Emitted at 1600 px, full frame and uncropped. The hero frame is square on a
+   phone and near-square on a wide screen, so the crop is done in CSS with
+   `object-cover` — that way the frame can change without re-running this. 1600
+   is the upper bound `next/image` resizes down from; the sign has to stay legible
+   at 2× on a ~700 px panel. */
+await emit(
+  'public/brand/campus-hero.jpg',
+  sharp(`${SRC}/amity-campus.png`)
+    .resize({ width: 1600, withoutEnlargement: true })
+    .jpeg({ quality: 82, mozjpeg: true }),
+)
+
 /* ---- brand marks --------------------------------------------------------
    The crest is transparent, so it works on the header's clear background, on
    the navy footer, and on a browser tab. */
 const CREST = `${SRC}/amity-small-logo.png`
-
 await emit(
   'public/brand/amity-shield.png',
   sharp(CREST).resize({ height: 200 }).png({ compressionLevel: 9, effort: 10, palette: true }),
