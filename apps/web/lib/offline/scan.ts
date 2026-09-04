@@ -38,7 +38,9 @@
  * failed to verify, and that never falls through.
  */
 import type { ScanMethod, ScanEventInput } from '@orientation/contracts'
-import { parseCode10 } from '@orientation/core/pass'
+// `/pass/identity`, not `/pass`. The barrel re-exports the signing module, which
+// imports `node:crypto`, and this file ends up in a browser bundle.
+import { parseCode10 } from '@orientation/core/pass/identity'
 import {
   importPublicKeys,
   verifyPassPayloadWeb,

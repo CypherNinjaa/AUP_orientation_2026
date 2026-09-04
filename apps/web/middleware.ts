@@ -74,9 +74,18 @@ export const config = {
    * model weights out of middleware. The model files in particular are several
    * megabytes fetched by the registration page, and a session read per chunk would
    * be pure overhead.
+   *
+   * Both entries are path-to-regexp, **not** raw regular expressions. A negative
+   * lookahead has to sit *inside* a group — `/api/((?!webhooks).*)`, never
+   * `/api/(?!webhooks)(.*)`, which fails to parse at boot with "Pattern cannot start
+   * with ? at 6" and takes the whole dev server down with it.
+   *
+   * The second entry looks redundant against the first and is not quite: the first
+   * excludes any path ending in an extension, and an API route whose dynamic segment
+   * happens to contain a dot should still be protected.
    */
   matcher: [
     '/((?!_next|api/webhooks|.*\\.[\\w]+$).*)',
-    '/api/(?!webhooks)(.*)',
+    '/api/((?!webhooks).*)',
   ],
 }

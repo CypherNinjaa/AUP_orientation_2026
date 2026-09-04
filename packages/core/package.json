@@ -7,6 +7,7 @@
     "./roster": "./src/roster/index.ts",
     "./roster/workbook": "./src/roster/workbook.ts",
     "./pass": "./src/pass/index.ts",
+    "./pass/identity": "./src/pass/identity.ts",
     "./pass/verify-web": "./src/pass/verify-web.ts",
     "./scan": "./src/scan/index.ts",
     "./crypto/secrets": "./src/crypto/secrets.ts",

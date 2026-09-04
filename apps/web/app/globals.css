@@ -76,13 +76,53 @@
   --color-syn-comment: #7488b3;
   --color-syn-punct: #8fdcff;
 
+  /* ---- gate ops ------------------------------------------------------
+     The second skin. Two surfaces in this app are not the website: the
+     volunteer scanner, held at arm's length in September sun, and the admin
+     command centre, read for six hours straight in a room with the lights off.
+     They are the same institution and a different product, and they get their
+     own ground rather than a dark variant of the paper tokens — inverting
+     "First Light" would produce a dark brochure, which is the wrong instrument.
+
+     The ground is navy-black, not neutral black: hue 220 keeps it in the
+     shield's family, and the --shadow-* tokens are already navy-tinted so they
+     compose over it without going grey. Panels step up in the same hue, which
+     is what lets a dense table read as depth instead of as lines. */
+  --color-ops: #070c17;
+  --color-ops-panel: #0d1424;
+  --color-ops-raise: #15203a;
+  --color-ops-line: #22304f;
+  --color-ops-ink: #eaeffc;
+  --color-ops-soft: #9fadcc;
+  /* ~4.1:1 on --color-ops. For labels and disabled states only — never for a
+     number an operator has to act on. */
+  --color-ops-faint: #63719a;
+
+  /* ---- signals -------------------------------------------------------
+     Four, not two. A duplicate scan is the commonest non-admit at a gate and it
+     is almost never fraud — it is a student who already walked through coming
+     back with a friend. Painting it the same red as a forged code teaches a
+     volunteer to stop reading red, which is the failure that lets the real one
+     past. So: green go, blue already-used, amber needs-a-decision, red stop.
+
+     Hue is never the only channel. Every badge carries a word and an icon, and
+     the go/stop pair is blue-shifted green against orange-shifted red so the two
+     stay distinguishable with red-green colour deficiency.
+
+     Bright by necessity: the light-mode --color-leaf and --color-danger are
+     tuned for contrast against paper and both disappear on this ground. */
+  --color-go: #19d97a;
+  --color-stop: #ff5566;
+  --color-warn: #ffc233;
+  --color-info: #55b6ff;
+
   /* ---- type ---------------------------------------------------------- */
   --font-sans: var(--font-jakarta), ui-sans-serif, system-ui, sans-serif;
   --font-hand: var(--font-caveat), 'Segoe Script', cursive;
-  /* --font-mono-dev is set on the /developer subtree only, so every other
-     route falls through to the platform face and pays for no extra request. */
+  /* --font-mono-var is set on the /developer and gate-ops subtrees only, so the
+     public routes never request the face. */
   --font-mono:
-    var(--font-mono-dev, ui-monospace), 'Cascadia Mono', Consolas, 'SF Mono', Menlo, monospace;
+    var(--font-mono-var, ui-monospace), 'Cascadia Mono', Consolas, 'SF Mono', Menlo, monospace;
 
   /* Fluid display sizes: mobile floor → desktop ceiling, no breakpoints. */
   --text-display: clamp(2.875rem, 8.4vw, 5.25rem);
