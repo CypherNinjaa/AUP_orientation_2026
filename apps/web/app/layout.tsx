@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from 'next'
+import { ClerkProvider } from '@clerk/nextjs'
 import { Caveat, Plus_Jakarta_Sans } from 'next/font/google'
 import type { ReactNode } from 'react'
 import { MotionProvider } from '@/components/motion/MotionProvider'
@@ -71,21 +72,40 @@ export const viewport: Viewport = {
  */
 const BOOTSTRAP = "document.documentElement.classList.add('js')"
 
+/**
+ * Clerk's appearance, set once here.
+ *
+ * The sign-in card is the first authenticated surface a fresher sees and it should
+ * not look like a different product from the page they arrived on, so it inherits
+ * the site's navy and its radius. The variables are the only ones that matter for
+ * that: everything else Clerk renders is already neutral.
+ */
+const CLERK_APPEARANCE = {
+  variables: {
+    colorPrimary: '#12235c',
+    colorText: '#12235c',
+    borderRadius: '0.75rem',
+    fontFamily: 'var(--font-jakarta)',
+  },
+} as const
+
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en-IN" suppressHydrationWarning className={`${jakarta.variable} ${caveat.variable}`}>
-      <head>
-        <script dangerouslySetInnerHTML={{ __html: BOOTSTRAP }} />
-      </head>
-      <body>
-        <a
-          href="#main"
-          className="focus-visible:bg-navy sr-only focus-visible:not-sr-only focus-visible:fixed focus-visible:top-4 focus-visible:left-4 focus-visible:z-100 focus-visible:rounded-full focus-visible:px-5 focus-visible:py-3 focus-visible:text-sm focus-visible:font-semibold focus-visible:text-white"
-        >
-          Skip to content
-        </a>
-        <MotionProvider>{children}</MotionProvider>
-      </body>
-    </html>
+    <ClerkProvider appearance={CLERK_APPEARANCE}>
+      <html lang="en-IN" suppressHydrationWarning className={`${jakarta.variable} ${caveat.variable}`}>
+        <head>
+          <script dangerouslySetInnerHTML={{ __html: BOOTSTRAP }} />
+        </head>
+        <body>
+          <a
+            href="#main"
+            className="focus-visible:bg-navy sr-only focus-visible:not-sr-only focus-visible:fixed focus-visible:top-4 focus-visible:left-4 focus-visible:z-100 focus-visible:rounded-full focus-visible:px-5 focus-visible:py-3 focus-visible:text-sm focus-visible:font-semibold focus-visible:text-white"
+          >
+            Skip to content
+          </a>
+          <MotionProvider>{children}</MotionProvider>
+        </body>
+      </html>
+    </ClerkProvider>
   )
 }

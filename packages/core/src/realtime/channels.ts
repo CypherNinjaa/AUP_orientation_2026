@@ -69,7 +69,12 @@ export function scannerChannel(): string {
 export interface StudentEvent {
   type: 'registration.status'
   registrationId: string
-  status: 'DRAFT' | 'PENDING_REVIEW' | 'APPROVED' | 'REVISION_REQUESTED'
+  /**
+   * Every value `RegistrationStatus` can hold, `REJECTED` included. A rejected
+   * student is the one who most needs the screen to change under them — otherwise
+   * they sit watching "under review" until they give up and telephone somebody.
+   */
+  status: 'DRAFT' | 'PENDING_REVIEW' | 'APPROVED' | 'REVISION_REQUESTED' | 'REJECTED'
   /** True when a pass now exists to fetch. */
   hasPass: boolean
   at: number
@@ -80,6 +85,14 @@ export interface BroadcastEvent {
   type: 'broadcast'
   broadcastId: string
   severity: 'INFO' | 'WARNING' | 'EMERGENCY'
+  /**
+   * Who it is for. Carried in the event rather than resolved by publishing to
+   * separate channels: the SSE handler already knows the connected actor's role,
+   * so one channel plus a field is one subscription per process instead of three,
+   * and "volunteers only" messages ("gate 2 is closing, move to main") never
+   * reach a student's phone.
+   */
+  audience: 'STUDENTS' | 'VOLUNTEERS' | 'ALL'
   title: string
   body: string
   at: number

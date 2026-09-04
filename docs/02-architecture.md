@@ -94,14 +94,14 @@ sufficient. Revisit only if the connection count in Railway metrics approaches t
 | Validation | **Zod** — one schema per boundary, shared client/server | `packages/contracts` |
 | ORM | **Prisma 6** + PostgreSQL 16 | |
 | Cache / pub-sub / locks | **Redis 7** (`ioredis`) | |
-| Jobs | **BullMQ** in `apps/worker` | Exports, retention sweep, metric rollups |
+| Jobs | **None.** No queue, no worker service | ⚠️ **Corrects the plan.** BullMQ in `apps/worker` was specified; nothing needed it. Exports and PDFs are generated in the request that asks for them (both are sub-second for one document), and the only genuinely scheduled work — the DPDP retention sweep — is a `POST /api/cron/retention` a scheduler pings. A second always-on runtime to hold one cron job is the thing D1 exists to avoid |
 | Object storage | **Cloudinary**, `type: 'authenticated'` | No public URL exists; reads are short-lived signed URLs. Transformation replaces a `sharp` step ([D14](01-decisions.md#1-decision-log)) |
 | Client-side face detect | **`@vladmandic/face-api`** — TinyFaceDetector only, behind a dynamic `import()` on the selfie step | 193 KB of weights committed to `public/models/`; the 1.24 MB library is its own chunk, in no first-load bundle ([D4](01-decisions.md#1-decision-log)) |
 | QR generate / read | `qrcode` (server, SVG) · `@zxing/browser` (camera, QR **and** Code128) | One decoder for both formats |
 | Barcode | `bwip-js` server-side Code128 render | |
 | Offline store | **IndexedDB** via `idb` | Manifest + outbox (05) |
-| PDF | `@react-pdf/renderer` in the worker | |
-| Excel | `exceljs` in the worker | |
+| PDF | **`pdf-lib`**, in `GET /api/pass/pdf` | ⚠️ `@react-pdf/renderer` was specified. It brings a React reconciler and a Yoga layout engine to draw one A5 card of fixed geometry; `pdf-lib` draws it directly, has no React dependency, and runs in the route rather than needing a worker to run in |
+| Excel | `exceljs`, in `GET /api/admin/export` | Streamed to the response. A 15,000-row workbook is ~2 s, which is a spinner, not a job queue |
 | Testing | Vitest (unit) · Playwright (E2E, incl. offline) · k6 (load) | |
 | Errors / logs | Sentry + `pino` structured JSON | |
 | Deploy | Railway, Docker multi-stage | |
@@ -152,14 +152,17 @@ cross-service auth handshake.
                     │  │  truth          │   │  pub/sub (SSE)     │  │
                     │  │                 │   │  scan mutex        │  │
                     │  │  daily backup   │   │  rate-limit counts │  │
-                    │  └───────▲─────────┘   │  BullMQ queues     │  │
-                    │          │             └─────────▲──────────┘  │
-                    │  ┌───────┴───────────────────────┴──────────┐  │
-                    │  │  worker  (Node)               × 1        │  │
-                    │  │  ────────────────────────────────────────│  │
-                    │  │   roster import  ·  PDF/Excel exports    │  │
-                    │  │   metric rollups ·  retention sweep      │  │
-                    │  └──────────────────────────────────────────┘  │
+                    │  └───────▲─────────┘   └─────────▲──────────┘  │
+                    │          │                       │             │
+                    │          └───────────┬───────────┘             │
+                    │                      │                         │
+                    │        ┌─────────────┴──────────────┐          │
+                    │        │  cron  (scheduler only)    │          │
+                    │        │  ────────────────────────  │          │
+                    │        │  POST /api/cron/retention  │          │
+                    │        │  → the web service does    │          │
+                    │        │    the work. No runtime.   │          │
+                    │        └────────────────────────────┘          │
                     └────────────────────────┬───────────────────────┘
                                              │  signed upload / URL
                                  ┌───────────▼────────────┐
@@ -170,7 +173,10 @@ cross-service auth handshake.
                                  └────────────────────────┘
 ```
 
-**Four Railway services.** `web` is the only one exposed. The worker has no ingress at all.
+**Three Railway services, not four**, and only `web` runs application code. The fourth was a `worker`; ⚠️ it
+was not built, and the row for **Jobs** above says why. Roster imports, PDFs and Excel exports all happen in the
+request that asks for them, and the retention sweep is a scheduled `curl` at a route — so what would have been a
+second always-on Node runtime is a cron entry with no code of its own.
 
 `Excel` and `PDF` exports are generated on demand and streamed to the requesting admin rather than parked in
 object storage, so the only thing Cloudinary holds is imagery. Selfies are `type: 'authenticated'`: no URL for
@@ -227,13 +233,10 @@ orientation2026/
 │   │   │   ├── offline/              # IndexedDB manifest store + outbox + sync loop
 │   │   │   └── scanner/              # camera pipeline, decode, feedback
 │   │   └── public/sw.js              # service worker: app shell + background sync
-│   │
-│   └── worker/                       # BullMQ consumers + cron. No HTTP ingress.
-│       └── src/jobs/
-│           ├── roster-import.ts
-│           ├── generate-export.ts
-│           ├── rollup-metrics.ts
-│           └── retention-sweep.ts    # deletes selfies past retention
+│                                     # ⚠️ no apps/worker/ — see the Jobs row above.
+│                                     #    roster import, exports and PDF render in the
+│                                     #    request; the retention sweep is a cron'd POST
+│                                     #    to /api/cron/retention.
 │
 ├── packages/
 │   ├── db/                           # Prisma schema, migrations, client singleton, seed
@@ -269,8 +272,18 @@ orientation2026/
 // One implementation → the offline verdict and the online verdict can
 // never disagree. This is the entire basis for trusting offline mode.
 
-export function decideScan(input: ScanInput, known: KnownPass | null): ScanDecision
+export function decideScan(
+  input: ScanInput,
+  known: KnownPass | null,
+  ctx: ScanContext,
+): ScanDecision
 ```
+
+`ctx` is the third argument because a verdict is not a property of the pass alone. It carries
+`manifestGeneratedAt`, `manifestMaxAgeMs` and the gate's `opensAt` / `closesAt`, which is what lets the same
+function say "not on the list, but this device's list is forty minutes old, so send them to the help desk
+rather than turning them away" — and what makes a clock-skew check possible, since a scan timestamped before
+the manifest that the device is holding was generated is a device with a wrong clock, not a wrong student.
 
 Everything else in the system is replaceable. If this function is wrong, students get turned away at the gate.
 It gets exhaustive unit tests covering every combination of pass status, signature validity, manifest

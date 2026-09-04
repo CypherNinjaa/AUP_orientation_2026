@@ -28,6 +28,7 @@
  */
 import { z } from 'zod'
 import { code10, cuid, scanMethod } from './common'
+import type { ScanOutcome } from './common'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Manifest
@@ -209,16 +210,14 @@ export interface SyncEventResult {
   clientEventId: string
   /** The row the server wrote. Null when the event was a duplicate submission. */
   scanEventId: string | null
-  /** The server's own verdict, recomputed against live data. */
-  outcome:
-    | 'ADMITTED'
-    | 'DUPLICATE'
-    | 'REVOKED'
-    | 'NOT_APPROVED'
-    | 'OUT_OF_WINDOW'
-    | 'STALE_MANIFEST'
-    | 'INVALID'
-    | 'NOT_FOUND'
+  /**
+   * The server's own verdict, recomputed against live data.
+   *
+   * The full eight-member enum, not the seven a device can reach: a code the
+   * device called `STALE_MANIFEST` comes back as `NOT_FOUND` when the server
+   * looks and there is genuinely no such pass.
+   */
+  outcome: ScanOutcome
   reason: string
   agreed: boolean
   /** Set when this scan created the check-in. */

@@ -156,7 +156,7 @@ export async function requireActor(request: Request, minimum: Role = 'STUDENT'):
     await writeAudit({
       action: AUDIT_ACTIONS.ACCESS_DENIED,
       actor,
-      entityType: 'endpoint',
+      entityType: 'Endpoint',
       entityId: new URL(request.url).pathname,
       after: { required: minimum, had: actor.role },
       ip: clientIp(request),
@@ -203,7 +203,7 @@ export async function setRole(
   await writeAudit({
     action: ROLE_RANK[role] > ROLE_RANK[before.role] ? AUDIT_ACTIONS.ROLE_GRANTED : AUDIT_ACTIONS.ROLE_REVOKED,
     actor: by,
-    entityType: 'user',
+    entityType: 'User',
     entityId: targetUserId,
     before: { role: before.role },
     after: { role, reason: reason ?? null },

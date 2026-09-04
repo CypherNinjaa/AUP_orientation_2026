@@ -118,6 +118,22 @@ const schema = z.object({
     .min(24, { error: 'ADMIN_BOOTSTRAP_KEY should be long enough not to be guessed.' })
     .optional()
     .transform((value) => (value === '' ? undefined : value)),
+
+  /**
+   * Bearer token for the scheduled jobs at `/api/cron/*` — currently the DPDP
+   * selfie retention sweep.
+   *
+   * Optional so a local checkout runs without it, but the route refuses every
+   * unauthenticated call when it is unset rather than falling open: an unprotected
+   * endpoint that deletes student selfies is worse than a retention sweep that has
+   * to be triggered from the admin console by hand.
+   */
+  CRON_SECRET: z
+    .string()
+    .trim()
+    .min(24, { error: 'CRON_SECRET should be long enough not to be guessed.' })
+    .optional()
+    .transform((value) => (value === '' ? undefined : value)),
 })
 
 export type Env = z.infer<typeof schema>

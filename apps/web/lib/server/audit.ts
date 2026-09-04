@@ -23,7 +23,7 @@
  */
 import 'server-only'
 
-import { prisma, type Role } from '@orientation/db'
+import { Prisma, prisma, type Role } from '@orientation/db'
 import { type AuditAction, isPiiAccess } from '@orientation/core/audit'
 
 /** Everything an entry can carry. Only `action` and `entityType` are required. */
@@ -69,11 +69,15 @@ const MAX_STRING_LENGTH = 500
  * Belt and braces over the call sites' discipline: one `after: registration`
  * written by a future handler in a hurry would otherwise put a signed pass payload
  * and a Cloudinary public id into a table nothing can delete from.
+ *
+ * Returns Prisma's `InputJsonObject` rather than `Record<string, unknown>`, because
+ * a `Jsonb` column will not accept `unknown` — and the narrower type is what forces
+ * every branch below to produce something that survives a JSON round trip.
  */
-function redact(value: Record<string, unknown> | null | undefined): Record<string, unknown> | undefined {
+function redact(value: Record<string, unknown> | null | undefined): Prisma.InputJsonObject | undefined {
   if (!value) return undefined
 
-  const out: Record<string, unknown> = {}
+  const out: Record<string, Prisma.InputJsonValue> = {}
   for (const [key, raw] of Object.entries(value)) {
     const lower = key.toLowerCase()
     if (FORBIDDEN_KEY_PATTERNS.some((pattern) => lower.includes(pattern))) {
@@ -86,8 +90,16 @@ function redact(value: Record<string, unknown> | null | undefined): Record<strin
       continue
     }
 
-    if (raw === null || typeof raw === 'number' || typeof raw === 'boolean') {
+    if (typeof raw === 'number' || typeof raw === 'boolean') {
       out[key] = raw
+      continue
+    }
+
+    // `Jsonb` distinguishes SQL NULL from JSON null, so a bare `null` is rejected
+    // by `InputJsonValue`. The string keeps the information that the field was
+    // explicitly cleared, which is the whole point of recording it in a `before`.
+    if (raw === null) {
+      out[key] = Prisma.JsonNull as unknown as Prisma.InputJsonValue
       continue
     }
 
@@ -102,7 +114,10 @@ function redact(value: Record<string, unknown> | null | undefined): Record<strin
     // storing a tree.
     try {
       const json = JSON.stringify(raw)
-      out[key] = json.length > MAX_STRING_LENGTH ? `${json.slice(0, MAX_STRING_LENGTH)}…` : JSON.parse(json)
+      out[key] =
+        json.length > MAX_STRING_LENGTH
+          ? `${json.slice(0, MAX_STRING_LENGTH)}…`
+          : (JSON.parse(json) as Prisma.InputJsonValue)
     } catch {
       out[key] = '[unserialisable]'
     }

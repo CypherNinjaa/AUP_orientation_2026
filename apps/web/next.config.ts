@@ -31,7 +31,7 @@ const nextConfig: NextConfig = {
    * package by default, so the query engine binary is required from
    * node_modules at runtime rather than bundled.
    */
-  transpilePackages: ['@orientation/core', '@orientation/db'],
+  transpilePackages: ['@orientation/contracts', '@orientation/core', '@orientation/db'],
 
   experimental: {
     optimizePackageImports: ['gsap'],

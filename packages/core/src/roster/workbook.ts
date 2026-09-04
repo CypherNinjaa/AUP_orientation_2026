@@ -1,5 +1,5 @@
 /**
- * Excel adapter: workbook bytes → the 2D array `parseRoster` expects.
+ * Spreadsheet adapter: file bytes → the 2D array `parseRoster` expects.
  *
  * Isolated in its own module and its own package export so exceljs stays out of
  * anything that only needs the pure parser — the browser never loads it, and the
@@ -110,4 +110,88 @@ export async function readRosterWorkbook(
   if (chosen === undefined) throw new Error(`Sheet ${String(wanted)} vanished while reading.`)
 
   return { rows, sheet: chosen, sheets }
+}
+
+/**
+ * Read a CSV export of the same roster.
+ *
+ * `ROSTER_EXTENSIONS` accepts `.csv` because "save as CSV" is what an admissions
+ * office does when the xlsx will not open, and arriving at the upload screen with
+ * the only file you have and being refused is a bad afternoon.
+ *
+ * Hand-rolled rather than `workbook.csv.read`: exceljs's CSV path guesses at
+ * dates, and a form number is a bare digit string that must not be guessed at.
+ * This does the one thing RFC 4180 actually requires — `""` inside a quoted field
+ * is a literal quote — and returns every cell as a string, leaving all
+ * interpretation to `parseRoster`, which is where the roster's rules live.
+ *
+ * Every value comes back as a string, including `Si.No`. `parseRoster` already
+ * accepts that: `serialNo` goes through `Number()` and the phone columns are
+ * parsed out of text regardless.
+ */
+export function readRosterCsv(data: ArrayBuffer | Buffer): WorkbookRead {
+  const text = Buffer.from(data instanceof ArrayBuffer ? new Uint8Array(data) : data)
+    .toString('utf8')
+    // Strip a UTF-8 BOM. Excel writes one, and it would otherwise become part of
+    // the first header's text and stop `Si.No` from matching. Built from its code
+    // point rather than written literally, because the literal character is
+    // invisible in an editor — which is the whole reason it causes this bug.
+    .replace(new RegExp(`^${String.fromCharCode(0xfeff)}`), '')
+
+  const rows: Cell[][] = []
+  let row: Cell[] = []
+  let field = ''
+  let quoted = false
+
+  for (let i = 0; i < text.length; i += 1) {
+    // `charAt` rather than `text[i]`: under `noUncheckedIndexedAccess` the index
+    // form is `string | undefined`, which it cannot be inside these bounds.
+    const char = text.charAt(i)
+
+    if (quoted) {
+      if (char === '"') {
+        if (text[i + 1] === '"') {
+          field += '"'
+          i += 1
+        } else {
+          quoted = false
+        }
+      } else {
+        field += char
+      }
+      continue
+    }
+
+    if (char === '"' && field === '') {
+      quoted = true
+    } else if (char === ',') {
+      row.push(field)
+      field = ''
+    } else if (char === '\n' || char === '\r') {
+      // Swallow the LF of a CRLF pair so it does not open an empty row.
+      if (char === '\r' && text[i + 1] === '\n') i += 1
+      row.push(field)
+      rows.push(row)
+      row = []
+      field = ''
+    } else {
+      field += char
+    }
+  }
+
+  // A file with no trailing newline still has a last row.
+  if (field !== '' || row.length > 0) {
+    row.push(field)
+    rows.push(row)
+  }
+
+  // Same padding rule as the xlsx path: a row that ends in blanks must not
+  // shift the columns to its left.
+  const width = rows[0]?.length ?? 0
+  for (const line of rows) {
+    while (line.length < width) line.push(null)
+  }
+
+  const sheet: SheetChoice = { index: 1, name: 'CSV', rowCount: rows.length }
+  return { rows, sheet, sheets: [sheet] }
 }

@@ -342,7 +342,14 @@ model Registration {
   /// persisting a link that expires, or making the asset public, which is the
   /// thing the authenticated type exists to prevent. The URL is derived from
   /// these fields at read time by packages/core/media.
+  ///
+  /// `selfieCloudName` records *which* Cloudinary account holds it. There is more
+  /// than one: when the primary account's free tier fills up an admin adds another
+  /// from the settings screen, and a read signed with the wrong account's secret is
+  /// a 401, not a fallback. Without this column a selfie stored in the second
+  /// account becomes unviewable the moment the first one is no longer the default.
   selfiePublicId   String?
+  selfieCloudName  String?
   selfieVersion    String?
   selfieBytes      Int?
   selfieWidth      Int?

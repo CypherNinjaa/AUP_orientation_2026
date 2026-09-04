@@ -591,10 +591,15 @@ export interface AuditEntryView {
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
- * Grant a role. Writes to Clerk's `publicMetadata` and mirrors it locally, in
- * that order — Clerk is the source of truth for authorisation (D13), so a local
- * write that succeeded while the Clerk write failed would grant a role the
- * middleware does not honour.
+ * Grant a role.
+ *
+ * Postgres first, then Clerk's `publicMetadata` as a mirror — see `setRole` in
+ * `apps/web/lib/server/auth.ts`. That order is deliberate and it is the opposite of
+ * the obvious one: `publicMetadata` is readable by the client, so writing it first
+ * would open a window in which a browser can see a role the database has not
+ * granted. The middleware reads the metadata for a cheap edge check and every write
+ * path re-reads the database, so a mirror that lags is a slow sign-in, while a
+ * mirror that leads is a privilege escalation.
  */
 export const roleGrantRequest = z.strictObject({
   clerkUserId: z.string().trim().min(5).max(60),

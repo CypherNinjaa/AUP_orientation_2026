@@ -169,13 +169,29 @@ export type PassStatus = z.infer<typeof passStatus>
 export const scanMethod = z.enum(['QR', 'BARCODE', 'MANUAL_CODE'])
 export type ScanMethod = z.infer<typeof scanMethod>
 
+/**
+ * All eight values the `ScanOutcome` column can hold — the full Prisma enum, not
+ * the subset a device can produce.
+ *
+ * `packages/core/scan/decide.ts` has its own seven-member union: everything here
+ * except `NOT_FOUND`, which only a server with the live table can reach. A device
+ * says `STALE_MANIFEST` ("I do not know") where the server says `NOT_FOUND`
+ * ("there is no such pass"), and both have to be storable because a `ScanEvent`
+ * records the device's verdict alongside the server's.
+ *
+ * This list must stay identical to the database enum. A `groupBy` on the column
+ * is typed by it, so a missing member here is a type error at the admin stats
+ * query rather than a silently dropped bar on a chart.
+ */
 export const scanOutcome = z.enum([
   'ADMITTED',
   'DUPLICATE',
   'INVALID',
   'REVOKED',
-  'NOT_FOUND',
+  'NOT_APPROVED',
   'OUT_OF_WINDOW',
+  'STALE_MANIFEST',
+  'NOT_FOUND',
 ])
 export type ScanOutcome = z.infer<typeof scanOutcome>
 

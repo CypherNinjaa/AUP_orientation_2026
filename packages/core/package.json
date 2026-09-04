@@ -11,7 +11,8 @@
     "./scan": "./src/scan/index.ts",
     "./crypto/secrets": "./src/crypto/secrets.ts",
     "./realtime": "./src/realtime/channels.ts",
-    "./audit": "./src/audit/actions.ts"
+    "./audit": "./src/audit/actions.ts",
+    "./export": "./src/export/tabular.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit"
