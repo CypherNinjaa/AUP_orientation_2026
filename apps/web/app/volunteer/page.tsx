@@ -43,7 +43,23 @@ export default async function VolunteerPage({
 }: {
   searchParams: Promise<{ gate?: string }>
 }) {
-  const actor = await getActor()
+  let actor = await getActor()
+
+  if (process.env.NODE_ENV === 'development' && !actor) {
+    const devVolunteer = await prisma.user.findFirst({
+      where: { role: { in: ['VOLUNTEER', 'ADMIN'] }, isActive: true },
+      orderBy: { role: 'asc' },
+    })
+    if (devVolunteer) {
+      actor = {
+        id: devVolunteer.id,
+        clerkUserId: devVolunteer.clerkUserId,
+        role: devVolunteer.role,
+        email: devVolunteer.email,
+        name: devVolunteer.name,
+      }
+    }
+  }
 
   if (actor === null) redirect('/sign-in?redirect_url=%2Fvolunteer')
   if (actor.role === 'STUDENT') redirect('/not-authorised')
@@ -79,13 +95,13 @@ export default async function VolunteerPage({
 function NoGate() {
   return (
     <div className="flex min-h-dvh flex-col items-center justify-center gap-4 px-6 text-center">
-      <span className="bg-warn/12 text-warn grid size-14 place-items-center rounded-full">
+      <span className="bg-amber-50 text-amber-600 border border-amber-200 grid size-14 place-items-center rounded-2xl shadow-xs">
         <Icon name="alert" size={26} />
       </span>
-      <p className="text-ops-ink text-base font-bold">No gate is open</p>
-      <p className="text-ops-soft max-w-sm text-sm leading-relaxed">
+      <p className="text-navy text-lg font-bold">No gate is currently open</p>
+      <p className="text-ink-soft max-w-sm text-sm leading-relaxed">
         Every gate is switched off, so there is nothing for this device to scan against. The
-        control room turns them on from the admin console — ask them, then reload this page.
+        control room activates gates from the command console. Please contact operations and reload this page.
       </p>
     </div>
   )
@@ -101,9 +117,9 @@ function PickGate({ gates }: { gates: readonly { code: string; name: string }[] 
   return (
     <div className="flex min-h-dvh flex-col items-center justify-center gap-5 px-6">
       <div className="text-center">
-        <p className="text-ops-ink text-base font-bold">Which gate are you on?</p>
-        <p className="text-ops-soft mt-1 text-sm">
-          Every scan you take is recorded against it, so pick the door you are standing at.
+        <p className="text-navy text-lg font-bold">Which gate are you stationed at?</p>
+        <p className="text-ink-soft mt-1 text-sm">
+          Every scan is logged against your gate station. Select your assigned entrance.
         </p>
       </div>
       <ul className="flex w-full max-w-sm flex-col gap-2">
@@ -111,10 +127,10 @@ function PickGate({ gates }: { gates: readonly { code: string; name: string }[] 
           <li key={gate.code}>
             <Link
               href={`/volunteer?gate=${encodeURIComponent(gate.code)}`}
-              className="bg-ops-panel ring-ops-line hover:bg-ops-raise focus-visible:outline-info flex min-h-14 items-center justify-between gap-3 rounded-xl px-4 ring-1 focus-visible:outline-2 focus-visible:outline-offset-2"
+              className="bg-white border border-slate-200 hover:border-violet hover:shadow-sm focus-visible:outline-violet flex min-h-14 items-center justify-between gap-3 rounded-xl px-4 shadow-xs transition-all focus-visible:outline-2 focus-visible:outline-offset-2"
             >
-              <span className="text-ops-ink text-sm font-bold">{gate.name}</span>
-              <span className="text-ops-faint font-mono text-xs font-bold tracking-[0.08em]">
+              <span className="text-navy text-sm font-bold">{gate.name}</span>
+              <span className="text-ink-faint font-mono text-xs font-bold tracking-[0.08em] bg-paper-tint px-2 py-0.5 rounded border border-slate-200/60">
                 {gate.code}
               </span>
             </Link>

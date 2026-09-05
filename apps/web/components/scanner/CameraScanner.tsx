@@ -6,7 +6,6 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import type { ScanMethod } from '@orientation/contracts'
 
 import { Icon } from '@/components/ui/Icon'
-import { OpsButton } from '@/components/ui/ops'
 import { cn } from '@/lib/cn'
 
 /**
@@ -200,89 +199,96 @@ export function CameraScanner({ active, onDecode, onUnavailable }: CameraScanner
       })
       .catch(() => {
         // The capability was advertised and refused. Hide the control rather than
-        // leave a button that does nothing.
         setTorch(null)
       })
   }, [torch])
 
   if (fault !== null) {
     return (
-      <div className="bg-ops-panel ring-ops-line/70 flex flex-1 flex-col items-center justify-center gap-3 rounded-xl px-6 py-12 text-center ring-1">
-        <span className="bg-stop/12 text-stop grid size-12 place-items-center rounded-full">
-          <Icon name="camera" size={22} />
+      <div className="bg-white border border-slate-200 shadow-xs flex flex-1 flex-col items-center justify-center gap-3 p-6 text-center rounded-2xl">
+        <span className="grid size-12 place-items-center rounded-2xl bg-rose-50 border border-rose-200 text-rose-600">
+          <Icon name="alert" size={24} />
         </span>
-        <p className="text-ops-ink text-sm font-bold">The camera is not available</p>
-        <p className="text-ops-soft max-w-sm text-sm">{fault}</p>
-        <p className="text-ops-faint max-w-sm text-xs">
-          Nobody has to be turned away. Ask for the ten-digit number on the pass and key it in.
+        <p className="text-navy text-base font-bold">Camera Unavailable</p>
+        <p className="text-slate-600 max-w-sm text-sm">{fault}</p>
+        <p className="text-slate-400 max-w-sm text-xs">
+          Nobody has to be turned away. Switch to &ldquo;Student Search&rdquo; or &ldquo;Passcode Keypad&rdquo; to admit students directly.
         </p>
       </div>
     )
   }
 
   return (
-    <div className="bg-ops-panel ring-ops-line/70 relative flex-1 overflow-hidden rounded-xl ring-1">
+    <div className="relative flex-1 min-h-[22rem] sm:min-h-[26rem] overflow-hidden rounded-2xl bg-slate-900 border border-slate-200/90 shadow-sm flex flex-col justify-center items-center">
       <video
         ref={videoRef}
         playsInline
         muted
-        // Not `autoPlay`: ZXing calls `play()` itself once the stream is attached, and
-        // a competing autoplay attempt is what produces "The play() request was
-        // interrupted" in the console on Android.
         className="absolute inset-0 size-full object-cover"
       />
 
-      {/* The reticle. Not a viewfinder — ZXing reads the whole frame — but a target,
-          which is what stops a volunteer holding the phone six inches too far away. */}
-      <div aria-hidden className="pointer-events-none absolute inset-0 grid place-items-center">
+      {/* High-legibility alignment reticle */}
+      <div aria-hidden className="pointer-events-none absolute inset-0 grid place-items-center p-4">
         <div
           className={cn(
-            'relative aspect-square w-[68%] max-w-72 rounded-2xl',
-            active ? 'ring-info/70' : 'ring-ops-line/60',
-            'ring-2',
+            'relative aspect-square w-[75%] max-w-72 rounded-2xl transition-all duration-300',
+            active ? 'ring-1 ring-amber-400/60 shadow-[0_0_40px_rgba(202,108,0,0.25)]' : 'ring-1 ring-white/30',
           )}
         >
-          {active ? (
-            <span className="bg-info/70 absolute inset-x-3 top-1/2 h-px motion-safe:animate-pulse" />
-          ) : null}
+          {/* Amity Flame corner brackets */}
+          <div className="absolute -top-1 -left-1 size-6 border-t-[3px] border-l-[3px] border-amber-400 rounded-tl-lg" />
+          <div className="absolute -top-1 -right-1 size-6 border-t-[3px] border-r-[3px] border-amber-400 rounded-tr-lg" />
+          <div className="absolute -bottom-1 -left-1 size-6 border-b-[3px] border-l-[3px] border-amber-400 rounded-bl-lg" />
+          <div className="absolute -bottom-1 -right-1 size-6 border-b-[3px] border-r-[3px] border-amber-400 rounded-br-lg" />
+
+          {/* Laser scanning beam */}
+          {active && (
+            <div className="absolute inset-x-2 top-1/2 h-0.5 -translate-y-1/2 bg-gradient-to-r from-transparent via-amber-400 to-transparent motion-safe:animate-pulse" />
+          )}
         </div>
       </div>
 
       {starting ? (
-        <p className="bg-ops/70 text-ops-soft absolute inset-0 grid place-items-center text-sm font-semibold">
-          Opening the camera…
-        </p>
+        <div className="bg-navy/80 text-white absolute inset-0 grid place-items-center text-sm font-bold backdrop-blur-xs">
+          <div className="flex items-center gap-2">
+            <Icon name="camera" size={18} className="animate-spin" />
+            <span>Starting camera feed…</span>
+          </div>
+        </div>
       ) : null}
 
       {!active && !starting ? (
-        <p className="bg-ops/55 text-ops-faint absolute inset-0 grid place-items-center text-xs font-bold tracking-[0.11em] uppercase">
-          Paused
-        </p>
+        <div className="bg-navy/70 text-white/90 absolute inset-0 grid place-items-center text-xs font-bold tracking-wider uppercase backdrop-blur-xs">
+          <span>Scanner Ready · Awaiting Code</span>
+        </div>
       ) : null}
 
-      <div className="absolute right-2 bottom-2 flex gap-2">
+      <div className="absolute right-3 bottom-3 flex gap-2">
         {devices.length > 1 ? (
-          <OpsButton
-            size="sm"
-            variant="outline"
-            icon="camera"
+          <button
+            type="button"
             onClick={flip}
-            className="bg-ops/80 backdrop-blur"
+            className="inline-flex items-center gap-1.5 rounded-lg bg-white/90 hover:bg-white text-navy font-bold text-xs px-3 py-1.5 border border-slate-200/80 shadow-sm backdrop-blur transition-all"
           >
-            Flip
-          </OpsButton>
+            <Icon name="camera" size={14} />
+            <span>Flip</span>
+          </button>
         ) : null}
         {torch !== null ? (
-          <OpsButton
-            size="sm"
-            variant={torch ? 'primary' : 'outline'}
-            icon="bolt"
+          <button
+            type="button"
             onClick={toggleTorch}
             aria-pressed={torch}
-            className={torch ? undefined : 'bg-ops/80 backdrop-blur'}
+            className={cn(
+              'inline-flex items-center gap-1.5 rounded-lg font-bold text-xs px-3 py-1.5 border shadow-sm backdrop-blur transition-all',
+              torch
+                ? 'bg-amber-400 text-navy border-amber-500'
+                : 'bg-white/90 hover:bg-white text-navy border-slate-200/80',
+            )}
           >
-            Light
-          </OpsButton>
+            <Icon name="bolt" size={14} />
+            <span>{torch ? 'Torch ON' : 'Torch'}</span>
+          </button>
         ) : null}
       </div>
     </div>

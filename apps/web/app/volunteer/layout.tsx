@@ -33,18 +33,18 @@ const mono = JetBrains_Mono({
 })
 
 export const metadata: Metadata = {
-  title: 'Gate scanner',
+  title: 'Gate Operations Desk · Orientation 2026',
   robots: { index: false, follow: false },
 }
 
 export const viewport: Viewport = {
-  themeColor: '#070c17',
-  colorScheme: 'dark',
+  themeColor: '#f8f9fd',
+  colorScheme: 'light',
 }
 
 export default function VolunteerLayout({ children }: { children: ReactNode }) {
   return (
-    <div className={`${mono.variable} bg-ops text-ops-ink min-h-dvh`}>
+    <div className={`${mono.variable} bg-paper text-navy min-h-dvh antialiased font-sans selection:bg-sky/40`}>
       <main id="main" className="min-h-dvh">
         {children}
       </main>

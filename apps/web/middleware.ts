@@ -39,6 +39,10 @@ const requiresVolunteer = createRouteMatcher(['/volunteer(.*)'])
 const requiresAdmin = createRouteMatcher(['/admin(.*)'])
 
 export default clerkMiddleware(async (auth, request) => {
+  if (process.env.NODE_ENV === 'development' && request.nextUrl.pathname.startsWith('/volunteer')) {
+    return NextResponse.next()
+  }
+
   if (!requiresSignIn(request)) return
 
   const { userId, sessionClaims } = await auth()

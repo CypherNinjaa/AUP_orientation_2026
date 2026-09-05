@@ -9,11 +9,14 @@ import { CameraScanner } from '@/components/scanner/CameraScanner'
 import { Keypad } from '@/components/scanner/Keypad'
 import { SyncBar } from '@/components/scanner/SyncBar'
 import { VerdictCard } from '@/components/scanner/VerdictCard'
+import { VolunteerStatsBar } from '@/components/scanner/VolunteerStatsBar'
+import { VolunteerHelpDesk } from '@/components/scanner/VolunteerHelpDesk'
+import { ScanHistoryFeed, type ScanHistoryItem } from '@/components/scanner/ScanHistoryFeed'
+import { GateEmergencyGuide } from '@/components/scanner/GateEmergencyGuide'
 import { Icon } from '@/components/ui/Icon'
-import { OpsButton } from '@/components/ui/ops'
 import { RealtimeProvider, useRealtime } from '@/lib/client/RealtimeProvider'
 import { cn } from '@/lib/cn'
-import { clearIdentifyingData, ensureDevice, type ManifestMeta } from '@/lib/offline/db'
+import { clearIdentifyingData, ensureDevice, scannerDb, type ManifestMeta } from '@/lib/offline/db'
 import { countPasses, readManifestMeta } from '@/lib/offline/manifest'
 import { amendQueuedGuests, outboxStatus, type OutboxStatus } from '@/lib/offline/outbox'
 import { openSession, performScan, type ScannerSession, type ScanResult } from '@/lib/offline/scan'
@@ -26,44 +29,14 @@ import {
 import { cue, unlock } from '@/lib/scanner/feedback'
 
 /**
- * The gate scanner. One screen, one job, and no network on the critical path.
+ * The gate scanner & volunteer command station.
  *
- * Everything underneath this file already exists and is tested: `performScan` reaches
- * a verdict from IndexedDB and WebCrypto, `startAutoSync` runs the loops, `decideScan`
- * decides. This is the wiring, and the decisions it owns are about *sequence* — what
- * must be true before the first scan, what happens between a verdict and the next
- * student, and what the volunteer is told when something is not true.
- *
- * ## The boot order matters
- *
- * hello → manifest → session, in that order, and only the third is load-bearing.
- *
- * `helloDevice` is allowed to fail: it registers the device and measures the clock,
- * and a device that could not reach the server still scans. `refreshManifest` is
- * allowed to fail: the device keeps whatever snapshot it already had. `openSession` is
- * not optional — it imports the public keys and carries `meta` into every verdict — so
- * a device with no manifest at all does not get a camera. It gets a sentence telling it
- * to find a connection, because a scanner that cannot recognise anybody would refuse
- * fifteen thousand valid passes in a row.
- *
- * ## Why the session is re-opened on every manifest change
- *
- * `session.meta` feeds `decideScan`'s staleness and gate-window rules. `startAutoSync`
- * refreshes the manifest on its own five-minute timer and writes it straight to
- * IndexedDB, so an in-memory `meta` captured at boot would drift behind the stored
- * one — and the visible symptom would be `STALE_MANIFEST` verdicts on a device that
- * had just synced. Every sync publish is therefore checked for a new manifest
- * timestamp, and the session is rebuilt when one appears.
- *
- * ## Push is a hint, never state
- *
- * `manifest.stale` does not say what changed and is not trusted to. It triggers a
- * forced refresh, which asks the server — the same rule the rest of the application
- * follows for every event.
+ * Full offline-capable PWA scanner, live student lookup/help desk,
+ * local scan history feed, and gate emergency contacts.
  */
 
 /** How long an admission stays on screen before the queue moves. */
-const ADMIT_DWELL_MS = 2_200
+const ADMIT_DWELL_MS = 2_400
 
 const EMPTY_OUTBOX: OutboxStatus = {
   total: 0,
@@ -78,11 +51,6 @@ export interface ScannerShellProps {
   volunteerName: string
 }
 
-/**
- * One `EventSource` for the screen. The scanner subscribes to two events and the
- * broadcast banner to a third; three connections from one phone on venue wifi is
- * three times the reconnect storm when the access point drops.
- */
 export function ScannerShell(props: ScannerShellProps) {
   return (
     <RealtimeProvider>
@@ -94,18 +62,15 @@ export function ScannerShell(props: ScannerShellProps) {
 type Boot =
   | { at: 'starting' }
   | { at: 'ready' }
-  /** No manifest, so no verdict is possible. Recoverable, with a connection. */
   | { at: 'empty' }
   | { at: 'failed'; message: string }
 
 interface Verdict {
   result: ScanResult
-  /** Kept so an override can re-issue the identical scan. */
   raw: string
   method: ScanMethod
   guests: number
   guestState: 'clean' | 'saved' | 'sent'
-  /** True once this verdict has been overridden, so the control disappears. */
   overridden: boolean
 }
 
@@ -116,6 +81,8 @@ interface Notice {
   body: string
 }
 
+type VolunteerTab = 'camera' | 'keypad' | 'lookup' | 'log'
+
 function Scanner({ gateCode, volunteerName }: ScannerShellProps) {
   const [boot, setBoot] = useState<Boot>({ at: 'starting' })
   const [meta, setMeta] = useState<ManifestMeta | undefined>(undefined)
@@ -124,11 +91,13 @@ function Scanner({ gateCode, volunteerName }: ScannerShellProps) {
   const [passCount, setPassCount] = useState(0)
   const [resyncing, setResyncing] = useState(false)
 
-  const [mode, setMode] = useState<'camera' | 'keypad'>('camera')
+  const [tab, setTab] = useState<VolunteerTab>('camera')
   const [cameraFault, setCameraFault] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [verdict, setVerdict] = useState<Verdict | null>(null)
   const [tally, setTally] = useState({ admitted: 0, refused: 0 })
+  const [guestsTotal, setGuestsTotal] = useState(0)
+  const [history, setHistory] = useState<ScanHistoryItem[]>([])
   const [notice, setNotice] = useState<Notice | null>(null)
 
   // Read from callbacks that outlive the render they were created in.
@@ -138,7 +107,7 @@ function Scanner({ gateCode, volunteerName }: ScannerShellProps) {
   const verdictRef = useRef<Verdict | null>(null)
   verdictRef.current = verdict
 
-  /** Adopt whatever manifest is in IndexedDB right now. Cheap; safe to over-call. */
+  /** Adopt whatever manifest is in IndexedDB right now. */
   const adopt = useCallback(async (): Promise<ManifestMeta | undefined> => {
     const stored = await readManifestMeta()
     setMeta(stored)
@@ -164,7 +133,6 @@ function Scanner({ gateCode, volunteerName }: ScannerShellProps) {
     [gateCode, adopt],
   )
 
-  // `startAutoSync` is created once and must not be torn down when `resync` changes.
   const resyncRef = useRef(resync)
   resyncRef.current = resync
 
@@ -174,15 +142,11 @@ function Scanner({ gateCode, volunteerName }: ScannerShellProps) {
     let cancelled = false
 
     const run = async () => {
-      // Best effort. Registers the device, names it after whoever is holding it, and
-      // measures the clock — none of which is required to reach a verdict.
       const hello = await helloDevice(gateCode, volunteerName)
       if (cancelled) return
       if (hello !== null) {
         setClockOffsetMs(hello.device.clockOffsetMs)
       } else {
-        // Offline start. Use the offset measured the last time this device did reach
-        // the server; it is the best estimate available and better than claiming none.
         const device = await ensureDevice(gateCode)
         if (cancelled) return
         setClockOffsetMs(device.clockOffsetMs)
@@ -199,9 +163,6 @@ function Scanner({ gateCode, volunteerName }: ScannerShellProps) {
 
     void run().catch((error: unknown) => {
       if (cancelled) return
-      // Almost always storage: Safari in private browsing refuses IndexedDB outright,
-      // and so does a browser with site data blocked. Neither is recoverable here and
-      // both need saying, because the phone looks fine.
       setBoot({
         at: 'failed',
         message:
@@ -228,8 +189,6 @@ function Scanner({ gateCode, volunteerName }: ScannerShellProps) {
           setClockOffsetMs(state.lastDrain.clockOffsetMs)
         }
 
-        // The sync loop refreshed the manifest behind our back. Rebuild the session
-        // so verdicts are decided against the snapshot that is actually stored.
         if (state.lastManifestAt !== null && state.lastManifestAt !== manifestAtRef.current) {
           manifestAtRef.current = state.lastManifestAt
           void adopt().then((stored) => {
@@ -247,18 +206,12 @@ function Scanner({ gateCode, volunteerName }: ScannerShellProps) {
 
   const stream = useRealtime({
     'manifest.stale': () => {
-      // The reason is not read. It says what changed, not what this device now holds,
-      // and the only trustworthy answer to that is the server's.
       void resyncRef.current(true)
     },
     'gate.config': () => {
-      // The window moved. It lives in the manifest's `gate`, so a refresh is the whole
-      // of the response — and it must be forced, or the delta would return nothing.
       void resyncRef.current(true)
     },
     broadcast: (event) => {
-      // Info-level messages are noise in front of a queue. Warnings and emergencies
-      // are the control room telling a gate to change what it is doing.
       if (event.severity === 'INFO' || event.audience === 'STUDENTS') return
       setNotice({
         id: event.broadcastId,
@@ -295,8 +248,6 @@ function Scanner({ gateCode, volunteerName }: ScannerShellProps) {
           overridden,
         })
 
-        // Only the first pass over a scan counts towards the shift figures; an
-        // override is the same student, decided again.
         if (!overridden) {
           setTally((current) =>
             result.admitted
@@ -305,8 +256,29 @@ function Scanner({ gateCode, volunteerName }: ScannerShellProps) {
           )
         }
 
-        // The queue depth changed a moment ago. Show it now rather than at the next
-        // twenty-second drain, so "3 queued" matches what the volunteer just did.
+        if (result.admitted) {
+          setGuestsTotal((current) => current + result.guestsAdmitted)
+        }
+
+        // Add to live shift history
+        const passInfo = result.decision.pass
+        const historyItem: ScanHistoryItem = {
+          id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+          clientEventId: result.clientEventId,
+          raw,
+          code: passInfo?.code10 ?? null,
+          method,
+          badge: result.badge,
+          tone: result.tone,
+          admitted: result.admitted,
+          name: passInfo?.name ?? null,
+          program: passInfo?.program ?? null,
+          guests: result.guestsAdmitted,
+          timestamp: Date.now(),
+          overridden,
+        }
+        setHistory((prev) => [historyItem, ...prev.slice(0, 49)])
+
         const status = await outboxStatus()
         setSync((current) => (current === null ? current : { ...current, outbox: status }))
       } finally {
@@ -333,18 +305,12 @@ function Scanner({ gateCode, volunteerName }: ScannerShellProps) {
 
   const onCameraUnavailable = useCallback((message: string) => {
     setCameraFault(message)
-    // The keypad is the documented fallback for every camera failure (D8). Switching
-    // to it without being asked is the difference between a volunteer who keeps
-    // working and one who reads an error and comes looking for help.
-    setMode('keypad')
+    setTab('keypad')
   }, [])
 
   const onOverride = useCallback(() => {
     const current = verdict
     if (current === null) return
-    // Deliberately a second scan rather than an edit of the first. The gate did refuse,
-    // and then a volunteer decided otherwise; two events is what actually happened, and
-    // `/api/scanner/sync` resolves them in that order.
     void scan(current.raw, current.method, true)
   }, [verdict, scan])
 
@@ -355,19 +321,45 @@ function Scanner({ gateCode, volunteerName }: ScannerShellProps) {
 
     void amendQueuedGuests(id, next).then((amended) => {
       setVerdict((latest) => {
-        // The volunteer may have moved on. Never write a count onto a later verdict.
         if (latest === null || latest.result.clientEventId !== id) return latest
         return amended
           ? { ...latest, guests: next, guestState: 'saved' }
           : { ...latest, guestState: 'sent' }
       })
+
+      if (amended) {
+        setHistory((prev) =>
+          prev.map((item) => {
+            if (item.clientEventId === id) {
+              const diff = next - item.guests
+              setGuestsTotal((gt) => Math.max(0, gt + diff))
+              return { ...item, guests: next }
+            }
+            return item
+          }),
+        )
+      }
     })
   }, [])
 
-  // An admission clears itself so the queue keeps moving; everything else waits to be
-  // dismissed, because every other verdict needs a conversation first. Any interaction
-  // re-creates the verdict object and so restarts the dwell — which is the behaviour
-  // wanted while somebody is stepping the guest count down.
+  const onAdjustHistoryGuests = useCallback((clientEventId: string, nextGuests: number) => {
+    void amendQueuedGuests(clientEventId, nextGuests).then((amended) => {
+      if (amended) {
+        setHistory((prev) =>
+          prev.map((item) => {
+            if (item.clientEventId === clientEventId) {
+              const diff = nextGuests - item.guests
+              setGuestsTotal((gt) => Math.max(0, gt + diff))
+              return { ...item, guests: nextGuests }
+            }
+            return item
+          }),
+        )
+      }
+    })
+  }, [])
+
+  // Auto clear admitted verdict after dwell time
   useEffect(() => {
     if (verdict === null || verdict.result.tone !== 'ok') return
     const timer = setTimeout(() => {
@@ -377,6 +369,29 @@ function Scanner({ gateCode, volunteerName }: ScannerShellProps) {
       clearTimeout(timer)
     }
   }, [verdict])
+
+  // Simulator test scans
+  const runSimulatorTest = useCallback(
+    async (type: 'valid' | 'duplicate' | 'unregistered') => {
+      if (type === 'unregistered') {
+        void scan('9999999999', 'MANUAL_CODE', false)
+        return
+      }
+
+      try {
+        const db = await scannerDb()
+        const sample = await db.getAll('passes', undefined, 1)
+        if (sample.length > 0 && sample[0]) {
+          void scan(sample[0].code10, 'QR', false)
+        } else {
+          void scan('AUP26TEST01', 'MANUAL_CODE', false)
+        }
+      } catch {
+        void scan('AUP26TEST01', 'MANUAL_CODE', false)
+      }
+    },
+    [scan],
+  )
 
   /* ---- render -------------------------------------------------------------- */
 
@@ -394,13 +409,13 @@ function Scanner({ gateCode, volunteerName }: ScannerShellProps) {
   }
 
   const outbox = sync?.outbox ?? EMPTY_OUTBOX
-  const scanning = verdict === null && !busy
+  const scanning = verdict === null && !busy && tab === 'camera'
 
   return (
-    // Every tap is a chance to buy the `AudioContext` back; `unlock` is idempotent.
-    <div className="flex min-h-dvh flex-col" onPointerDown={unlock}>
+    <div className="flex min-h-dvh flex-col bg-paper text-navy" onPointerDown={unlock}>
+      {/* 1. Official Amity University Gate Header */}
       <SyncBar
-        gate={meta?.gate ?? { id: '', code: gateCode, name: 'Not synced', opensAt: null, closesAt: null }}
+        gate={meta?.gate ?? { id: '', code: gateCode, name: 'Main Gate', opensAt: null, closesAt: null }}
         online={sync?.online ?? true}
         outbox={outbox}
         drain={sync?.lastDrain ?? null}
@@ -412,8 +427,10 @@ function Scanner({ gateCode, volunteerName }: ScannerShellProps) {
         onResync={() => {
           void resync(true)
         }}
+        volunteerName={volunteerName}
       />
 
+      {/* Notice Banner */}
       {notice !== null ? (
         <NoticeBanner
           notice={notice}
@@ -423,229 +440,315 @@ function Scanner({ gateCode, volunteerName }: ScannerShellProps) {
         />
       ) : null}
 
-      <div className="relative flex flex-1 flex-col gap-3 p-3">
-        <div className="flex min-h-72 flex-1 flex-col">
-          {mode === 'camera' ? (
-            <CameraScanner
-              active={scanning}
-              onDecode={onDecode}
-              onUnavailable={onCameraUnavailable}
-            />
-          ) : (
-            <Keypad onSubmit={onKeypad} busy={busy} />
+      <main className="mx-auto flex flex-1 flex-col w-full max-w-2xl p-3 sm:p-5 gap-3">
+        {cameraFault !== null && tab === 'camera' && (
+          <div className="p-3 bg-amber-50 border border-amber-200 text-amber-800 text-xs rounded-xl flex items-center gap-2 shadow-2xs">
+            <Icon name="alert" size={15} className="shrink-0 text-amber-600" />
+            <span>Camera unavailable ({cameraFault}). Use Code entry or Student Lookup.</span>
+          </div>
+        )}
+
+        {/* Workspace Area */}
+        <div className="relative flex flex-1 flex-col">
+          {/* TAB 1: SCAN QR (Camera) — PURE, IMMERSIVE, UNCLUTTERED */}
+          {tab === 'camera' && (
+            <div className="flex flex-1 flex-col gap-2">
+              <div className="flex-1 flex flex-col min-h-[22rem] sm:min-h-[28rem]">
+                <CameraScanner
+                  active={scanning}
+                  onDecode={onDecode}
+                  onUnavailable={onCameraUnavailable}
+                />
+              </div>
+              <p className="text-center text-xs text-slate-500 font-medium py-1">
+                Align student pass QR code or barcode within frame
+              </p>
+            </div>
           )}
+
+          {/* TAB 2: CODE ENTRY — CLEAN, SPACIOUS, DISTRACTION-FREE */}
+          {tab === 'keypad' && (
+            <div className="mx-auto w-full max-w-md py-2">
+              <Keypad onSubmit={onKeypad} busy={busy} />
+              <p className="text-center text-xs text-slate-400 mt-3 font-medium">
+                Pass codes are printed directly below the barcode
+              </p>
+            </div>
+          )}
+
+          {/* TAB 3: STUDENT LOOKUP — ROSTER & DISPUTES */}
+          {tab === 'lookup' && (
+            <div className="w-full">
+              <VolunteerHelpDesk
+                onAdmitCode={(code10) => {
+                  void scan(code10, 'MANUAL_CODE', false)
+                }}
+                online={sync?.online ?? true}
+              />
+            </div>
+          )}
+
+          {/* TAB 4: SHIFT LOG & OPERATIONS */}
+          {tab === 'log' && (
+            <div className="flex flex-col gap-4 py-1">
+              {/* Shift Metrics (Moved here out of the way of scanning) */}
+              <VolunteerStatsBar
+                tally={tally}
+                guestsTotal={guestsTotal}
+                passCount={passCount}
+                queuedCount={outbox.total}
+                online={sync?.online ?? true}
+              />
+
+              {/* Real-time Activity Feed */}
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center justify-between px-1">
+                  <div className="flex items-center gap-2">
+                    <span className="size-2 rounded-full bg-violet animate-pulse" />
+                    <h3 className="text-xs font-extrabold uppercase tracking-wider text-navy">
+                      Shift Scans Feed
+                    </h3>
+                  </div>
+                  <span className="text-xs font-medium text-slate-500 font-mono">
+                    {history.length} record{history.length === 1 ? '' : 's'}
+                  </span>
+                </div>
+                <ScanHistoryFeed
+                  items={history}
+                  onAdjustGuests={onAdjustHistoryGuests}
+                  onClear={() => setHistory([])}
+                />
+              </div>
+
+              {/* Gate Emergency Guidelines */}
+              <GateEmergencyGuide
+                gateCode={gateCode}
+                clockOffsetMs={clockOffsetMs}
+                passCount={passCount}
+                online={sync?.online ?? true}
+              />
+
+              {/* Handover & Sign Out */}
+              <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-xs flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-xs font-bold text-navy truncate">{volunteerName}</p>
+                  <p className="text-[0.6875rem] text-slate-500 mt-0.5">
+                    {tally.admitted} admitted · {tally.refused} refused
+                  </p>
+                </div>
+                <Handover queued={outbox.total} />
+              </div>
+
+              {/* Development Testing Bar (Hidden in production) */}
+              {process.env.NODE_ENV === 'development' && (
+                <div className="bg-white/80 border border-dashed border-slate-300 rounded-2xl p-3 text-xs">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="font-bold text-slate-500 text-[0.6875rem] uppercase tracking-wider">
+                      Developer Scanner Test Scenarios
+                    </span>
+                    <span className="text-[0.625rem] font-mono text-slate-400">Dev Only</span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => runSimulatorTest('valid')}
+                      className="py-1.5 px-2 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold text-xs border border-emerald-200 transition-colors"
+                    >
+                      Test Valid
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => runSimulatorTest('duplicate')}
+                      className="py-1.5 px-2 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-800 font-bold text-xs border border-amber-200 transition-colors"
+                    >
+                      Test Duplicate
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => runSimulatorTest('unregistered')}
+                      className="py-1.5 px-2 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs border border-rose-200 transition-colors"
+                    >
+                      Test Invalid
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Live Verdict Card Overlay */}
+          {verdict !== null ? (
+            <VerdictCard
+              result={verdict.result}
+              online={sync?.online ?? true}
+              guests={verdict.guests}
+              guestState={verdict.guestState}
+              onGuests={onGuests}
+              onOverride={
+                verdict.result.decision.overridable && !verdict.overridden ? onOverride : null
+              }
+              onDismiss={() => {
+                setVerdict(null)
+              }}
+              busy={busy}
+            />
+          ) : null}
         </div>
 
-        <ModeTabs mode={mode} onMode={setMode} cameraFault={cameraFault} />
-
-        {verdict !== null ? (
-          <VerdictCard
-            result={verdict.result}
-            online={sync?.online ?? true}
-            guests={verdict.guests}
-            guestState={verdict.guestState}
-            onGuests={onGuests}
-            onOverride={
-              verdict.result.decision.overridable && !verdict.overridden ? onOverride : null
-            }
-            onDismiss={() => {
-              setVerdict(null)
-            }}
-            busy={busy}
-          />
-        ) : null}
-      </div>
-
-      <Footer volunteerName={volunteerName} tally={tally} queued={outbox.total} />
+        {/* Bottom Navigation Bar */}
+        <nav
+          aria-label="Volunteer navigation"
+          className="sticky bottom-2 z-20 mt-auto bg-white/95 backdrop-blur-md border border-slate-200/90 rounded-2xl p-1.5 shadow-lg grid grid-cols-4 gap-1"
+        >
+          <button
+            type="button"
+            onClick={() => setTab('camera')}
+            className={cn(
+              'flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-1.5 py-2 sm:py-2.5 rounded-xl text-[0.6875rem] sm:text-xs font-extrabold transition-all',
+              tab === 'camera'
+                ? 'bg-navy text-white shadow-xs'
+                : 'text-slate-500 hover:text-navy hover:bg-paper-tint',
+            )}
+          >
+            <Icon name="camera" size={16} />
+            <span className="truncate">Scan QR</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setTab('keypad')}
+            className={cn(
+              'flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-1.5 py-2 sm:py-2.5 rounded-xl text-[0.6875rem] sm:text-xs font-extrabold transition-all',
+              tab === 'keypad'
+                ? 'bg-navy text-white shadow-xs'
+                : 'text-slate-500 hover:text-navy hover:bg-paper-tint',
+            )}
+          >
+            <Icon name="keypad" size={16} />
+            <span className="truncate">Code</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setTab('lookup')}
+            className={cn(
+              'flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-1.5 py-2 sm:py-2.5 rounded-xl text-[0.6875rem] sm:text-xs font-extrabold transition-all',
+              tab === 'lookup'
+                ? 'bg-navy text-white shadow-xs'
+                : 'text-slate-500 hover:text-navy hover:bg-paper-tint',
+            )}
+          >
+            <Icon name="search" size={16} />
+            <span className="truncate">Lookup</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setTab('log')}
+            className={cn(
+              'flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-1.5 py-2 sm:py-2.5 rounded-xl text-[0.6875rem] sm:text-xs font-extrabold transition-all',
+              tab === 'log'
+                ? 'bg-navy text-white shadow-xs'
+                : 'text-slate-500 hover:text-navy hover:bg-paper-tint',
+            )}
+          >
+            <Icon name="clock" size={16} />
+            <span className="truncate">
+              Log{history.length > 0 ? ` (${history.length})` : ''}
+            </span>
+          </button>
+        </nav>
+      </main>
     </div>
   )
 }
 
-/**
- * The screens that come before a camera.
- *
- * Three states, and they are genuinely different: one is a wait, one is a device that
- * cannot store anything, and one is a device holding no pass list. Only the third is
- * fixable at the gate, and it is the only one with a button.
- */
 function Gate({
   boot,
   gateCode,
   resyncing,
   onRetry,
 }: {
-  /** Never `ready` — that branch renders the scanner instead. */
   boot: Exclude<Boot, { at: 'ready' }>
   gateCode: string
   resyncing: boolean
   onRetry: () => void
 }) {
   return (
-    <div className="flex min-h-dvh flex-col items-center justify-center gap-4 px-6 text-center">
+    <div className="flex min-h-dvh flex-col items-center justify-center gap-4 px-6 text-center bg-paper text-navy">
       {boot.at === 'starting' ? (
         <>
-          <span className="border-info/70 size-8 animate-spin rounded-full border-2 border-t-transparent" />
-          <p className="text-ops-soft text-sm font-semibold">Loading the pass list for {gateCode}…</p>
-          <p className="text-ops-faint max-w-xs text-xs">
-            This happens once. After it, the scanner works with no connection at all.
+          <span className="border-violet/70 size-8 animate-spin rounded-full border-2 border-t-transparent" />
+          <p className="text-navy text-sm font-bold">Loading pass list for {gateCode}…</p>
+          <p className="text-slate-500 max-w-xs text-xs">
+            Initializing offline pass cache. Once loaded, scanning functions without internet.
           </p>
         </>
       ) : boot.at === 'empty' ? (
-        <>
-          <span className="bg-stop/12 text-stop grid size-14 place-items-center rounded-full">
-            <Icon name="alert" size={26} />
+        <div className="bg-white border border-slate-200/90 shadow-sm rounded-2xl p-6 flex flex-col items-center gap-3 max-w-sm">
+          <span className="bg-amber-50 text-amber-600 border border-amber-200 grid size-14 place-items-center rounded-2xl shadow-xs">
+            <Icon name="cloud" size={26} />
           </span>
-          <p className="text-ops-ink text-base font-bold">No pass list on this device</p>
-          <p className="text-ops-soft max-w-sm text-sm leading-relaxed">
-            The scanner has never reached the server, so it does not know who is expected and
-            would turn everybody away. Find a connection and try again.
+          <p className="text-navy text-base font-extrabold">No Pass List on Device</p>
+          <p className="text-slate-600 text-xs leading-relaxed">
+            The device has not yet synchronized with the server to download the approved manifest. Connect to Wi-Fi/data and click sync.
           </p>
-          <OpsButton size="tap" variant="primary" icon="download" onClick={onRetry} disabled={resyncing}>
-            {resyncing ? 'Trying…' : 'Get the pass list'}
-          </OpsButton>
-        </>
+          <button
+            type="button"
+            onClick={onRetry}
+            disabled={resyncing}
+            className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-navy hover:bg-navy-soft text-white font-bold text-sm py-2.5 shadow-xs transition-all disabled:opacity-50"
+          >
+            <Icon name="download" size={16} />
+            <span>{resyncing ? 'Fetching…' : 'Download Pass Roster'}</span>
+          </button>
+        </div>
       ) : (
-        <>
-          <span className="bg-stop/12 text-stop grid size-14 place-items-center rounded-full">
+        <div className="bg-white border border-slate-200/90 shadow-sm rounded-2xl p-6 flex flex-col items-center gap-3 max-w-sm">
+          <span className="bg-rose-50 text-rose-600 border border-rose-200 grid size-14 place-items-center rounded-2xl shadow-xs">
             <Icon name="shield" size={26} />
           </span>
-          <p className="text-ops-ink text-base font-bold">This browser cannot run the scanner</p>
-          <p className="text-ops-soft max-w-sm text-sm leading-relaxed">{boot.message}</p>
-          <p className="text-ops-faint max-w-sm text-xs">
-            Turn off private browsing, or allow site data for this address, and reload. On a
-            borrowed phone, ask the control room for a spare device.
+          <p className="text-navy text-base font-extrabold">Browser Storage Restricted</p>
+          <p className="text-slate-600 text-xs leading-relaxed">{boot.message}</p>
+          <p className="text-slate-400 text-xs">
+            Disable private browsing or grant local storage permissions to allow offline operation.
           </p>
-        </>
+        </div>
       )}
     </div>
   )
 }
 
-function ModeTabs({
-  mode,
-  onMode,
-  cameraFault,
-}: {
-  mode: 'camera' | 'keypad'
-  onMode: (next: 'camera' | 'keypad') => void
-  cameraFault: string | null
-}) {
-  return (
-    <div className="flex flex-col gap-1.5">
-      <div className="bg-ops-panel ring-ops-line/70 grid grid-cols-2 gap-1 rounded-xl p-1 ring-1">
-        <Tab active={mode === 'camera'} onPress={() => onMode('camera')} icon="camera" label="Camera" />
-        <Tab active={mode === 'keypad'} onPress={() => onMode('keypad')} icon="keypad" label="Type code" />
-      </div>
-      {cameraFault !== null && mode === 'keypad' ? (
-        <p className="text-ops-faint px-1 text-xs">
-          The camera is unavailable on this phone, so the keypad is doing the work. Nobody has to
-          be turned away.
-        </p>
-      ) : null}
-    </div>
-  )
-}
-
-function Tab({
-  active,
-  onPress,
-  icon,
-  label,
-}: {
-  active: boolean
-  onPress: () => void
-  icon: 'camera' | 'keypad'
-  label: string
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onPress}
-      aria-pressed={active}
-      className={cn(
-        'flex min-h-14 items-center justify-center gap-2 rounded-lg text-sm font-bold',
-        'focus-visible:outline-info focus-visible:outline-2 focus-visible:outline-offset-2',
-        active ? 'bg-ops-raise text-ops-ink' : 'text-ops-faint',
-      )}
-    >
-      <Icon name={icon} size={18} />
-      {label}
-    </button>
-  )
-}
-
-/**
- * The control room, talking to the gate.
- *
- * The broadcast event is the one event in the system that carries its own body, so
- * this renders it directly instead of refetching — a "stop admitting" that waited for
- * a round trip would be worth less than the round trip took.
- */
 function NoticeBanner({ notice, onDismiss }: { notice: Notice; onDismiss: () => void }) {
   return (
     <div
       role="alert"
       className={cn(
-        'flex items-start gap-3 px-4 py-3',
-        notice.severity === 'EMERGENCY' ? 'bg-stop text-ops' : 'bg-warn text-ops',
+        'flex items-start gap-3 px-4 py-3 border-b shadow-xs',
+        notice.severity === 'EMERGENCY'
+          ? 'bg-rose-50 border-rose-200 text-rose-900'
+          : 'bg-amber-50 border-amber-200 text-amber-900',
       )}
     >
-      <Icon name="alert" size={18} strokeWidth={2.5} className="mt-0.5 shrink-0" />
+      <Icon
+        name="alert"
+        size={18}
+        strokeWidth={2.5}
+        className={cn('mt-0.5 shrink-0', notice.severity === 'EMERGENCY' ? 'text-rose-600' : 'text-amber-600')}
+      />
       <div className="min-w-0 flex-1">
         <p className="text-sm font-extrabold">{notice.title}</p>
-        <p className="mt-0.5 text-sm leading-snug font-medium">{notice.body}</p>
+        <p className="mt-0.5 text-xs leading-snug font-medium opacity-90">{notice.body}</p>
       </div>
       <button
         type="button"
         onClick={onDismiss}
-        aria-label="Dismiss this message"
-        className="-mt-1 -mr-1 grid size-9 shrink-0 place-items-center rounded-md"
+        aria-label="Dismiss message"
+        className="-mt-1 -mr-1 grid size-8 shrink-0 place-items-center rounded-lg hover:bg-black/5"
       >
-        <Icon name="close" size={16} strokeWidth={2.5} />
+        <Icon name="close" size={15} strokeWidth={2.5} />
       </button>
     </div>
   )
 }
 
-/**
- * Who is holding the phone, what they have done, and how to hand it on.
- *
- * The shift figures reset on reload and are labelled as this device's, because they
- * are: the authoritative counts are in the admin console, and a volunteer comparing a
- * number here against the one on the control-room screen must not think either is
- * wrong.
- */
-function Footer({
-  volunteerName,
-  tally,
-  queued,
-}: {
-  volunteerName: string
-  tally: { admitted: number; refused: number }
-  queued: number
-}) {
-  return (
-    <div className="border-ops-line/70 flex items-center gap-3 border-t px-3 py-2">
-      <p className="text-ops-faint min-w-0 flex-1 truncate text-xs">
-        <span className="text-ops-soft font-semibold">{volunteerName}</span>
-        <span className="tnum ml-2">
-          {tally.admitted} in · {tally.refused} refused
-        </span>
-      </p>
-      <Handover queued={queued} />
-    </div>
-  )
-}
-
-/**
- * Passing the device to the next volunteer.
- *
- * Two things have to happen and the order is not negotiable: the queued scans must
- * have reached the server, then the student names must leave the device. Signing out
- * with a full outbox would strand check-ins on a phone nobody is watching, so the
- * control is refused rather than warned about — `clearIdentifyingData` deliberately
- * keeps the outbox, but a signed-out device has nobody to drain it.
- */
 function Handover({ queued }: { queued: number }) {
   const clerk = useClerk()
   const [armed, setArmed] = useState(false)
@@ -663,17 +766,15 @@ function Handover({ queued }: { queued: number }) {
 
   if (queued > 0) {
     return (
-      <p className="text-warn shrink-0 text-xs font-bold">
-        <span className="tnum">{queued}</span> to send — stay signed in
-      </p>
+      <span className="text-amber-800 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded text-xs font-bold shrink-0">
+        <strong className="tnum font-mono">{queued}</strong> scans pending sync — stay signed in
+      </span>
     )
   }
 
   return (
-    <OpsButton
-      size="sm"
-      variant={armed ? 'danger' : 'ghost'}
-      icon="shield"
+    <button
+      type="button"
       disabled={going}
       onClick={() => {
         if (!armed) {
@@ -688,9 +789,15 @@ function Handover({ queued }: { queued: number }) {
             setArmed(false)
           })
       }}
-      className="shrink-0"
+      className={cn(
+        'inline-flex items-center gap-1.5 rounded-lg px-3 py-1 text-xs font-bold border transition-all shrink-0',
+        armed
+          ? 'bg-rose-600 border-rose-600 text-white shadow-xs'
+          : 'bg-paper-tint border-slate-200 text-slate-600 hover:text-navy hover:bg-slate-100',
+      )}
     >
-      {going ? 'Signing out…' : armed ? 'Tap again to wipe' : 'Hand over'}
-    </OpsButton>
+      <Icon name="logout" size={13} />
+      <span>{going ? 'Signing out…' : armed ? 'Confirm Wipe & Sign Out' : 'Sign Out / Hand Over'}</span>
+    </button>
   )
 }
