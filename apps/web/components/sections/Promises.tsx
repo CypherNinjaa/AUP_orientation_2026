@@ -13,7 +13,7 @@ export function Promises() {
       <Container>
         <Reveal stagger={0.06}>
           <p data-reveal className="text-ink-faint mb-11 text-center text-lede">
-            By Wednesday evening you will have{' '}
+            By the end of the day you will have{' '}
             <HandNote tilt={-2} className="text-violet-deep text-[1.6em] align-middle">
               all five
             </HandNote>{' '}

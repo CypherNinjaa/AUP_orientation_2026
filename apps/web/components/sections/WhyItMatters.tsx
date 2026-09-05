@@ -19,7 +19,7 @@ export function WhyItMatters() {
             </h2>
             <p data-reveal className="text-lede text-ink-soft mb-4">
               School told you where to sit. University asks you to choose — electives, clubs,
-              mentors, how you spend a Tuesday afternoon. Orientation is the three days we spend
+              mentors, and how you spend your time. Orientation is the day we spend
               making those choices legible before they start counting.
             </p>
             <p data-reveal className="text-lede text-ink-soft mb-8">
@@ -34,7 +34,7 @@ export function WhyItMatters() {
             </p>
 
             <h3 data-reveal className="text-label text-ink-faint mb-4 uppercase">
-              Bring these on day one
+              Bring these on 14 September
             </h3>
             <ul className="mb-9 grid gap-x-8 gap-y-3 sm:grid-cols-2">
               {BRING.map((b) => (

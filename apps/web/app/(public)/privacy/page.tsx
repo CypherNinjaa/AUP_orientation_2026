@@ -99,7 +99,7 @@ export default function PrivacyPage() {
               </li>
               <li>Every single time it is viewed, that is written to an audit log.</li>
               <li>
-                <strong>It is deleted 30 days after the last day of orientation</strong>, by an
+                <strong>It is deleted 30 days after orientation day</strong>, by an
                 automated sweep. Nobody has to remember to do it.
               </li>
             </ul>

@@ -30,7 +30,7 @@ export function SiteFooter() {
           <div>
             <BrandMark tone="white" />
             <p className="mt-5 max-w-xs text-[0.9375rem] leading-relaxed">
-              {EVENT.programme} {EVENT.year}. Three days to arrive, explore and begin.
+              {EVENT.programme} {EVENT.year}. Your welcome to university life.
             </p>
             <p className="hand text-flame-mid mt-5 text-2xl">See you on campus.</p>
           </div>

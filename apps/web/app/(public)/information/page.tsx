@@ -135,7 +135,7 @@ export default function InformationPage() {
           <Reveal stagger={0.06}>
             <SectionHeading
               eyebrow="Getting here"
-              title="Every arrival, all three days, is through Gate 1"
+              title="Every arrival on 14 September is through Gate 1"
               lede={`${EVENT.venue.name}, ${EVENT.venue.street}, ${EVENT.venue.city}.`}
               align="left"
               className="mb-12 max-w-3xl"

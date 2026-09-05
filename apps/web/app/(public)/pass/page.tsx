@@ -110,7 +110,7 @@ export default async function PassPage() {
         eyebrow="Entry pass"
         title={
           <>
-            One pass, <span className="grad-text">three days</span>
+            One pass, <span className="grad-text">orientation day</span>
           </>
         }
         note={`and ${GUEST_ALLOWANCE}`}
@@ -145,7 +145,7 @@ export default async function PassPage() {
             <SectionHeading
               eyebrow="How it scans"
               title="Three codes, because one is a single point of failure"
-              lede="Fifteen thousand people arrive across three mornings. Every one of them gets in even if the network is down, the light is bad, or their screen is broken."
+              lede="Fifteen thousand people arrive on 14 September. Every one of them gets in even if the network is down, the light is bad, or their screen is broken."
               align="left"
               className="mb-14 max-w-3xl"
             />
@@ -198,7 +198,7 @@ export default async function PassPage() {
                 >
                   privacy policy
                 </Link>
-                , including the fact that your photograph is deleted 30 days after the last day.
+                , including the fact that your photograph is deleted 30 days after orientation day.
               </p>
             </Reveal>
 
@@ -260,7 +260,7 @@ export default async function PassPage() {
       <CtaBand
         icon="id"
         title="No pass yet?"
-        body={`Registering takes about two minutes. Your pass covers ${EVENT.dateRange} and brings ${GUEST_ALLOWANCE} with you.`}
+        body={`Registering takes about two minutes. Your pass covers orientation day (${EVENT.dateRange}) and brings ${GUEST_ALLOWANCE} with you.`}
       />
     </>
   )

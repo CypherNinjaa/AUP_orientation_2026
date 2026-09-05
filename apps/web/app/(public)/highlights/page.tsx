@@ -28,7 +28,7 @@ export default function HighlightsPage() {
           </>
         }
         note="long after the timetable is gone"
-        lede="Five moments across the three days. None of them are the parts you would guess from a schedule."
+        lede="Five moments from orientation day. None of them are the parts you would guess from a schedule."
         aside={<PhotoStack className="mx-auto max-w-md lg:max-w-none" />}
       />
 
@@ -60,7 +60,7 @@ export default function HighlightsPage() {
           <Reveal stagger={0.07}>
             <SectionHeading
               eyebrow="What makes it special"
-              title="Five moments, in the order the days give them to you"
+              title="Five moments, in the order the day gives them to you"
               align="left"
               className="mb-12 max-w-3xl"
             />
@@ -144,7 +144,7 @@ export default function HighlightsPage() {
         icon="heart"
         tint="flame"
         title="Be in the room for it"
-        body={`${EVENT.dateRange}. Register once and your pass covers all three days, plus ${GUEST_ALLOWANCE}.`}
+        body={`${EVENT.dateRange}. Register once and your pass covers orientation day, plus ${GUEST_ALLOWANCE}.`}
       />
     </>
   )

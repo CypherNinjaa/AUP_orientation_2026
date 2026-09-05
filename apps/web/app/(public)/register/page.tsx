@@ -19,7 +19,7 @@ import {
 
 export const metadata: Metadata = {
   title: 'Register',
-  description: `Register for ${EVENT.programme} ${EVENT.year} — four short steps, one pass covering all three days, and seats on it for the family coming with you.`,
+  description: `Register for ${EVENT.programme} ${EVENT.year} — four short steps, one pass for orientation day, and seats on it for the family coming with you.`,
 }
 
 /**
@@ -64,8 +64,8 @@ export default async function RegisterPage() {
             Get your <span className="grad-text">name</span> on the list
           </>
         }
-        note="once, for all three days"
-        lede={`Four short steps and you are done. One pass covers ${EVENT.dateRange}, and it brings ${config.maxCompanions === 1 ? 'somebody' : `up to ${String(config.maxCompanions)} people`} in with you.`}
+        note="one pass for orientation day"
+        lede={`Four short steps and you are done. One pass covers orientation day (${EVENT.dateRange}), and it brings ${config.maxCompanions === 1 ? 'somebody' : `up to ${String(config.maxCompanions)} people`} in with you.`}
         aside={
           <div className="bg-card ring-rule/25 shadow-card rounded-3xl p-7 ring-1 sm:p-8">
             <h2 className="text-label text-flame flex items-center gap-2.5 uppercase">
@@ -152,7 +152,7 @@ export default async function RegisterPage() {
         icon="note"
         tint="flame"
         title="While you wait"
-        body="What to bring, how to reach Bailey Road, and what happens at Gate 1 on the morning of day one."
+        body="What to bring, how to reach Bailey Road, and what happens at Gate 1 on orientation morning."
         cta="Practical information"
         href="/information"
       />

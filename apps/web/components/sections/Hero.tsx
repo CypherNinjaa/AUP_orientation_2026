@@ -152,8 +152,8 @@ export function Hero() {
           </p>
 
           <p data-hero data-hero-lede className="text-lede text-ink-soft max-w-lg">
-            On the first morning you will not know where the library is, or anyone&rsquo;s name.
-            Three days later you will know both. That is what orientation is for.
+            When you arrive you will not know where the library is, or anyone&rsquo;s name.
+            By the end of the day you will know both. That is what orientation is for.
           </p>
 
           {/* Flat, not boxed: these are three facts, not three products. */}
@@ -184,7 +184,7 @@ export function Hero() {
               variant="secondary"
               className="w-full sm:w-auto"
             >
-              See the three days
+              See the schedule
             </LinkButton>
           </div>
         </div>

@@ -79,24 +79,18 @@ export const EVENT = {
   programme: 'Orientation Programme',
   year: '2026',
 
-  /** Doors open on day one. Drives the countdown. */ // unconfirmed
+  /** Doors open on orientation day. Drives the countdown. */ // unconfirmed
   gatesOpenAt: new Date('2026-09-14T08:30:00+05:30'),
   /** First session begins. */ // unconfirmed
   startsAt: new Date('2026-09-14T09:00:00+05:30'),
   /** Last session ends. */ // unconfirmed
-  endsAt: new Date('2026-09-16T17:00:00+05:30'),
+  endsAt: new Date('2026-09-14T17:30:00+05:30'),
 
-  dateRange: '14 – 16 September 2026', // unconfirmed
+  dateRange: '14 September 2026', // unconfirmed
   /**
    * The gate time, not the first-session time.
-   *
-   * It used to read "09:00 AM onwards", which contradicted everything else on
-   * the site: the gate opens at 08:30, and BRING tells people to arrive about
-   * thirty minutes before their first session. Somebody who trusted the hero
-   * would turn up at 09:00 and be late for a 09:00 session. Also 24-hour, which
-   * is the format every other time on the site uses.
    */
-  timeNote: 'Gates open 08:30 on day one',
+  timeNote: 'Gates open 08:30',
 
   venue: {
     name: 'Amity University Patna',
@@ -165,18 +159,18 @@ export const LEGACY_STATS = [
 ] as const
 
 /* -------------------------------------------------------------------------- */
-/* Three days                                                                 */
+/* Orientation Day schedule                                                   */
 /* -------------------------------------------------------------------------- */
 
 export const DAYS: readonly EventDay[] = [
   {
     id: 'day-1',
-    label: 'Day 1',
+    label: 'Orientation Day',
     date: '14 Sep',
     iso: '2026-09-14', // unconfirmed
     weekday: 'Monday',
-    theme: 'Arrive',
-    blurb: 'Registration, the welcome ceremony, and your first look at the people you will graduate with.',
+    theme: 'Welcome & Induction',
+    blurb: 'Registration, inaugural ceremony, faculty introduction, campus tour, and programme orientation.',
     sessions: [
       {
         from: '08:30',
@@ -190,7 +184,7 @@ export const DAYS: readonly EventDay[] = [
         from: '09:30',
         to: '10:30',
         kind: 'ceremony',
-        title: 'Inauguration',
+        title: 'Inauguration & lamp lighting',
         detail: 'Lamp lighting, the university song, and a welcome from the Vice Chancellor.',
         venue: 'Main Auditorium', // unconfirmed
       },
@@ -198,153 +192,49 @@ export const DAYS: readonly EventDay[] = [
         from: '10:30',
         to: '11:15',
         kind: 'talk',
-        title: "Chancellor's address",
-        detail: 'Words of wisdom and vision for your journey ahead.',
+        title: "Chancellor's address & vision",
+        detail: 'Words of wisdom and vision for your academic journey ahead.',
         venue: 'Main Auditorium', // unconfirmed
       },
       {
         from: '11:15',
         to: '12:30',
         kind: 'talk',
-        title: 'Meet your faculty',
-        detail: 'Programme-wise breakouts. Meet your mentors and heads of department.',
-        venue: 'Respective block', // unconfirmed
+        title: 'Meet your faculty & department orientation',
+        detail: 'Programme-wise breakouts. Meet your mentors, faculty coordinators and heads of department.',
+        venue: 'Respective academic blocks', // unconfirmed
       },
       {
         from: '12:30',
         to: '13:30',
         kind: 'break',
         title: 'Lunch',
-        detail: 'Sit with someone you have not met. That is the whole assignment.',
+        detail: 'Provided at the central canteen for all students and accompanying guests.',
         venue: 'Central Canteen', // unconfirmed
       },
       {
-        // Two hours, not ninety minutes: the copy elsewhere promises a
-        // two-hour walk, and the schedule is the thing people plan against.
         from: '13:30',
-        to: '15:30',
-        kind: 'tour',
-        title: 'Campus & facilities tour',
-        detail: 'Library, labs, sports complex, hostel wings and the medical room.',
-        venue: 'Campus-wide',
-      },
-      {
-        from: '15:30',
-        to: '17:00',
-        kind: 'social',
-        title: 'Icebreakers',
-        detail: 'Mixed groups of twelve, led by senior students. No slides.',
-        venue: 'Activity Lawn', // unconfirmed
-      },
-    ],
-  },
-  {
-    id: 'day-2',
-    label: 'Day 2',
-    date: '15 Sep',
-    iso: '2026-09-15', // unconfirmed
-    weekday: 'Tuesday',
-    theme: 'Explore',
-    blurb: 'How the academics actually work, what the clubs do, and where you fit.',
-    sessions: [
-      {
-        from: '09:00',
-        to: '10:00',
+        to: '15:00',
         kind: 'talk',
-        title: 'How your degree works',
-        detail: 'Credits, electives, attendance, internal assessment — in plain language.',
-        venue: 'Main Auditorium', // unconfirmed
-      },
-      {
-        from: '10:00',
-        to: '11:30',
-        kind: 'talk',
-        title: 'Academic support & wellbeing',
-        detail: 'Counselling, accessibility support, anti-ragging cell and the student grievance route.',
-        venue: 'Seminar Hall A', // unconfirmed
-      },
-      {
-        from: '11:30',
-        to: '13:00',
-        kind: 'social',
-        title: 'Clubs & societies fair',
-        detail: 'Thirty-plus stalls: robotics, debate, dance, photography, e-cell, NSS and more.',
-        venue: 'Central Plaza', // unconfirmed
-      },
-      {
-        from: '13:00',
-        to: '14:00',
-        kind: 'break',
-        title: 'Lunch',
-        detail: 'Club sign-up sheets stay open through the break.',
-        venue: 'Central Canteen', // unconfirmed
-      },
-      {
-        from: '14:00',
-        to: '15:30',
-        kind: 'talk',
-        title: 'Placements & industry',
-        detail: 'What recruiters look for, from first year onward. With alumni on the panel.',
-        venue: 'Main Auditorium', // unconfirmed
-      },
-      {
-        from: '15:30',
-        to: '17:00',
-        kind: 'tour',
-        title: 'Lab & studio open house',
-        detail: 'Walk into the labs. Touch the equipment. Ask the technicians anything.',
-        venue: 'Academic blocks', // unconfirmed
-      },
-    ],
-  },
-  {
-    id: 'day-3',
-    label: 'Day 3',
-    date: '16 Sep',
-    iso: '2026-09-16', // unconfirmed
-    weekday: 'Wednesday',
-    theme: 'Begin',
-    blurb: 'Paperwork closed, timetable in hand, and a night you will bring up for four years.',
-    sessions: [
-      {
-        from: '09:00',
-        to: '10:30',
-        kind: 'checkin',
-        title: 'Documents & help desk',
-        detail: 'Final verification, fee queries, hostel allotment, scholarship paperwork.',
-        venue: 'Admin Block', // unconfirmed
-      },
-      {
-        from: '10:30',
-        to: '12:00',
-        kind: 'talk',
-        title: 'Your timetable & first week',
-        detail: 'Collect your schedule, find your rooms, meet your class representative.',
-        venue: 'Respective block', // unconfirmed
-      },
-      {
-        from: '12:00',
-        to: '13:00',
-        kind: 'break',
-        title: 'Lunch',
-        detail: 'Last one before classes are real.',
-        venue: 'Central Canteen', // unconfirmed
-      },
-      {
-        from: '13:00',
-        to: '14:30',
-        kind: 'talk',
-        title: 'Parents & guardians session',
-        detail: 'For the family member who came with you. Hostel, safety, fees, contact points.',
-        venue: 'Seminar Hall A', // unconfirmed
+        title: 'Academic overview, degree structure & support',
+        detail: 'Credits, electives, examination system, counselling, anti-ragging cell, and student support.',
+        venue: 'Main Auditorium & Seminar Halls', // unconfirmed
       },
       {
         from: '15:00',
-        to: '17:00',
+        to: '16:15',
+        kind: 'tour',
+        title: 'Campus & facilities tour',
+        detail: 'Guided walk through the library, labs, sports complex, hostel wings, and medical centre.',
+        venue: 'Campus-wide',
+      },
+      {
+        from: '16:15',
+        to: '17:30',
         kind: 'social',
-        title: 'Cultural evening',
-        detail: 'Student performances, the batch photograph, and a close from the faculty.',
-        venue: 'Open-Air Theatre', // unconfirmed
+        title: 'Clubs fair, senior interactions & high tea',
+        detail: 'Student clubs exhibition, interaction with senior mentors, and informal welcome gathering.',
+        venue: 'Central Plaza & Activity Lawn', // unconfirmed
       },
     ],
   },
@@ -363,7 +253,7 @@ export const HIGHLIGHTS = [
   {
     tint: 'violet',
     icon: 'sunrise',
-    kicker: 'Day 1, 09:30',
+    kicker: '14 Sep, 09:30',
     title: 'The lamp lighting',
     body: 'The whole batch in one hall for the first and — until convocation — the last time.',
     more: 'The lamp is lit, the university song is sung, and the Vice Chancellor welcomes the intake by name of programme. It takes an hour. Most people remember where they were sitting.',
@@ -371,34 +261,34 @@ export const HIGHLIGHTS = [
   {
     tint: 'flame',
     icon: 'spark',
-    kicker: 'Day 2, 11:30',
-    title: 'The clubs fair',
+    kicker: '14 Sep, 16:15',
+    title: 'The clubs fair & high tea',
     body: 'Thirty-plus stalls in the plaza. Most people find their people here, not in class.',
-    more: 'Robotics, debate, dance, photography, the e-cell, NSS and more, all in the plaza with sign-up sheets open through lunch. Join two. Drop one in October. That is how everybody does it.',
+    more: 'Robotics, debate, dance, photography, the e-cell, NSS and more, all in the plaza with sign-up sheets open. Join two. Drop one in October. That is how everybody does it.',
   },
   {
     tint: 'sky',
     icon: 'compass',
-    kicker: 'Day 1, 13:30',
+    kicker: '14 Sep, 15:00',
     title: 'The campus walk',
-    body: 'Two hours, one loop, and by the end you can find the library without your phone.',
-    more: 'Led by second and third years who will tell you which lab has the good air conditioning and which canteen counter moves fastest. Two hours on your feet, so wear shoes you can stand in.',
+    body: 'One loop across the campus, and by the end you can find the library without your phone.',
+    more: 'Led by second and third years who will tell you which lab has the good air conditioning and which canteen counter moves fastest. An active walk, so wear shoes you can stand in.',
   },
   {
     tint: 'flame',
     icon: 'heart',
-    kicker: 'Day 3, 15:00',
-    title: 'The cultural evening',
-    body: 'Your seniors perform, your batch photograph is taken, and nobody leaves early.',
-    more: 'Two hours at the open-air theatre: student bands, dance sets, the batch photograph, and a close from the faculty. Guests are welcome. It is the informal one — come as you are.',
+    kicker: '14 Sep, 11:15',
+    title: 'Faculty & mentor breakouts',
+    body: 'Meet the professors, heads of department, and senior mentors in your field.',
+    more: 'Department-specific sessions to walk through your syllabus, lab spaces, and academic expectations before classes officially begin.',
   },
   {
     tint: 'violet',
     icon: 'people',
-    kicker: 'All three days',
+    kicker: 'Orientation Day',
     title: 'The senior mentors',
     body: 'Second and third years volunteer as guides. Ask them the questions you would not ask a professor.',
-    more: 'Every group of twelve gets a mentor for the full three days. They queue with you, eat with you, and answer the questions that feel too small to email about. Most people stay in touch with theirs.',
+    more: 'Every group of twelve gets a mentor for orientation day. They queue with you, eat with you, and answer the questions that feel too small to email about. Most people stay in touch with theirs.',
   },
 ] as const
 
@@ -412,7 +302,7 @@ export const BRING = [
   { label: 'Photo ID', note: 'Aadhaar, passport or driving licence.' },
   { label: 'Two passport photographs', note: 'For your student ID card.' },
   { label: 'A refillable water bottle', note: 'Refill points on every floor.' },
-  { label: 'Comfortable shoes', note: 'Day one includes a two-hour campus walk.' },
+  { label: 'Comfortable shoes', note: 'Includes an afternoon campus walk.' },
 ] as const
 
 /* -------------------------------------------------------------------------- */
@@ -422,11 +312,11 @@ export const BRING = [
 export const FAQS = [
   {
     q: 'Is attending orientation compulsory?',
-    a: 'Yes. Orientation is part of your programme induction and attendance is recorded against your enrolment. If you cannot attend for a medical or travel reason, email the orientation desk before the event so it can be noted.',
+    a: 'Yes. Orientation is part of your programme induction and attendance is recorded against your enrolment on 14 September. If you cannot attend for a medical or travel reason, email the orientation desk before the event so it can be noted.',
   },
   {
     q: 'Can a parent or guardian come with me?',
-    a: `You may bring ${GUEST_ALLOWANCE}. Add them while registering and they will appear on your pass — there is no separate guest pass to collect. Day 3 has a dedicated session for guardians covering hostel, safety and fees.`,
+    a: `You may bring ${GUEST_ALLOWANCE}. Add them while registering and they will appear on your pass — there is no separate guest pass to collect. Accompanying guardians can attend sessions and the campus tour alongside you.`,
   },
   {
     q: 'What if I have not received my enrolment number yet?',
@@ -442,11 +332,11 @@ export const FAQS = [
   },
   {
     q: 'What should I wear?',
-    a: 'Smart casual is right for all three days. Day 1 includes a long campus walk, so choose shoes you can stand in for two hours. The cultural evening on Day 3 is informal.',
+    a: 'Smart casual is right for the day. Includes a campus walk, so choose shoes you can stand and walk comfortably in.',
   },
   {
     q: 'Is lunch provided?',
-    a: 'Yes, lunch is provided on all three days at the central canteen and is included — you do not need to pay or carry a coupon. Tell us about dietary requirements while registering.',
+    a: 'Yes, lunch is provided at the central canteen and is included for all students and registered guests — you do not need to pay or carry a coupon. Tell us about dietary requirements while registering.',
   },
   {
     q: 'I lost my pass. What now?',
@@ -465,7 +355,7 @@ export const FAQS = [
  */
 export const NAV = [
   { href: '/', label: 'Home', hint: 'start here' },
-  { href: '/about', label: 'About', hint: 'why three days' },
+  { href: '/about', label: 'About', hint: 'the day ahead' },
   { href: '/schedule', label: 'Schedule', hint: 'hour by hour' },
   { href: '/highlights', label: 'Highlights', hint: 'the good bits' },
   { href: '/information', label: 'Information', hint: 'what to bring' },
@@ -482,32 +372,31 @@ export const NAV = [
 export const SESSION_COUNT = DAYS.reduce((n, d) => n + d.sessions.length, 0)
 
 /**
- * The argument for the shape of the programme. This is the question the About
- * page exists to answer — "why three days and not one assembly" — so it is
- * structured as three claims, one per day, in the order you will live them.
+ * The argument for the shape of the programme. Structured across the three
+ * distinct phases of orientation day.
  */
 export const WHY_THREE_DAYS = [
   {
     theme: 'Arrive',
-    label: 'Day one',
-    title: 'One day is enough to be processed. It is not enough to arrive.',
-    body: 'A single assembly gets you a folder and a seat number. Day one is built so that by the time you go home you have been welcomed by name, walked the campus, and eaten lunch beside twenty people from your own batch.',
+    label: 'Morning',
+    title: 'One morning to welcome you and get your bearings.',
+    body: 'Registration, welcome kit, inauguration, and an official welcome by name from the Vice Chancellor and faculty heads.',
   },
   {
     theme: 'Explore',
-    label: 'Day two',
-    title: 'The things that decide your first year are not on your timetable.',
-    body: 'Credits, electives, attendance rules, who to ask when you are stuck, which club keeps you on campus past five. Day two puts all of it in one place while the stakes are still zero.',
+    label: 'Afternoon',
+    title: 'Understand how your degree works and meet your mentors.',
+    body: 'Credits, electives, examination rules, student support cells, and academic orientation breakouts with your department mentors.',
   },
   {
     theme: 'Begin',
-    label: 'Day three',
-    title: 'You should leave with paperwork closed and a plan in hand.',
-    body: 'Documents verified, hostel sorted, fee questions answered, timetable collected, rooms found. Then the cultural evening, because the batch you will graduate with should meet each other properly before term starts.',
+    label: 'Evening',
+    title: 'Tour the campus, meet the clubs, and prepare for day one of classes.',
+    body: 'Guided campus walk through labs and library, the clubs and societies showcase, and senior student interactions over high tea.',
   },
 ] as const
 
-/** What actually happens across the three days, in eight lines. */
+/** What actually happens across the orientation day, in eight points. */
 export const ABOUT_EXPECT = [
   {
     icon: 'flag',
@@ -556,7 +445,7 @@ export const WHO_RUNS_IT = [
   {
     icon: 'shield',
     title: 'The orientation office',
-    body: 'Plans the three days, answers the help desk email, and owns every date on this site.',
+    body: 'Plans the orientation day, answers the help desk email, and owns every date on this site.',
   },
   {
     icon: 'cap',
@@ -575,9 +464,9 @@ export const WHO_RUNS_IT = [
 /* -------------------------------------------------------------------------- */
 
 export const SCHEDULE_NOTES = [
-  'Arrive about thirty minutes before your first session. The gate queue is longest at 08:30 on day one.',
-  'Carry your pass and one photo ID every day — both are checked at the gate, every morning.',
-  'Smart casual, and shoes you can stand in. Day one includes a two-hour campus tour.',
+  'Arrive about thirty minutes before your first session. The gate queue is longest at 08:30.',
+  'Carry your pass and one photo ID — both are checked at the gate in the morning.',
+  'Smart casual, and shoes you can stand in. Includes an afternoon campus tour.',
   'Individual times can shift by a few minutes on the day. This page is the live version — check it the night before.',
 ] as const
 
@@ -591,7 +480,7 @@ export const SCHEDULE_NOTES = [
  * prospectus. Every other figure here is derived or stated elsewhere on the site.
  */
 export const HIGHLIGHT_STATS = [
-  { icon: 'calendar', value: '3', label: 'Days on campus' },
+  { icon: 'calendar', value: '1', label: 'Day on campus' },
   { icon: 'clock', value: String(SESSION_COUNT), label: 'Sessions in total' },
   { icon: 'spark', value: '30+', label: 'Clubs at the fair' },
   { icon: 'cap', value: '50+', label: 'Programmes represented' },
@@ -614,7 +503,7 @@ export const BEYOND = [
   },
   {
     title: 'Whoever sits next to you at lunch',
-    body: 'Day one seats you in mixed groups on purpose. It is the whole assignment.',
+    body: 'Seated in mixed groups on purpose. It is part of the experience.',
   },
 ] as const
 
@@ -624,7 +513,7 @@ export const BEYOND = [
 
 /** The four things people check before anything else. */
 export const ARRIVAL_TILES = [
-  { icon: 'calendar', label: 'When', value: EVENT.dateRange, note: 'Gates open 08:30 on day one' },
+  { icon: 'calendar', label: 'When', value: EVENT.dateRange, note: 'Gates open 08:30' },
   { icon: 'pin', label: 'Where', value: EVENT.venue.name, note: `${EVENT.venue.street} — Gate 1` },
   { icon: 'cap', label: 'Who', value: EVENT.audience.headline, note: EVENT.audience.detail },
   { icon: 'people', label: 'Guests', value: `Up to ${MAX_GUESTS_WORD}`, note: 'Added while you register' },
@@ -639,7 +528,7 @@ export const GETTING_HERE = [
   {
     icon: 'bus',
     title: 'By road',
-    body: 'The campus is on Bailey Road. Open the map pin and your app will route you to Gate 1, which is where every arrival on all three days happens.',
+    body: 'The campus is on Bailey Road. Open the map pin and your app will route you to Gate 1, which is where every arrival on 14 September happens.',
   },
   {
     icon: 'compass',
@@ -654,7 +543,7 @@ export const GETTING_HERE = [
   {
     icon: 'alert',
     title: 'Dropping off',
-    body: 'Visitor parking is tight on the morning of day one. If family are dropping you, use Gate 1 and a volunteer will direct the car.', // unconfirmed
+    body: 'Visitor parking is tight on the morning of orientation. If family are dropping you, use Gate 1 and a volunteer will direct the car.', // unconfirmed
   },
 ] as const
 
@@ -697,12 +586,12 @@ export const PRACTICALS = [
   {
     icon: 'shirt',
     title: 'What to wear',
-    body: 'Smart casual for all three days. Shoes you can walk two hours in on day one. The cultural evening is informal.',
+    body: 'Smart casual for the day. Shoes you can walk comfortably in for the afternoon campus tour.',
   },
   {
     icon: 'utensils',
     title: 'Food',
-    body: 'Lunch is provided on all three days at the central canteen and is included — no coupon, nothing to pay. Tell us about dietary requirements while registering.',
+    body: 'Lunch is provided at the central canteen and is included for all students and registered guests — no coupon, nothing to pay. Tell us about dietary requirements while registering.',
   },
   {
     icon: 'sunrise',
@@ -717,12 +606,12 @@ export const PRACTICALS = [
   {
     icon: 'headset',
     title: 'If you feel unwell',
-    body: 'The medical room is staffed through all three days and is on the campus tour. Any volunteer in a lanyard can take you there.',
+    body: 'The medical room is staffed throughout orientation day and is on the campus tour. Any volunteer in a lanyard can take you there.',
   },
   {
     icon: 'camera',
     title: 'Photographs',
-    body: 'Sessions and the cultural evening are photographed for university use. Tell a volunteer or the help desk if you would rather not appear.',
+    body: 'Sessions and the campus tour are photographed for university use. Tell a volunteer or the help desk if you would rather not appear.',
   },
 ] as const
 
@@ -761,7 +650,7 @@ export const CONTACT_CHANNELS = [
     title: 'Help desk, on the day',
     value: 'Gate 1 foyer',
     href: null,
-    note: 'From 08:00, all three days',
+    note: 'From 08:00 on 14 September',
   },
 ] as const
 
@@ -788,7 +677,7 @@ export const REGISTER_STEPS = [
   {
     icon: 'people',
     title: 'Your guests',
-    body: 'Up to two people can come in on your pass, for all three days — your father, your mother, or a guardian standing in for them. Just their names. Skip it if you are coming alone.',
+    body: 'Up to two people can come in on your pass — your father, your mother, or a guardian standing in for them. Just their names. Skip it if you are coming alone.',
     need: 'Their names, if anyone is coming with you',
   },
   {

@@ -40,7 +40,7 @@ export function Welcome() {
             className="mt-6 text-[1.625rem] leading-[1.35] font-extrabold tracking-tight text-white sm:text-[2.125rem]"
           >
             You have already done the hard part. You got in. The only thing left is to walk in on the
-            first morning, and we have built three days to make that easy.
+            morning of 14 September, and we have built orientation day to make that easy.
           </p>
 
           <p data-reveal className="mt-7">

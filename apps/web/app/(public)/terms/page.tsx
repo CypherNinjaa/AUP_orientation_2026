@@ -60,7 +60,7 @@ export default function TermsPage() {
                 programme and your photograph, and it is checked against your face at the gate.
               </li>
               <li>
-                It covers <strong>all three days</strong> — {EVENT.dateRange} — and you may bring{' '}
+                It covers <strong>orientation day</strong> — {EVENT.dateRange} — and you may bring{' '}
                 <strong>{GUEST_ALLOWANCE}</strong> on it. They enter with you, not separately.
               </li>
               <li>

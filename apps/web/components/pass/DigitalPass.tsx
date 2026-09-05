@@ -345,8 +345,8 @@ function Revoked({ reason }: { reason: string | null }) {
  * Already used.
  *
  * Not an error, and phrased so it does not read like one. Every pass is used once
- * on the first morning and stays used for the remaining two days — a student
- * opening this page on day two must not think something has gone wrong.
+ * at the gate and stays used for the rest of the day — a student
+ * opening this page later must not think something has gone wrong.
  */
 function Used({ at }: { at: string | null }) {
   return (
@@ -359,7 +359,7 @@ function Used({ at }: { at: string | null }) {
           <h3 className="text-navy text-[1.0625rem] font-bold">You are checked in</h3>
           <p className="text-ink-soft mt-1.5 text-[0.9375rem] leading-relaxed">
             Scanned {at !== null ? formatWhen(at) : 'at the gate'}. Keep the pass — it is your
-            identification for the rest of the three days, and the sessions inside do not scan it
+            identification for the rest of orientation day, and the sessions inside do not scan it
             again.
           </p>
         </div>

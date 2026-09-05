@@ -45,7 +45,7 @@ export const metadata: Metadata = {
     template: `%s — Orientation ${EVENT.year}`,
   },
   description:
-    'Three days that turn a campus you have never seen into the place you belong. ' +
+    'The day that turns a campus you have never seen into the place you belong. ' +
     `${EVENT.institution} welcomes the ${EVENT.year} intake — ${EVENT.dateRange}.`,
   applicationName: `Orientation ${EVENT.year}`,
   authors: [{ name: EVENT.institution }],

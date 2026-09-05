@@ -55,41 +55,47 @@ export function ScheduleBoard({
 
   return (
     <div className={className}>
-      {/* ---- day tabs ----------------------------------------------------
-          Three equal cards on a phone with the date stacked under the label:
-          the inline pills need ~145px each, so on a 375px screen the third
-          one wrapped onto a line of its own and stopped reading as a set. */}
-      <div
-        role="tablist"
-        aria-label="Choose a day"
-        className="grid grid-cols-3 gap-2 sm:flex sm:flex-wrap sm:gap-2.5"
-      >
-        {days.map((d, i) => {
-          const on = i === active
-          return (
-            <button
-              key={d.id}
-              role="tab"
-              type="button"
-              aria-selected={on}
-              aria-controls={`panel-${d.id}`}
-              id={`tab-${d.id}`}
-              onClick={() => setActive(i)}
-              className={cn(
-                'flex flex-col items-center rounded-2xl px-3 py-2.5 text-[0.9375rem] font-bold transition-all duration-300 ease-[var(--ease-out-soft)] sm:flex-row sm:items-baseline sm:gap-2 sm:rounded-full sm:px-5 sm:py-3',
-                on
-                  ? 'grad-pair shadow-card text-white'
-                  : 'bg-card text-navy ring-rule/50 hover:ring-violet/60 ring-1',
-              )}
-            >
-              {d.label}
-              <span className={cn('text-[0.8125rem] font-semibold', on ? 'text-white/75' : 'text-ink-faint')}>
-                {d.date}
-              </span>
-            </button>
-          )
-        })}
-      </div>
+      {/* ---- day tabs / header ------------------------------------------ */}
+      {days.length > 1 ? (
+        <div
+          role="tablist"
+          aria-label="Choose a day"
+          className="grid grid-cols-3 gap-2 sm:flex sm:flex-wrap sm:gap-2.5"
+        >
+          {days.map((d, i) => {
+            const on = i === active
+            return (
+              <button
+                key={d.id}
+                role="tab"
+                type="button"
+                aria-selected={on}
+                aria-controls={`panel-${d.id}`}
+                id={`tab-${d.id}`}
+                onClick={() => setActive(i)}
+                className={cn(
+                  'flex flex-col items-center rounded-2xl px-3 py-2.5 text-[0.9375rem] font-bold transition-all duration-300 ease-[var(--ease-out-soft)] sm:flex-row sm:items-baseline sm:gap-2 sm:rounded-full sm:px-5 sm:py-3',
+                  on
+                    ? 'grad-pair shadow-card text-white'
+                    : 'bg-card text-navy ring-rule/50 hover:ring-violet/60 ring-1',
+                )}
+              >
+                {d.label}
+                <span className={cn('text-[0.8125rem] font-semibold', on ? 'text-white/75' : 'text-ink-faint')}>
+                  {d.date}
+                </span>
+              </button>
+            )
+          })}
+        </div>
+      ) : (
+        <div className="flex items-center gap-3">
+          <span className="grad-pair shadow-card inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-[0.9375rem] font-bold text-white">
+            <span>{day.label}</span>
+            <span className="text-white/75 font-semibold">· {day.weekday}, {day.date}</span>
+          </span>
+        </div>
+      )}
 
       {/* ---- panel ------------------------------------------------------- */}
       <div

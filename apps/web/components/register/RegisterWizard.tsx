@@ -782,9 +782,9 @@ function GuestsPanel({
       </div>
 
       <p className="text-ink-soft border-rule/50 mt-7 border-t pt-5 text-[0.875rem] leading-relaxed">
-        <strong className="text-navy font-bold">One pass, all three days.</strong> Whoever you name
-        here walks in beside you each morning — they do not get a pass of their own, and they cannot
-        come in without you.
+        <strong className="text-navy font-bold">One pass for orientation day.</strong> Whoever you name
+        here walks in beside you at the gate — they do not get a separate pass, and they come in
+        alongside you.
       </p>
     </div>
   )

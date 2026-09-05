@@ -107,7 +107,7 @@ export default function AccessibilityPage() {
               <li>Reserved seating near the front, near an exit, or beside your companion.</li>
               <li>An interpreter, a note-taker, or captions for a session.</li>
               <li>
-                A quiet space to step out to. Three days and several thousand people is a lot, and
+                A quiet space to step out to. A full day with several thousand people is a lot, and
                 needing a room with the volume turned down is normal.
               </li>
               <li>

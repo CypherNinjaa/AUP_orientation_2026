@@ -10,9 +10,9 @@ export function SchedulePreview() {
       <Container>
         <Reveal>
           <SectionHeading
-            eyebrow="Three days"
-            title="Arrive, explore, begin"
-            lede="Each day has one job. Nothing is optional, nothing runs past five, and there is a break every ninety minutes."
+            eyebrow="Orientation Schedule"
+            title="Your day on campus"
+            lede="A structured single-day programme on 14 September. Clear sessions, guided campus tour, faculty interactions, and lunch provided."
             className="mb-12"
           />
           <div data-reveal>
@@ -20,7 +20,7 @@ export function SchedulePreview() {
           </div>
           <div data-reveal className="mt-10 flex justify-center">
             <LinkButton href="/schedule" variant="secondary" size="lg" arrow>
-              Full three-day schedule
+              Full orientation schedule
             </LinkButton>
           </div>
         </Reveal>

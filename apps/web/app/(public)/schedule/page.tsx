@@ -10,7 +10,7 @@ import { DAYS, EVENT, SCHEDULE_NOTES, SESSION_COUNT } from '@/lib/event'
 
 export const metadata: Metadata = {
   title: 'Schedule',
-  description: `Hour by hour across all three days of ${EVENT.programme} ${EVENT.year} — ${SESSION_COUNT} sessions, with venues.`,
+  description: `Hour by hour for ${EVENT.programme} ${EVENT.year} on ${EVENT.dateRange} — ${SESSION_COUNT} sessions, with venues.`,
 }
 
 export default function SchedulePage() {
@@ -20,15 +20,15 @@ export default function SchedulePage() {
         crumb="Schedule"
         eyebrow={`${EVENT.institution} · ${EVENT.year}`}
         title="Schedule"
-        note="hour by hour, all three days"
-        lede={`Every session, with the room it happens in. ${SESSION_COUNT} in total across the three days — nothing here is optional, and nothing here runs twice.`}
+        note="hour by hour, 14 September"
+        lede={`Every session, with the room it happens in. ${SESSION_COUNT} in total on orientation day — nothing here is optional, and nothing here runs twice.`}
         aside={
           <dl className="bg-card ring-rule/30 shadow-card divide-rule/40 divide-y rounded-3xl px-7 py-2 ring-1">
             {[
-              { icon: 'calendar' as const, label: 'Dates', value: EVENT.dateRange },
-              { icon: 'clock' as const, label: 'Timings', value: 'Day one from 08:30, then 09:00' },
+              { icon: 'calendar' as const, label: 'Date', value: EVENT.dateRange },
+              { icon: 'clock' as const, label: 'Timings', value: '08:30 to 17:30 (Gates open 08:30)' },
               { icon: 'pin' as const, label: 'Venue', value: `${EVENT.venue.name} — Gate 1` },
-              { icon: 'utensils' as const, label: 'Lunch', value: 'Provided, all three days' },
+              { icon: 'utensils' as const, label: 'Lunch', value: 'Provided on orientation day' },
             ].map((r) => (
               <div key={r.label} className="flex items-start gap-4 py-5">
                 <IconChip name={r.icon} tint="violet" size={36} />
@@ -81,7 +81,7 @@ export default function SchedulePage() {
                 data-reveal
                 className="bg-card ring-rule/25 shadow-soft rounded-2xl p-7 ring-1"
               >
-                <h2 className="text-navy text-[1.0625rem] font-bold">The three days, counted</h2>
+                <h2 className="text-navy text-[1.0625rem] font-bold">Orientation Day, counted</h2>
                 <dl className="divide-rule/40 mt-4 divide-y">
                   {DAYS.map((d) => (
                     <div key={d.id} className="flex items-baseline justify-between gap-4 py-3">
@@ -111,7 +111,7 @@ export default function SchedulePage() {
                 <div className="relative">
                   <h2 className="text-[1.0625rem] font-bold text-white">Put it in your calendar</h2>
                   <p className="mt-2 text-[0.9375rem] leading-relaxed text-white/90">
-                    Downloads all three days as one file. It opens in Google Calendar, Apple
+                    Downloads the full orientation schedule. It opens in Google Calendar, Apple
                     Calendar and Outlook.
                   </p>
                   <div className="mt-5 flex flex-col gap-2.5 sm:flex-row lg:flex-col">

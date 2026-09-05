@@ -16,10 +16,10 @@ import { ABOUT_EXPECT, EVENT, SESSION_COUNT, WHO_RUNS_IT, WHY_THREE_DAYS } from 
 export const metadata: Metadata = {
   title: 'About',
   description:
-    'Why orientation runs for three days, what happens on each of them, and who you will be dealing with when you arrive.',
+    'What happens on orientation day, how the sessions are structured, and who you will be dealing with when you arrive.',
 }
 
-/** Day one violet, day two flame, day three navy — the same order as the schedule tabs. */
+/** Morning violet, afternoon flame, evening navy — the three phases of orientation day. */
 const DAY_ACCENT = ['bg-violet', 'bg-flame-bright', 'bg-navy-line'] as const
 
 export default function AboutPage() {
@@ -33,10 +33,10 @@ export default function AboutPage() {
             The start of something <span className="grad-text">bigger</span> than a timetable
           </>
         }
-        lede={`${EVENT.programme} ${EVENT.year} is ${SESSION_COUNT} sessions across three days, built around one idea: nobody should have to work out how university functions while it is already counting.`}
+        lede={`${EVENT.programme} ${EVENT.year} is ${SESSION_COUNT} structured sessions on 14 September, built around one idea: nobody should have to work out how university functions while it is already counting.`}
         aside={
           <QuoteCard
-            quote="Orientation is not an event you attend. It is the first three days of the four years."
+            quote="Orientation is not just an event you attend. It is day one of your four years."
             note="Let's begin together!"
           />
         }
@@ -46,14 +46,14 @@ export default function AboutPage() {
         </LinkButton>
       </PageHeader>
 
-      {/* ---- why three days --------------------------------------------- */}
-      <Section id="why-three-days">
+      {/* ---- orientation day structured --------------------------------- */}
+      <Section id="the-day-structured">
         <Container>
           <Reveal stagger={0.07}>
             <SectionHeading
-              eyebrow="Why three days"
-              title="One assembly would have been cheaper"
-              lede="It would also have sent you home with a folder and no idea where the library is. Each day is doing a different job."
+              eyebrow="Orientation Day"
+              title="A structured journey from morning to evening"
+              lede="Designed so you leave knowing your faculty, campus layout, degree rules, and fellow classmates."
               align="left"
               className="mb-14 max-w-3xl"
             />
@@ -95,7 +95,7 @@ export default function AboutPage() {
           <Reveal stagger={0.05}>
             <SectionHeading
               eyebrow="What to expect"
-              title="Eight things that will have happened by Wednesday evening"
+              title="Eight things that will have happened by the time you head home"
               className="mb-14"
             />
 
@@ -150,7 +150,7 @@ export default function AboutPage() {
 
       <CtaBand
         icon="cap"
-        title="Three days, then four years"
+        title="One day to prepare, four years to thrive"
         body={`${EVENT.dateRange}. Registering takes a few minutes and puts your name on the gate list.`}
       />
     </>
