@@ -55,11 +55,15 @@ export default clerkMiddleware(async (auth, request) => {
   const role = (sessionClaims?.['metadata'] as { role?: string } | undefined)?.role
     ?? (sessionClaims?.['publicMetadata'] as { role?: string } | undefined)?.role
 
-  if (requiresAdmin(request) && role !== 'ADMIN') {
+  // Fast-path edge check: If the session token explicitly declares the user is a non-admin,
+  // we can rewrite early. If the role claim is missing (e.g. Clerk default session token
+  // where custom JWT templates aren't configured), do NOT block here: let the request
+  // reach the server layout (AdminLayout / VolunteerPage), which checks Postgres directly.
+  if (requiresAdmin(request) && role && role !== 'ADMIN') {
     return NextResponse.rewrite(new URL('/not-authorised', request.url))
   }
 
-  if (requiresVolunteer(request) && role !== 'VOLUNTEER' && role !== 'ADMIN') {
+  if (requiresVolunteer(request) && role && role !== 'VOLUNTEER' && role !== 'ADMIN') {
     return NextResponse.rewrite(new URL('/not-authorised', request.url))
   }
 

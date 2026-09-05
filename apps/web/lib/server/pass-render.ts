@@ -29,6 +29,8 @@
  */
 import 'server-only'
 
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import bwipjs from 'bwip-js/node'
 import { PDFDocument, StandardFonts, rgb } from 'pdf-lib'
 import QRCode from 'qrcode'
@@ -37,6 +39,14 @@ import { formatCode10 } from '@orientation/core/pass'
 import type { CompanionRelationship } from '@orientation/contracts'
 
 import { EVENT } from '../event'
+
+/**
+ * The white-on-transparent Amity University Patna logo, loaded once.
+ * Used in the PDF header band instead of text so the pass carries the real mark.
+ */
+const LOGO_PNG = readFileSync(
+  join(process.cwd(), 'public', 'brand', 'amity-aup-logo-white.png'),
+)
 
 /**
  * Letter-spaced text.
@@ -109,7 +119,7 @@ export async function qrPng(payload: string): Promise<Buffer> {
     type: 'png',
     errorCorrectionLevel: 'M',
     margin: 1,
-    width: 900,
+    width: 1200,
   })
 }
 
@@ -125,8 +135,8 @@ export async function barcodePng(code10: string): Promise<Buffer> {
   return bwipjs.toBuffer({
     bcid: 'code128',
     text: code10,
-    scale: 4,
-    height: 14,
+    scale: 8,
+    height: 16,
     includetext: false,
     paddingwidth: 8,
     paddingheight: 4,
@@ -215,18 +225,23 @@ export async function renderPassPdf(input: PassPdfInput): Promise<Uint8Array> {
 
   // ── header band ───────────────────────────────────────────────────────────
   page.drawRectangle({ x: 0, y: HEIGHT - 74, width: WIDTH, height: 74, color: NAVY })
-  drawTracked(page, winAnsi(EVENT.institution.toUpperCase()), {
+
+  // Embed the real Amity University Patna logo instead of Helvetica text.
+  const logo = await doc.embedPng(LOGO_PNG)
+  // The source image is 1280×444. Scale it to fit inside the header band.
+  const logoH = 36
+  const logoW = (logo.width / logo.height) * logoH
+  page.drawImage(logo, {
     x: 32,
-    y: HEIGHT - 34,
-    size: 13,
-    font: bold,
-    color: rgb(1, 1, 1),
-    tracking: 1.4,
+    y: HEIGHT - 56,
+    width: logoW,
+    height: logoH,
   })
+
   page.drawText(winAnsi(`${EVENT.programme} ${EVENT.year} · Entry pass`), {
     x: 32,
-    y: HEIGHT - 55,
-    size: 10,
+    y: HEIGHT - 68,
+    size: 8.5,
     font: regular,
     color: rgb(0.78, 0.82, 0.92),
   })

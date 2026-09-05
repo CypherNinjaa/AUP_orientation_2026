@@ -293,7 +293,7 @@ export async function submitRegistration(
           create: input.companions.map((companion, index) => ({
             relationship: companion.relationship,
             name: companion.name,
-            position: index,
+            position: index + 1,
           })),
         },
       },

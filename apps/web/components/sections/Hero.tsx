@@ -9,6 +9,7 @@ import { Countdown } from '@/components/motion/Countdown'
 import { LinkButton } from '@/components/ui/Button'
 import { Container, HandNote, IconChip, type Tint } from '@/components/ui/atoms'
 import { EVENT } from '@/lib/event'
+import { useUserStatus } from '@/lib/client/UserStatusProvider'
 
 gsap.registerPlugin(useGSAP, SplitText)
 
@@ -20,6 +21,7 @@ const FACTS: { icon: 'calendar' | 'pin' | 'people'; tint: Tint; head: string; su
 
 export function Hero() {
   const scope = useRef<HTMLDivElement>(null)
+  const { isSignedIn, isRegistered } = useUserStatus()
 
   useGSAP(
     () => {
@@ -118,8 +120,7 @@ export function Hero() {
             data-hero-eyebrow
             className="text-headline mb-3 font-bold tracking-tight uppercase"
           >
-            <span className="text-violet">Your</span> <span className="text-navy">journey.</span>{' '}
-            <span className="text-flame">Our</span> <span className="text-navy">community.</span>
+            <span className="grad-text">Deeksharambh</span>
           </p>
 
           {/* The `lg:` size cap is load-bearing, not a tweak. `--text-display`
@@ -132,11 +133,11 @@ export function Hero() {
           <h1
             data-hero
             data-hero-title
-            className="text-display uppercase lg:text-[min(5.25rem,6.5vw)]"
+            className="text-display uppercase lg:text-[min(4.5rem,5.5vw)]"
           >
-            Orientation
+            Student Orientation
             <br />
-            <span className="grad-text">2026</span>
+            Programme <span className="grad-text">2026</span>
           </h1>
 
           <p className="relative -mt-1 mb-7 h-12 md:h-14">
@@ -175,9 +176,19 @@ export function Hero() {
           </ul>
 
           <div data-hero data-hero-cta className="mt-9 flex flex-col gap-3 sm:flex-row sm:items-center">
-            <LinkButton href="/register" size="lg" arrow className="w-full sm:w-auto">
-              Register now
-            </LinkButton>
+            {isRegistered ? (
+              <LinkButton href="/pass" size="lg" arrow className="w-full sm:w-auto">
+                View your pass
+              </LinkButton>
+            ) : isSignedIn ? (
+              <LinkButton href="/register" size="lg" arrow className="w-full sm:w-auto">
+                Complete registration
+              </LinkButton>
+            ) : (
+              <LinkButton href="/register" size="lg" arrow className="w-full sm:w-auto">
+                Register now
+              </LinkButton>
+            )}
             <LinkButton
               href="/schedule"
               size="lg"

@@ -94,7 +94,7 @@ export default async function PassPage() {
             </>
           }
           note={firstName(registration.name)}
-          lede="Everything a volunteer needs is on this page. Screenshot it, print it, or keep this tab — none of it needs a signal at the gate."
+          lede="Everything a volunteer needs is on this page. Screenshot it, download it, or keep this tab — none of it needs a signal at the gate."
         />
         <StudentPortal />
       </>
@@ -165,12 +165,12 @@ export default async function PassPage() {
             </ul>
 
             <p data-reveal className="text-ink-soft mt-10 max-w-2xl leading-relaxed">
-              Print it if you would rather not rely on a phone —{' '}
+              Download the PDF if you would rather not rely on a phone —{' '}
               <Link
                 href="/information#gate"
                 className="text-violet-deep font-bold underline decoration-1 underline-offset-4"
               >
-                a printed pass clears the gate exactly like the screen
+                a downloaded pass clears the gate exactly like the screen
               </Link>
               . Lose it entirely and it is regenerated from your record; there is nothing to keep
               safe.

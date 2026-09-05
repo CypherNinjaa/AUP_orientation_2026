@@ -2,19 +2,10 @@ import Image from 'next/image'
 import { cn } from '@/lib/cn'
 
 /**
- * Amity University Patna lock-up: the official crest beside the campus wordmark.
+ * Amity University Patna official lock-up.
  *
- * The crest is the supplied artwork, unaltered and unrecoloured — it carries its
- * own 2px white keyline, which is what lets the same file sit on the header's
- * clear background and on the navy footer without a plate behind it. `tone` only
- * switches the wordmark's colours.
- *
- * The crest also contains "AMITY UNIVERSITY" in its top band, which is why the
- * wordmark is not a duplication: at 40px tall that text is around 3px and reads
- * as texture, so the line beside it is the only legible one.
- *
- * Derived at 170x200 from `design/source-images/amity-small-logo.png` by
- * `scripts/build-assets.mjs`.
+ * Uses the authentic university mark from `aup.jpeg` rendered with a transparent background.
+ * For dark surfaces (tone="white"), the white-wordmark asset is used so text is crisp and legible.
  */
 export function BrandMark({
   className,
@@ -22,38 +13,20 @@ export function BrandMark({
 }: {
   className?: string
   tone?: 'navy' | 'white'
+  showText?: boolean
 }) {
-  const onWhite = tone === 'white'
+  const isWhite = tone === 'white'
 
   return (
-    <span className={cn('flex items-center gap-2.5', className)}>
+    <span className={cn('inline-flex items-center shrink-0', className)}>
       <Image
-        src={'/brand/amity-shield.png'}
-        width={170}
-        height={200}
-        alt=""
+        src={isWhite ? '/brand/amity-aup-logo-white.webp' : '/brand/amity-aup-logo.webp'}
+        width={1280}
+        height={444}
+        alt="Amity University Patna"
         priority
-        className="h-10 w-auto shrink-0"
+        className="h-9 sm:h-10 md:h-11 w-auto max-w-[170px] sm:max-w-[200px] md:max-w-[240px] object-contain transition-transform duration-300 group-hover:scale-[1.02]"
       />
-
-      <span className="flex flex-col leading-none">
-        <span
-          className={cn(
-            'text-[0.9375rem] font-extrabold tracking-tight',
-            onWhite ? 'text-white' : 'text-navy',
-          )}
-        >
-          AMITY UNIVERSITY
-        </span>
-        <span
-          className={cn(
-            'text-[0.8125rem] font-bold tracking-[0.26em]',
-            onWhite ? 'text-flame-mid' : 'text-flame',
-          )}
-        >
-          PATNA
-        </span>
-      </span>
     </span>
   )
 }

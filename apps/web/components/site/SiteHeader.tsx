@@ -3,16 +3,21 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useEffect, useState } from 'react'
+import { useClerk, useUser, UserButton } from '@clerk/nextjs'
 import { LinkButton } from '@/components/ui/Button'
 import { Icon } from '@/components/ui/Icon'
 import { cn } from '@/lib/cn'
 import { NAV } from '@/lib/event'
+import { useUserStatus } from '@/lib/client/UserStatusProvider'
 import { BrandMark } from './BrandMark'
 
 export function SiteHeader() {
   const pathname = usePathname()
   const [scrolled, setScrolled] = useState(false)
   const [open, setOpen] = useState(false)
+  const { user } = useUser()
+  const { signOut } = useClerk()
+  const { isSignedIn, isRegistered, role } = useUserStatus()
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 12)
@@ -40,6 +45,10 @@ export function SiteHeader() {
     return () => window.removeEventListener('keydown', onKey)
   }, [open])
 
+  // When registered, omit registration from the nav links because the primary CTA
+  // button right next to the nav already is "Your pass ->"
+  const navItems = NAV.filter((item) => !(item.href === '/register' && isRegistered))
+
   return (
     <header
       className={cn(
@@ -49,13 +58,13 @@ export function SiteHeader() {
           : 'bg-transparent',
       )}
     >
-      <div className="mx-auto flex h-20 w-full max-w-[var(--container-page)] items-center justify-between px-6">
-        <Link href="/" aria-label={`Amity University Patna — Orientation home`} className="shrink-0">
+      <div className="mx-auto flex h-20 w-full max-w-[var(--container-page)] items-center justify-between px-4 sm:px-6">
+        <Link href="/" aria-label="Amity University Patna — Orientation home" className="shrink-0 group flex items-center">
           <BrandMark />
         </Link>
 
         <nav aria-label="Main" className="hidden items-center gap-1 lg:flex">
-          {NAV.map((item) => {
+          {navItems.map((item) => {
             const active = item.href === '/' ? pathname === '/' : pathname.startsWith(item.href)
             return (
               <Link
@@ -82,15 +91,71 @@ export function SiteHeader() {
           })}
         </nav>
 
-        <div className="flex items-center gap-2">
-          {/* The display utility lives on a wrapper, not on the button: Button's
-              own `inline-flex` and a `hidden` passed through className have the
-              same specificity, so stylesheet order decides and `hidden` loses. */}
-          <div className="hidden sm:block">
-            <LinkButton href="/register" size="sm" arrow>
-              Register now
-            </LinkButton>
-          </div>
+        <div className="flex items-center gap-2.5">
+          {/* Action button: changes depending on whether signed in and registered */}
+          {isSignedIn ? (
+            <>
+              {isRegistered ? (
+                <div className="hidden sm:block">
+                  <LinkButton href="/pass" size="sm" arrow>
+                    Your pass
+                  </LinkButton>
+                </div>
+              ) : (
+                <div className="hidden sm:block">
+                  <LinkButton href="/register" size="sm" arrow>
+                    Complete registration
+                  </LinkButton>
+                </div>
+              )}
+
+              {/* Clerk User Button for account management and sign out */}
+              <div className="flex items-center">
+                <UserButton
+                  userProfileMode="modal"
+                  appearance={{
+                    elements: {
+                      avatarBox: 'size-9 ring-2 ring-violet-deep/20 hover:ring-violet-deep transition-all duration-300',
+                      userButtonTrigger: 'focus:outline-none focus:ring-2 focus:ring-violet-deep rounded-full',
+                    },
+                  }}
+                >
+                  <UserButton.MenuItems>
+                    <UserButton.Link
+                      label="Your Digital Pass"
+                      labelIcon={<Icon name="id" size={16} />}
+                      href="/pass"
+                    />
+                    <UserButton.Link
+                      label="Orientation Schedule"
+                      labelIcon={<Icon name="calendar" size={16} />}
+                      href="/schedule"
+                    />
+                    {role === 'ADMIN' && (
+                      <UserButton.Link
+                        label="Admin Console"
+                        labelIcon={<Icon name="terminal" size={16} />}
+                        href="/admin"
+                      />
+                    )}
+                    {role === 'VOLUNTEER' && (
+                      <UserButton.Link
+                        label="Gate Scanner"
+                        labelIcon={<Icon name="qr" size={16} />}
+                        href="/volunteer"
+                      />
+                    )}
+                  </UserButton.MenuItems>
+                </UserButton>
+              </div>
+            </>
+          ) : (
+            <div className="hidden sm:block">
+              <LinkButton href="/register" size="sm" arrow>
+                Register now
+              </LinkButton>
+            </div>
+          )}
 
           <button
             type="button"
@@ -111,8 +176,36 @@ export function SiteHeader() {
         hidden={!open}
         className="bg-card/97 border-rule/50 supports-[backdrop-filter]:backdrop-blur-xl h-[calc(100dvh-5rem)] overflow-y-auto border-t px-6 pt-6 pb-10 lg:hidden"
       >
+        {isSignedIn && (
+          <div className="border-rule/50 bg-paper/60 mb-6 flex items-center justify-between rounded-2xl border p-4">
+            <div className="flex items-center gap-3 min-w-0">
+              <UserButton
+                userProfileMode="modal"
+                appearance={{
+                  elements: {
+                    avatarBox: 'size-10 ring-2 ring-violet-deep/20',
+                  },
+                }}
+              />
+              <div className="min-w-0">
+                <p className="text-navy truncate text-[0.9375rem] font-bold">
+                  {user?.fullName || user?.firstName || 'Signed in'}
+                </p>
+                <p className="text-ink-faint truncate text-xs">
+                  {user?.primaryEmailAddress?.emailAddress}
+                </p>
+              </div>
+            </div>
+            {role !== 'STUDENT' && (
+              <span className="bg-violet-tint text-violet-deep rounded-md px-2 py-0.5 text-xs font-bold uppercase">
+                {role}
+              </span>
+            )}
+          </div>
+        )}
+
         <nav aria-label="Main" className="flex flex-col">
-          {NAV.map((item) => {
+          {navItems.map((item) => {
             const active = item.href === '/' ? pathname === '/' : pathname.startsWith(item.href)
             return (
               <Link
@@ -131,9 +224,37 @@ export function SiteHeader() {
           })}
         </nav>
 
-        <LinkButton href="/register" size="lg" arrow className="mt-8 w-full">
-          Register now
-        </LinkButton>
+        {isSignedIn ? (
+          <div className="mt-8 flex flex-col gap-3">
+            {isRegistered ? (
+              <LinkButton href="/pass" size="lg" arrow className="w-full">
+                View your pass
+              </LinkButton>
+            ) : (
+              <LinkButton href="/register" size="lg" arrow className="w-full">
+                Complete registration
+              </LinkButton>
+            )}
+
+            <button
+              type="button"
+              onClick={async () => {
+                setOpen(false)
+                await signOut({ redirectUrl: '/' })
+              }}
+              className="border-rule/60 text-ink-soft hover:text-danger hover:border-danger/40 flex w-full items-center justify-center gap-2 rounded-full border py-3.5 text-sm font-semibold transition-colors"
+            >
+              <Icon name="logout" size={17} />
+              Sign out
+            </button>
+          </div>
+        ) : (
+          <div className="mt-8">
+            <LinkButton href="/register" size="lg" arrow className="w-full">
+              Register now
+            </LinkButton>
+          </div>
+        )}
 
         <p className="text-ink-soft mt-6 text-center text-sm">
           Questions? Call{' '}

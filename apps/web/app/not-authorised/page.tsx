@@ -67,6 +67,16 @@ export default async function NotAuthorisedPage() {
           <p className="text-ink-soft text-lede mt-4">
             {actor === null ? (
               <>Your session ended while you were away. Sign in again and you will land back here.</>
+            ) : actor.role === 'ADMIN' ? (
+              <>
+                You are signed in as an <strong className="text-navy">administrator</strong>. You have
+                full access to the command centre.
+              </>
+            ) : actor.role === 'VOLUNTEER' ? (
+              <>
+                You are signed in as a <strong className="text-navy">volunteer</strong>. You have
+                access to the gate scanner.
+              </>
             ) : (
               <>
                 This page is for {ROLE_NEEDED}. Your account is signed in as{' '}

@@ -120,6 +120,16 @@ const schema = z.object({
     .transform((value) => (value === '' ? undefined : value)),
 
   /**
+   * Comma-separated list of trusted administrator email addresses.
+   * Anyone signing in with these emails is guaranteed ADMIN access.
+   */
+  ADMIN_EMAILS: z
+    .string()
+    .trim()
+    .optional()
+    .transform((value) => (value === '' ? undefined : value)),
+
+  /**
    * Bearer token for the scheduled jobs at `/api/cron/*` — currently the DPDP
    * selfie retention sweep.
    *

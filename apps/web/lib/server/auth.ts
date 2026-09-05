@@ -72,6 +72,21 @@ export async function syncUser(): Promise<User | null> {
   if (existing) {
     if (!existing.isActive) return null
 
+    // Method 2 / Emergency Admin Fallback: check ADMIN_EMAILS
+    const adminEmails = (process.env.ADMIN_EMAILS ?? '')
+      .split(',')
+      .map((e) => e.trim().toLowerCase())
+      .filter(Boolean)
+
+    if (existing.email && adminEmails.includes(existing.email.toLowerCase()) && existing.role !== 'ADMIN') {
+      const promoted = await prisma.user.update({
+        where: { id: existing.id },
+        data: { role: 'ADMIN' },
+      })
+      void reconcileClerkRole(userId, 'ADMIN')
+      return promoted
+    }
+
     // `lastSeenAt` is useful for the admin staff list and worthless if it costs a
     // write per request, so it is only updated once an hour per user. Not awaited:
     // nothing depends on it and it must not add latency.
@@ -86,20 +101,31 @@ export async function syncUser(): Promise<User | null> {
     return existing
   }
 
-  // First request from a new account. Everything about them comes from Clerk;
-  // the role does not — a self-registered account is a STUDENT, and the only way
-  // to become anything else is an admin granting it.
+  // First request from a new account.
   const clerkUser = await currentUser()
   const email = clerkUser?.primaryEmailAddress?.emailAddress ?? null
   const name =
     [clerkUser?.firstName, clerkUser?.lastName].filter(Boolean).join(' ').trim() || null
 
+  const adminEmails = (process.env.ADMIN_EMAILS ?? '')
+    .split(',')
+    .map((e) => e.trim().toLowerCase())
+    .filter(Boolean)
+
+  const clerkRole = clerkUser?.publicMetadata?.['role'] as Role | undefined
+  const isEnvAdmin = email ? adminEmails.includes(email.toLowerCase()) : false
+  const initialRole: Role = isEnvAdmin
+    ? 'ADMIN'
+    : clerkRole === 'ADMIN' || clerkRole === 'VOLUNTEER'
+      ? clerkRole
+      : 'STUDENT'
+
   // `upsert` rather than `create`: two requests from a brand-new account can
   // arrive concurrently (a page and its `fetch`), and both would create.
   return prisma.user.upsert({
     where: { clerkUserId: userId },
-    update: { email, name },
-    create: { clerkUserId: userId, email, name, role: 'STUDENT' },
+    update: { email, name, ...(isEnvAdmin || clerkRole === 'ADMIN' ? { role: 'ADMIN' } : {}) },
+    create: { clerkUserId: userId, email, name, role: initialRole },
   })
 }
 

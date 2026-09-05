@@ -297,7 +297,7 @@ export const HIGHLIGHTS = [
 /* -------------------------------------------------------------------------- */
 
 export const BRING = [
-  { label: 'Your orientation pass', note: 'On your phone or printed. Both scan.' },
+  { label: 'Your orientation pass', note: 'On your phone or downloaded as PDF. Both scan.' },
   { label: 'Admission letter', note: 'Original, plus one photocopy.' },
   { label: 'Photo ID', note: 'Aadhaar, passport or driving licence.' },
   { label: 'Two passport photographs', note: 'For your student ID card.' },
@@ -328,7 +328,7 @@ export const FAQS = [
   },
   {
     q: 'My phone battery is dead / there is no network at the gate.',
-    a: 'Your pass works offline. Volunteer devices carry the full guest list on-device and can verify you by scanning a printed pass or by typing the 10-digit code on it. Charging points are available at the help desk.',
+    a: 'Your pass works offline. Volunteer devices carry the full guest list on-device and can verify you by scanning a downloaded pass or by typing the 10-digit code on it. Charging points are available at the help desk.',
   },
   {
     q: 'What should I wear?',
@@ -361,7 +361,6 @@ export const NAV = [
   { href: '/information', label: 'Information', hint: 'what to bring' },
   { href: '/contact', label: 'Contact', hint: 'ask a person' },
   { href: '/register', label: 'Registration', hint: 'get your pass' },
-  { href: '/developer', label: 'Developer', hint: 'who built this' },
 ] as const
 
 /* -------------------------------------------------------------------------- */
@@ -551,7 +550,7 @@ export const GETTING_HERE = [
 export const AT_THE_GATE = [
   {
     step: 'Show your pass',
-    body: 'On your phone or printed — both scan. It carries a QR code, a barcode and a ten-digit code.',
+    body: 'On your phone or as a downloaded PDF — both scan. It carries a QR code, a barcode and a ten-digit code.',
   },
   {
     step: 'A volunteer verifies you',
@@ -572,7 +571,7 @@ export const IF_IT_GOES_WRONG = [
   {
     icon: 'download',
     title: 'Flat battery',
-    body: 'Download the PDF and print it before you travel. A printed pass scans exactly like the screen.',
+    body: 'Download the PDF before you travel. A downloaded pass scans exactly like the screen.',
   },
   {
     icon: 'id',

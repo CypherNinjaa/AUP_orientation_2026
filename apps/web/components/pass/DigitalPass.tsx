@@ -152,9 +152,9 @@ export function DigitalPass({ data }: { data: PassRenderResponse }) {
       </div>
 
       <p className="text-ink-faint mx-auto max-w-[52ch] text-center text-[0.8125rem] leading-relaxed">
-        A screenshot works. So does a printout — {' '}
+        A screenshot works. Download the PDF for a backup —{' '}
         <a href="/information#gate" className="text-violet-deep font-semibold">
-          a printed pass clears the gate exactly like the screen
+          a downloaded pass clears the gate exactly like the screen
         </a>
         . Neither needs a signal.
       </p>
@@ -290,7 +290,7 @@ function Download({ reference }: { reference: string }) {
         ) : state === 'done' ? (
           <span className="text-leaf font-semibold">Saved. Check your downloads.</span>
         ) : (
-          <span className="text-ink-faint">Print it, or keep it on your phone.</span>
+          <span className="text-ink-faint">Keep it on your phone, or save a backup.</span>
         )}
       </p>
     </div>

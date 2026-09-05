@@ -197,9 +197,10 @@
    subject is not a signature.
    ========================================================================== */
 
-/* Left edge dissolving into the page — the wide-screen hero slab. */
+/* Left edge dissolving into the page — the wide-screen hero slab.
+   Tightened so the campus building is clearly visible without a heavy white wash. */
 @utility feather-l {
-  mask-image: linear-gradient(to right, transparent 0%, rgba(0, 0, 0, 0.55) 16%, black 38%);
+  mask-image: linear-gradient(to right, transparent 0%, rgba(0, 0, 0, 0.7) 8%, black 20%);
   mask-size: 100% 100%;
   mask-repeat: no-repeat;
 }

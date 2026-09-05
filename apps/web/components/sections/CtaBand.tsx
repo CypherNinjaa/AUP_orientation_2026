@@ -1,7 +1,10 @@
+'use client'
+
 import { Reveal } from '@/components/motion/Reveal'
 import { LinkButton } from '@/components/ui/Button'
 import type { IconName } from '@/components/ui/Icon'
 import { IconChip, type Tint } from '@/components/ui/atoms'
+import { useUserStatus } from '@/lib/client/UserStatusProvider'
 
 /**
  * The closing ask, used at the foot of every subpage.
@@ -28,6 +31,11 @@ export function CtaBand({
   cta?: string
   href?: string
 }) {
+  const { isRegistered } = useUserStatus()
+
+  const finalHref = isRegistered && href === '/register' ? '/pass' : href
+  const finalCta = isRegistered && href === '/register' ? 'View your pass' : cta
+
   return (
     <div className="px-6 pt-4 pb-20 md:pb-28">
       <Reveal
@@ -45,8 +53,8 @@ export function CtaBand({
         </div>
 
         <div data-reveal className="shrink-0">
-          <LinkButton href={href} size="lg" arrow>
-            {cta}
+          <LinkButton href={finalHref} size="lg" arrow>
+            {finalCta}
           </LinkButton>
         </div>
       </Reveal>

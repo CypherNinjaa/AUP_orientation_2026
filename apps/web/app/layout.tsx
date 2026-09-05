@@ -3,6 +3,7 @@ import { ClerkProvider } from '@clerk/nextjs'
 import { Caveat, Plus_Jakarta_Sans } from 'next/font/google'
 import type { ReactNode } from 'react'
 import { MotionProvider } from '@/components/motion/MotionProvider'
+import { UserStatusProvider } from '@/lib/client/UserStatusProvider'
 import { EVENT } from '@/lib/event'
 import './globals.css'
 
@@ -54,7 +55,7 @@ export const metadata: Metadata = {
     url: SITE_ORIGIN,
     siteName: `${EVENT.institution} — Orientation ${EVENT.year}`,
     title: `Orientation ${EVENT.year}`,
-    description: `Your journey, our community. ${EVENT.dateRange} at ${EVENT.institution}.`,
+    description: `Deeksharambh — Student Orientation Programme. ${EVENT.dateRange} at ${EVENT.institution}.`,
     locale: 'en_IN',
   },
   robots: { index: true, follow: true },
@@ -124,7 +125,9 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           >
             Skip to content
           </a>
-          <MotionProvider>{children}</MotionProvider>
+          <MotionProvider>
+            <UserStatusProvider>{children}</UserStatusProvider>
+          </MotionProvider>
         </body>
       </html>
     </ClerkProvider>
