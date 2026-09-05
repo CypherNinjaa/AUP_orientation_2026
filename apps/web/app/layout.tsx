@@ -89,9 +89,30 @@ const CLERK_APPEARANCE = {
   },
 } as const
 
+/**
+ * Where Clerk sends people, set here so no component has to remember.
+ *
+ * `signInUrl`/`signUpUrl` point at this app's own pages — without them Clerk
+ * falls back to its hosted Account Portal, which is a different domain wearing a
+ * different theme, and the return trip loses the `redirect_url` the middleware
+ * attached.
+ *
+ * The two `*FallbackRedirectUrl`s are *fallbacks*: an existing `redirect_url`
+ * always wins, so a student who followed a link to their pass still lands on their
+ * pass. `/dashboard` only handles the case where there was no destination — it
+ * reads the role and forwards, which is the one thing Clerk cannot do.
+ */
+const CLERK_ROUTES = {
+  signInUrl: '/sign-in',
+  signUpUrl: '/sign-up',
+  signInFallbackRedirectUrl: '/dashboard',
+  signUpFallbackRedirectUrl: '/dashboard',
+  afterSignOutUrl: '/',
+} as const
+
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <ClerkProvider appearance={CLERK_APPEARANCE}>
+    <ClerkProvider appearance={CLERK_APPEARANCE} {...CLERK_ROUTES}>
       <html lang="en-IN" suppressHydrationWarning className={`${jakarta.variable} ${caveat.variable}`}>
         <head>
           <script dangerouslySetInnerHTML={{ __html: BOOTSTRAP }} />

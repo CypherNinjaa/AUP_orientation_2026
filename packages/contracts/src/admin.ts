@@ -22,6 +22,7 @@ import {
   scanOutcome,
 } from './common'
 import type { RegistrationStatus, Role, ScanOutcome } from './common'
+import { MAX_COMPANIONS } from './registration'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Roster import
@@ -382,7 +383,8 @@ export const settingsUpdateRequest = z
      * would delete an image before the gate could use it.
      */
     selfieRetentionDays: z.number().int().min(1).max(180).optional(),
-    maxCompanions: z.number().int().min(0).max(2).optional(),
+    /** 0 is legitimate — a year the university admits no guests at all. */
+    maxCompanions: z.number().int().min(0).max(MAX_COMPANIONS).optional(),
     sseDegradeThreshold: z.number().int().min(100).max(50_000).optional(),
     /**
      * Bumping this invalidates every volunteer device's cached manifest, which

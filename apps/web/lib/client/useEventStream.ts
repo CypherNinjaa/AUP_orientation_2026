@@ -36,6 +36,16 @@ const HEALTHY_AFTER_MS = 10_000
 
 export type StreamStatus = 'connecting' | 'live' | 'degraded'
 
+/**
+ * A handler per event name, all optional.
+ *
+ * Exported because `RealtimeProvider` fans one connection out to many subscribers
+ * and needs to name this shape.
+ */
+export type EventHandlers = Partial<{
+  [K in RealtimeEvent['type']]: (event: Extract<RealtimeEvent, { type: K }>) => void
+}>
+
 export interface EventStream {
   status: StreamStatus
   /** Epoch ms of the last event of any kind, heartbeats excluded. */
@@ -52,7 +62,7 @@ export interface EventStream {
  * precisely because those are not free.
  */
 export function useEventStream(
-  handlers: Partial<{ [K in RealtimeEvent['type']]: (event: Extract<RealtimeEvent, { type: K }>) => void }>,
+  handlers: EventHandlers,
   options: { enabled?: boolean } = {},
 ): EventStream {
   const enabled = options.enabled ?? true
@@ -172,3 +182,5 @@ const EVENT_NAMES = [
   'manifest.stale',
   'gate.config',
 ] as const satisfies readonly RealtimeEvent['type'][]
+
+export { EVENT_NAMES }

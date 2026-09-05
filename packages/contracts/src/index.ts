@@ -43,6 +43,7 @@ export {
 } from './common'
 
 export {
+  MAX_COMPANIONS,
   SELFIE_MAX_BYTES,
   SELFIE_MIME_TYPES,
   companionInput,

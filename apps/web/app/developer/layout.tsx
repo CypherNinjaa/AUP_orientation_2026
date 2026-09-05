@@ -10,11 +10,12 @@ import { SiteHeader } from '@/components/site/SiteHeader'
  *
  * The mono face is loaded here rather than in the root layout so the other twelve
  * routes never request it. `--font-mono` in globals.css falls back to the platform
- * monospace when this variable is absent, which is everywhere but this subtree.
+ * monospace when this variable is absent, which is everywhere but this subtree and
+ * the gate-ops consoles, which load the same face for the same reason.
  */
 const mono = JetBrains_Mono({
   subsets: ['latin'],
-  variable: '--font-mono-dev',
+  variable: '--font-mono-var',
   display: 'swap',
 })
 

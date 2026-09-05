@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { PageHeader } from '@/components/site/PageHeader'
 import { Container, Section } from '@/components/ui/atoms'
-import { EVENT } from '@/lib/event'
+import { EVENT, MAX_GUESTS_WORD } from '@/lib/event'
 
 export const metadata: Metadata = {
   title: 'Accessibility',
@@ -110,7 +110,10 @@ export default function AccessibilityPage() {
                 A quiet space to step out to. Three days and several thousand people is a lot, and
                 needing a room with the volume turned down is normal.
               </li>
-              <li>A companion or carer, in addition to your one guest — that is not a problem.</li>
+              <li>
+                A companion or carer, over and above the {MAX_GUESTS_WORD} guest seats everyone
+                gets — that is not a problem.
+              </li>
               <li>
                 Anything about medication, food, or the length of time between breaks.
               </li>

@@ -6,7 +6,7 @@ import { PageHeader } from '@/components/site/PageHeader'
 import { Icon } from '@/components/ui/Icon'
 import { QuoteCard } from '@/components/ui/QuoteCard'
 import { ACCENT, Container, IconChip, Section, SectionHeading } from '@/components/ui/atoms'
-import { BEYOND, EVENT, HIGHLIGHTS, HIGHLIGHT_STATS } from '@/lib/event'
+import { BEYOND, EVENT, GUEST_ALLOWANCE, HIGHLIGHTS, HIGHLIGHT_STATS } from '@/lib/event'
 
 export const metadata: Metadata = {
   title: 'Highlights',
@@ -144,7 +144,7 @@ export default function HighlightsPage() {
         icon="heart"
         tint="flame"
         title="Be in the room for it"
-        body={`${EVENT.dateRange}. Register once and your pass covers all three days, plus one guest.`}
+        body={`${EVENT.dateRange}. Register once and your pass covers all three days, plus ${GUEST_ALLOWANCE}.`}
       />
     </>
   )

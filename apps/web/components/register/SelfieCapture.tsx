@@ -29,6 +29,21 @@ import {
  * just read what happens to it.
  */
 
+/**
+ * An approved frame, and what the detector saw in it.
+ *
+ * `faceDetected` travels with the image because the contract asks for both, and
+ * it can only be answered here — by the time the parent has a data URL there is
+ * nothing left to read it off. It is advisory in every direction (decision D4): a
+ * `false` sorts the moderation queue and warns the student, and refuses nothing.
+ * A device where the detector never loaded reports `false`, which is the honest
+ * answer to "did anything confirm a face" and lands the photo in front of a human.
+ */
+export interface Shot {
+  image: string
+  faceDetected: boolean
+}
+
 type Phase = 'idle' | 'opening' | 'live' | 'denied' | 'unsupported' | 'failed'
 
 const RING: Record<Level, string> = {
@@ -48,7 +63,7 @@ export function SelfieCapture({
   onChange,
 }: {
   value: string | null
-  onChange: (next: string | null) => void
+  onChange: (next: Shot | null) => void
 }) {
   const videoRef = useRef<HTMLVideoElement>(null)
   const streamRef = useRef<MediaStream | null>(null)
@@ -66,6 +81,15 @@ export function SelfieCapture({
   const [shot, setShot] = useState<string | null>(null)
   const [live, setLive] = useState(verdict(null))
   const [shotLevel, setShotLevel] = useState<Level>('good')
+  /**
+   * What the detector saw when the frame was taken.
+   *
+   * Three states, not two. `null` means it had nothing to say — never downloaded,
+   * dropped for being slow, or simply had not read a frame yet — which is not the
+   * same as looking and finding nobody, and only the second is worth telling a
+   * student about.
+   */
+  const [shotFace, setShotFace] = useState<boolean | null>(null)
 
   const stop = useCallback(() => {
     streamRef.current?.getTracks().forEach((t) => t.stop())
@@ -199,6 +223,8 @@ export function SelfieCapture({
       setPhase('failed')
       return
     }
+    const faces = facesRef.current
+    setShotFace(faces ? faces.count === 1 : null)
     setShotLevel(live.level)
     setShot(url)
     stop()
@@ -207,6 +233,7 @@ export function SelfieCapture({
 
   function retake() {
     setShot(null)
+    setShotFace(null)
     onChange(null)
     void open()
   }
@@ -228,6 +255,18 @@ export function SelfieCapture({
               This is the picture a volunteer will see beside your name at the gate. It has not left
               this device yet.
             </p>
+            {shotFace === false ? (
+              // Said plainly, and it stops nothing. The photo goes to a moderator
+              // either way; a student who knows why is a student who can fix it
+              // now rather than at the gate.
+              <p className="text-flame mt-2 flex items-start gap-2 text-[0.875rem] leading-relaxed font-semibold">
+                <span className="mt-0.5 shrink-0">
+                  <Icon name="alert" size={15} strokeWidth={2.2} />
+                </span>
+                We could not find a face in this one, so somebody will check it by hand. Taking
+                another in better light is quicker.
+              </p>
+            ) : null}
             <p className="text-ink-faint mt-1 text-[0.8125rem]">{dataUrlKb(value)} KB</p>
             <div className="mt-4 flex justify-center sm:justify-start">
               <Button type="button" variant="secondary" size="sm" onClick={retake}>
@@ -268,7 +307,7 @@ export function SelfieCapture({
           <Button
             type="button"
             variant={shotLevel === 'block' ? 'secondary' : 'primary'}
-            onClick={() => onChange(shot)}
+            onClick={() => onChange({ image: shot, faceDetected: shotFace === true })}
           >
             <Icon name="check" size={18} strokeWidth={2.2} />
             Use this photo
@@ -418,7 +457,7 @@ function NoCamera({ phase, onRetry }: { phase: 'denied' | 'unsupported' | 'faile
       {/* Nobody gets stuck here. Decision D8 — the help desk runs the same form. */}
       <p className="text-ink-faint border-rule/50 mt-6 border-t pt-5 text-[0.875rem] leading-relaxed">
         Still nothing? The help desk in the Gate 1 foyer will do this bit with you on the morning —
-        bring your enrolment number. Or ask us first on{' '}
+        bring your form number. Or ask us first on{' '}
         <a href={`tel:${EVENT.helpline.replace(/\s/g, '')}`} className="text-violet-deep font-semibold">
           {EVENT.helpline}
         </a>

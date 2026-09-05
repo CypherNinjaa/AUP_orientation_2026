@@ -71,6 +71,19 @@ export const companionInput = z.strictObject({
 export type CompanionInput = z.infer<typeof companionInput>
 
 /**
+ * The hard ceiling on companions per pass.
+ *
+ * `SystemConfig.maxCompanions` is the operator's setting and may be lower, but it
+ * cannot be higher — `settingsUpdateRequest` caps it at this number, the schema
+ * caps the array at this number, and `Prisma.SystemConfig.maxCompanions` defaults
+ * to it. Every public page that promises a seat count reads this rather than
+ * writing the digit into a sentence, because a marketing page that says "one
+ * guest" while the gate admits two is the kind of drift a family discovers at the
+ * gate.
+ */
+export const MAX_COMPANIONS = 2
+
+/**
  * Up to two companions (`SystemConfig.maxCompanions`), or none for "Coming
  * Alone".
  *
@@ -84,7 +97,7 @@ export type CompanionInput = z.infer<typeof companionInput>
  */
 export const companionsInput = z
   .array(companionInput)
-  .max(2, { error: 'A pass admits at most two guests.' })
+  .max(MAX_COMPANIONS, { error: `A pass admits at most ${String(MAX_COMPANIONS)} guests.` })
   .refine(
     (list) => {
       for (const relationship of ['FATHER', 'MOTHER'] as const) {

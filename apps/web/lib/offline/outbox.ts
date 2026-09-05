@@ -69,6 +69,39 @@ export async function enqueue(scan: QueuedScan): Promise<void> {
   await db.put('outbox', entry)
 }
 
+/**
+ * Correct the guest count on a scan that has not been sent yet.
+ *
+ * The gate case this exists for: a pass allows two companions, `performScan`
+ * therefore admits two, and only one of them turned up. Re-scanning would produce a
+ * `DUPLICATE`, so the count has to be fixed on the event that already exists.
+ *
+ * Returns false when the event is gone — acknowledged and deleted — or has been
+ * attempted at least once, because a failed attempt is not proof the server did not
+ * receive it. In both cases the volunteer is told the number is already with the
+ * control room rather than being shown a control that silently did nothing.
+ */
+export async function amendQueuedGuests(
+  clientEventId: string,
+  guestsAdmitted: number,
+): Promise<boolean> {
+  const db = await scannerDb()
+  const tx = db.transaction('outbox', 'readwrite')
+  const entry = await tx.store.get(clientEventId)
+
+  if (entry === undefined || entry.attempts > 0) {
+    await tx.done
+    return false
+  }
+
+  await tx.store.put({
+    ...entry,
+    event: { ...entry.event, guestsAdmitted: Math.max(0, Math.trunc(guestsAdmitted)) },
+  })
+  await tx.done
+  return true
+}
+
 export interface OutboxStatus {
   /** Everything still in the store, including quarantined events. */
   total: number

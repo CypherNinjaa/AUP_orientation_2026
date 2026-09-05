@@ -9,6 +9,42 @@
  * PLACEHOLDERS awaiting written confirmation from the Admissions office.
  * Every unconfirmed value is marked `// unconfirmed`.
  */
+import type { CompanionRelationship, MAX_COMPANIONS } from '@orientation/contracts'
+
+/* -------------------------------------------------------------------------- */
+/* How many people come in with a student                                      */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Seats on a pass besides the student's own.
+ *
+ * Declared as `typeof MAX_COMPANIONS` rather than imported as a value, and the
+ * distinction matters: a value import from `@orientation/contracts` drags Zod and
+ * every schema in the package into the bundle of each static page that reads one
+ * sentence off this file. A type-only import is erased at build and still fails
+ * the typecheck the moment the two numbers disagree — which is the whole job,
+ * because a page promising one guest while the gate admits two is drift a family
+ * discovers at the gate.
+ *
+ * The operator's `SystemConfig.maxCompanions` may be lower on the day. Pages that
+ * can read live config say what it says; static copy states the ceiling.
+ */
+export const MAX_GUESTS: typeof MAX_COMPANIONS = 2
+
+/**
+ * The allowance as a sentence fragment, indexed by seat count.
+ *
+ * A table rather than a pluralising helper: comparing a literal count against a
+ * literal is a type error under `strict`, and "nobody" is a different sentence
+ * from "one guest" rather than the same one with a suffix.
+ */
+const ALLOWANCE = ['nobody', 'one guest', 'up to two guests'] as const
+const WORDS = ['no', 'one', 'two'] as const
+
+/** e.g. `up to two guests`. Reads correctly after "you may bring". */
+export const GUEST_ALLOWANCE = ALLOWANCE[MAX_GUESTS]
+/** e.g. `two`. For places where the sentence supplies its own noun. */
+export const MAX_GUESTS_WORD = WORDS[MAX_GUESTS]
 
 export type SessionKind = 'checkin' | 'ceremony' | 'talk' | 'tour' | 'break' | 'social'
 
@@ -76,7 +112,7 @@ export const EVENT = {
 
   helpline: '+91 00000 00000', // unconfirmed
   email: 'orientation@ptn.amity.edu', // unconfirmed
-  maxGuestsPerStudent: 1,
+  maxGuestsPerStudent: MAX_GUESTS,
 } as const
 
 /* -------------------------------------------------------------------------- */
@@ -390,7 +426,7 @@ export const FAQS = [
   },
   {
     q: 'Can a parent or guardian come with me?',
-    a: `You may bring one guest. Add them while registering and they will appear on your pass — there is no separate guest pass to collect. Day 3 has a dedicated session for guardians covering hostel, safety and fees.`,
+    a: `You may bring ${GUEST_ALLOWANCE}. Add them while registering and they will appear on your pass — there is no separate guest pass to collect. Day 3 has a dedicated session for guardians covering hostel, safety and fees.`,
   },
   {
     q: 'What if I have not received my enrolment number yet?',
@@ -591,7 +627,7 @@ export const ARRIVAL_TILES = [
   { icon: 'calendar', label: 'When', value: EVENT.dateRange, note: 'Gates open 08:30 on day one' },
   { icon: 'pin', label: 'Where', value: EVENT.venue.name, note: `${EVENT.venue.street} — Gate 1` },
   { icon: 'cap', label: 'Who', value: EVENT.audience.headline, note: EVENT.audience.detail },
-  { icon: 'people', label: 'Guests', value: 'One per student', note: 'Added while you register' },
+  { icon: 'people', label: 'Guests', value: `Up to ${MAX_GUESTS_WORD}`, note: 'Added while you register' },
 ] as const
 
 /**
@@ -746,14 +782,14 @@ export const REGISTER_STEPS = [
   {
     icon: 'id',
     title: 'About you',
-    body: 'Name, programme, email and mobile, and your enrolment or application number so we can match you to your admission record.',
-    need: 'Your enrolment or application number',
+    body: 'Your application form number, and nothing else to type. We read your name and your programme back off your admission record — you check them and give us a mobile number that reaches you.',
+    need: 'Your application form number',
   },
   {
     icon: 'people',
-    title: 'Your guest',
-    body: 'One guest may come with you, on your pass, for all three days. Their name and how you know them — nothing more. Skip it if you are coming alone.',
-    need: 'A name, if you are bringing someone',
+    title: 'Your guests',
+    body: 'Up to two people can come in on your pass, for all three days — your father, your mother, or a guardian standing in for them. Just their names. Skip it if you are coming alone.',
+    need: 'Their names, if anyone is coming with you',
   },
   {
     icon: 'camera',
@@ -764,54 +800,37 @@ export const REGISTER_STEPS = [
   {
     icon: 'check',
     title: 'Check and submit',
-    body: 'Read it back, agree to how your photo is handled, and submit. Your pass appears straight away and is emailed to you.',
+    body: 'Read it back, agree to how your photo is handled, and submit. Most passes are ready the moment you finish; if somebody wants a second look at your photo, this page is where you will hear.',
     need: 'Two minutes',
   },
 ] as const
 
 /**
- * ⚠️ PLACEHOLDER. Every entry here is unconfirmed.
+ * The three relationships a companion can be added under, in the order offered.
  *
- * The real list has to come from Admissions, because this field exists to be
- * reconciled against the admission record — a label the university does not use
- * is worse than no field at all. Kept deliberately broad (programme families,
- * not specialisations) so that the shape of the control is right while the
- * contents are still wrong: a fresher picks one thing from a short list rather
- * than hunting for their exact degree code in ninety options.
+ * `value` is `CompanionRelationship` from the contracts package — the same three
+ * strings the database stores and the pass prints. There is no "friend" and no
+ * "someone else", and that is the policy rather than an oversight: a pass admits
+ * a student's parents, or the guardian standing in for them. A fourth option
+ * would be a field the gate has no rule for.
  *
- * When the real list arrives it may well need grouping by school, in which case
- * this becomes `{ school, programmes[] }` and the select grows <optgroup>s.
+ * Father and Mother may each be picked once; Guardian may be picked twice,
+ * because two people can both be a student's guardian. The contract enforces it —
+ * see `companionsInput` — and the wizard reads that same rule off this list.
  */
-export const PROGRAMMES = [
-  'B.Tech', // unconfirmed
-  'B.Arch', // unconfirmed
-  'BCA', // unconfirmed
-  'B.Sc.', // unconfirmed
-  'BBA', // unconfirmed
-  'B.Com.', // unconfirmed
-  'BA', // unconfirmed
-  'BA LL.B. / LL.B.', // unconfirmed
-  'B.Ed.', // unconfirmed
-  'M.Tech', // unconfirmed
-  'MCA', // unconfirmed
-  'MBA', // unconfirmed
-  'M.Sc.', // unconfirmed
-  'MA', // unconfirmed
-  'Other', // the escape hatch. Someone always falls outside the list.
-] as const
-
-/**
- * How a guest is related to the student.
- *
- * Asked because the volunteer at the gate is handing a wristband to somebody
- * whose name is on a pass that is not theirs, and "Parent or guardian" makes
- * that a two-second conversation. "Someone else" is last and is not a trap —
- * it needs no explanation and nothing is refused because of it.
- */
-export const GUEST_RELATIONSHIPS = [
-  'Parent or guardian',
-  'Brother or sister',
-  'Another relative',
-  'Friend',
-  'Someone else',
-] as const
+export const COMPANION_RELATIONSHIPS: readonly {
+  readonly value: CompanionRelationship
+  readonly label: string
+  /** Sits under the label. Answers "which of these am I?" without a paragraph. */
+  readonly hint: string
+  readonly once: boolean
+}[] = [
+  { value: 'FATHER', label: 'Father', hint: 'One father per pass', once: true },
+  { value: 'MOTHER', label: 'Mother', hint: 'One mother per pass', once: true },
+  {
+    value: 'GUARDIAN',
+    label: 'Guardian',
+    hint: 'Anyone who stands in for a parent — both seats may be guardians',
+    once: false,
+  },
+]

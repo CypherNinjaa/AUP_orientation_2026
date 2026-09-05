@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { PageHeader } from '@/components/site/PageHeader'
 import { Container, Section } from '@/components/ui/atoms'
-import { EVENT } from '@/lib/event'
+import { EVENT, GUEST_ALLOWANCE } from '@/lib/event'
 
 export const metadata: Metadata = {
   title: 'Terms of use',
@@ -61,7 +61,7 @@ export default function TermsPage() {
               </li>
               <li>
                 It covers <strong>all three days</strong> — {EVENT.dateRange} — and you may bring{' '}
-                <strong>one guest</strong> on it. The guest enters with you, not separately.
+                <strong>{GUEST_ALLOWANCE}</strong> on it. They enter with you, not separately.
               </li>
               <li>
                 It is verified once per entry. A pass that has already been used to enter cannot be
