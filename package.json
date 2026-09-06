@@ -14,7 +14,8 @@
     "seed": "node --env-file=.env --import tsx packages/db/prisma/seed.ts"
   },
   "scripts": {
-    "dev": "npm run dev --workspace=@orientation/web",
+    "dev": "node scripts/dev.mjs",
+    "dev:web": "npm run dev --workspace=@orientation/web",
     "build": "npm run build --workspace=@orientation/web",
     "start": "npm run start --workspace=@orientation/web",
     "lint": "npm run lint --workspace=@orientation/web",

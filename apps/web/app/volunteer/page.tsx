@@ -3,46 +3,18 @@ import { redirect } from 'next/navigation'
 
 import { prisma } from '@orientation/db'
 
+import { auth } from '@clerk/nextjs/server'
+
 import { ScannerShell } from '@/components/scanner/ScannerShell'
 import { Icon } from '@/components/ui/Icon'
 import { getActor } from '@/lib/server/auth'
 
-/**
- * `/volunteer` — the gate scanner.
- *
- * Almost nothing happens here. The scanner is a client application by necessity: its
- * verdicts come from IndexedDB and WebCrypto and it has to keep working when this
- * server is unreachable. What the server *can* do, and what a phone standing in a
- * queue should not have to, is answer "which gate is this device working" before the
- * camera opens.
- *
- * ## Why the gate is resolved here
- *
- * `deviceHello` refuses an unknown or switched-off gate code with a sentence written
- * for a volunteer — but `helloDevice` on the client returns `null` for every failure,
- * because a scanner must not treat "the server did not answer" as fatal. That is the
- * right trade for a network error and the wrong one for a typo: a mistyped code would
- * surface on the phone as "no pass list on this device", which sends somebody looking
- * for a wifi problem that does not exist.
- *
- * So the codes come from the database, on the server, before anything is handed to the
- * client. One active gate is used directly (the deployment is single-gate by design);
- * several offer a choice; none is its own screen, because a gate that is switched off
- * is an administrator's job and no amount of tapping at the gate will fix it.
- *
- * ## The role check is duplicated on purpose
- *
- * `middleware.ts` already rewrites `/volunteer(.*)` to `/not-authorised` for anyone
- * below VOLUNTEER, reading the role from the session token. This reads it from
- * Postgres, which is authoritative: a volunteer whose access was revoked ten seconds
- * ago still holds a token that says otherwise, and the gate is the last place that
- * should be trusting a cached claim.
- */
 export default async function VolunteerPage({
   searchParams,
 }: {
   searchParams: Promise<{ gate?: string }>
 }) {
+  const { userId } = await auth()
   let actor = await getActor()
 
   if (process.env.NODE_ENV === 'development' && !actor) {
@@ -61,7 +33,10 @@ export default async function VolunteerPage({
     }
   }
 
-  if (actor === null) redirect('/sign-in?redirect_url=%2Fvolunteer')
+  if (actor === null) {
+    if (userId) redirect('/deactivated')
+    redirect('/sign-in?redirect_url=%2Fvolunteer')
+  }
   if (actor.role === 'STUDENT') redirect('/not-authorised')
 
   const [{ gate }, gates] = await Promise.all([

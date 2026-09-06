@@ -31,6 +31,7 @@
  */
 import 'server-only'
 
+import { redirect } from 'next/navigation'
 import { auth, clerkClient, currentUser } from '@clerk/nextjs/server'
 
 import { prisma, type Role, type User } from '@orientation/db'
@@ -68,65 +69,76 @@ export async function syncUser(): Promise<User | null> {
   const { userId } = await auth()
   if (!userId) return null
 
-  const existing = await prisma.user.findUnique({ where: { clerkUserId: userId } })
-  if (existing) {
-    if (!existing.isActive) return null
+  try {
+    const existing = await prisma.user.findUnique({ where: { clerkUserId: userId } })
+    if (existing) {
+      if (!existing.isActive) return null
 
-    // Method 2 / Emergency Admin Fallback: check ADMIN_EMAILS
+      // Method 2 / Emergency Admin Fallback: check ADMIN_EMAILS
+      const adminEmails = (process.env.ADMIN_EMAILS ?? '')
+        .split(',')
+        .map((e) => e.trim().toLowerCase())
+        .filter(Boolean)
+
+      if (existing.email && adminEmails.includes(existing.email.toLowerCase()) && existing.role !== 'ADMIN') {
+        const promoted = await prisma.user.update({
+          where: { id: existing.id },
+          data: { role: 'ADMIN' },
+        })
+        void reconcileClerkRole(userId, 'ADMIN')
+        return promoted
+      }
+
+      // `lastSeenAt` is useful for the admin staff list and worthless if it costs a
+      // write per request, so it is only updated once an hour per user. Not awaited:
+      // nothing depends on it and it must not add latency.
+      const hourAgo = Date.now() - 60 * 60 * 1_000
+      if (!existing.lastSeenAt || existing.lastSeenAt.getTime() < hourAgo) {
+        void prisma.user
+          .update({ where: { id: existing.id }, data: { lastSeenAt: new Date() } })
+          .catch(() => undefined)
+      }
+
+      void reconcileClerkRole(userId, existing.role)
+      return existing
+    }
+
+    // First request from a new account.
+    const clerkUser = await currentUser()
+    const email = clerkUser?.primaryEmailAddress?.emailAddress ?? null
+    const name =
+      [clerkUser?.firstName, clerkUser?.lastName].filter(Boolean).join(' ').trim() || null
+
     const adminEmails = (process.env.ADMIN_EMAILS ?? '')
       .split(',')
       .map((e) => e.trim().toLowerCase())
       .filter(Boolean)
 
-    if (existing.email && adminEmails.includes(existing.email.toLowerCase()) && existing.role !== 'ADMIN') {
-      const promoted = await prisma.user.update({
-        where: { id: existing.id },
-        data: { role: 'ADMIN' },
-      })
-      void reconcileClerkRole(userId, 'ADMIN')
-      return promoted
-    }
+    const clerkRole = clerkUser?.publicMetadata?.['role'] as Role | undefined
+    const isEnvAdmin = email ? adminEmails.includes(email.toLowerCase()) : false
+    const initialRole: Role = isEnvAdmin
+      ? 'ADMIN'
+      : clerkRole === 'ADMIN' || clerkRole === 'VOLUNTEER'
+        ? clerkRole
+        : 'STUDENT'
 
-    // `lastSeenAt` is useful for the admin staff list and worthless if it costs a
-    // write per request, so it is only updated once an hour per user. Not awaited:
-    // nothing depends on it and it must not add latency.
-    const hourAgo = Date.now() - 60 * 60 * 1_000
-    if (!existing.lastSeenAt || existing.lastSeenAt.getTime() < hourAgo) {
-      void prisma.user
-        .update({ where: { id: existing.id }, data: { lastSeenAt: new Date() } })
-        .catch(() => undefined)
+    // `upsert` rather than `create`: two requests from a brand-new account can
+    // arrive concurrently (a page and its `fetch`), and both would create.
+    return await prisma.user.upsert({
+      where: { clerkUserId: userId },
+      update: { email, name, ...(isEnvAdmin || clerkRole === 'ADMIN' ? { role: 'ADMIN' } : {}) },
+      create: { clerkUserId: userId, email, name, role: initialRole },
+    })
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err)
+    if (msg.includes("Can't reach database server") || msg.includes('P1001')) {
+      console.error(
+        `\x1b[31m[Prisma Database Offline]\x1b[0m PostgreSQL is not reachable at 127.0.0.1:5433.\n` +
+        `Run 'npm run docker:up' or 'npm run dev' to automatically start the container services.`
+      )
     }
-
-    void reconcileClerkRole(userId, existing.role)
-    return existing
+    throw err
   }
-
-  // First request from a new account.
-  const clerkUser = await currentUser()
-  const email = clerkUser?.primaryEmailAddress?.emailAddress ?? null
-  const name =
-    [clerkUser?.firstName, clerkUser?.lastName].filter(Boolean).join(' ').trim() || null
-
-  const adminEmails = (process.env.ADMIN_EMAILS ?? '')
-    .split(',')
-    .map((e) => e.trim().toLowerCase())
-    .filter(Boolean)
-
-  const clerkRole = clerkUser?.publicMetadata?.['role'] as Role | undefined
-  const isEnvAdmin = email ? adminEmails.includes(email.toLowerCase()) : false
-  const initialRole: Role = isEnvAdmin
-    ? 'ADMIN'
-    : clerkRole === 'ADMIN' || clerkRole === 'VOLUNTEER'
-      ? clerkRole
-      : 'STUDENT'
-
-  // `upsert` rather than `create`: two requests from a brand-new account can
-  // arrive concurrently (a page and its `fetch`), and both would create.
-  return prisma.user.upsert({
-    where: { clerkUserId: userId },
-    update: { email, name, ...(isEnvAdmin || clerkRole === 'ADMIN' ? { role: 'ADMIN' } : {}) },
-    create: { clerkUserId: userId, email, name, role: initialRole },
-  })
 }
 
 /**
@@ -152,11 +164,57 @@ async function reconcileClerkRole(clerkUserId: string, role: Role): Promise<void
   }
 }
 
-/** The current actor, or null when nobody is signed in. */
+/**
+ * Synchronize user active status & role with Clerk.
+ * When deactivating, marks them inactive in Clerk publicMetadata.
+ * When reactivating, restores their active role metadata.
+ */
+export async function syncClerkUserStatus(
+  clerkUserId: string,
+  isActive: boolean,
+  role: Role,
+): Promise<void> {
+  try {
+    const client = await clerkClient()
+    const clerkUser = await client.users.getUser(clerkUserId)
+    await client.users.updateUser(clerkUserId, {
+      publicMetadata: {
+        ...clerkUser.publicMetadata,
+        isActive,
+        role: isActive ? role : 'STUDENT',
+      },
+    })
+  } catch (error) {
+    console.warn('[Clerk Sync Warning] Could not sync user active status with Clerk:', error)
+  }
+}
+
+/** The current actor, or null when nobody is signed in or account is inactive. */
 export async function getActor(): Promise<Actor | null> {
   const user = await syncUser()
   if (!user) return null
   return { id: user.id, clerkUserId: user.clerkUserId, role: user.role, email: user.email, name: user.name }
+}
+
+/**
+ * Returns the current authenticated Actor, or performs safe navigation:
+ * - If user is NOT signed in with Clerk: redirects to `/sign-in?redirect_url=${redirectTo}`
+ * - If user IS signed in with Clerk, but account is deactivated in DB: redirects to `/deactivated`
+ * - If user is active: returns Actor
+ */
+export async function getActorOrRedirect(redirectTo?: string): Promise<Actor> {
+  const { userId } = await auth()
+  if (!userId) {
+    redirect(`/sign-in${redirectTo ? `?redirect_url=${encodeURIComponent(redirectTo)}` : ''}`)
+  }
+
+  const actor = await getActor()
+  if (!actor) {
+    // Authenticated session exists in Clerk, but local User row is inactive/deactivated in Postgres
+    redirect('/deactivated')
+  }
+
+  return actor
 }
 
 /**

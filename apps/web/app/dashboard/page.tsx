@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation'
 
-import { getActor } from '@/lib/server/auth'
+import { getActorOrRedirect } from '@/lib/server/auth'
 
 /**
  * A signpost, not a page. Nothing renders here.
@@ -19,14 +19,7 @@ import { getActor } from '@/lib/server/auth'
  * fallback render at the end.
  */
 export default async function DashboardPage() {
-  const actor = await getActor()
-
-  if (actor === null) {
-    // Reachable despite the middleware: a valid Clerk session whose local `User`
-    // row is deactivated. `syncUser` returns null for an inactive user, and the
-    // right destination is sign-in, which will show them the account is disabled.
-    redirect('/sign-in?redirect_url=%2Fdashboard')
-  }
+  const actor = await getActorOrRedirect('/dashboard')
 
   if (actor.role === 'ADMIN') redirect('/admin')
   if (actor.role === 'VOLUNTEER') redirect('/volunteer')

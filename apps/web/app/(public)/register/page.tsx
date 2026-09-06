@@ -9,7 +9,7 @@ import { PageHeader } from '@/components/site/PageHeader'
 import { Icon } from '@/components/ui/Icon'
 import { Container, IconChip, Section, SectionHeading } from '@/components/ui/atoms'
 import { EVENT, REGISTER_STEPS } from '@/lib/event'
-import { getActor } from '@/lib/server/auth'
+import { getActorOrRedirect } from '@/lib/server/auth'
 import {
   type RegistrationWindow,
   getConfig,
@@ -22,27 +22,8 @@ export const metadata: Metadata = {
   description: `Register for ${EVENT.programme} ${EVENT.year} — four short steps, one pass for orientation day, and seats on it for the family coming with you.`,
 }
 
-/**
- * The registration page.
- *
- * A server component because three facts have to be true before a single control
- * is drawn, and none of them can be established in the browser:
- *
- *   1. Whether this student has already registered. If they have, the page they
- *      want is `/pass`, not a form that would refuse them at the last step.
- *   2. Whether the gate is open. Step 1 makes a live call to a gate-checked
- *      endpoint, so a shut gate means the wizard cannot get past its first
- *      screen — better to say so than to let somebody discover it.
- *   3. The consent version, the seat count and the retention period. All three are
- *      operator-set and all three appear in words the student reads; shipping a
- *      hard-coded copy of any of them is how the notice and the record diverge.
- *
- * The middleware guarantees a signed-in actor on this path, so `getActor()` is
- * only null for the deactivated-account case it also handles at `/dashboard`.
- */
 export default async function RegisterPage() {
-  const actor = await getActor()
-  if (actor === null) redirect('/sign-in?redirect_url=%2Fregister')
+  const actor = await getActorOrRedirect('/register')
 
   const [existing, config] = await Promise.all([
     // Deliberately just the id. This page never renders registration detail — it

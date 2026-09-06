@@ -5,7 +5,7 @@ import type { ReactNode } from 'react'
 
 import { AdminNav } from '@/components/admin/AdminNav'
 import { RealtimeProvider } from '@/lib/client/RealtimeProvider'
-import { getActor, hasRole } from '@/lib/server/auth'
+import { getActorOrRedirect, hasRole } from '@/lib/server/auth'
 
 /**
  * The admin command centre's shell.
@@ -54,9 +54,8 @@ export const viewport: Viewport = {
 }
 
 export default async function AdminLayout({ children }: { children: ReactNode }) {
-  const actor = await getActor()
+  const actor = await getActorOrRedirect('/admin')
 
-  if (actor === null) redirect('/sign-in?redirect_url=%2Fadmin')
   if (!hasRole(actor.role, 'ADMIN')) redirect('/not-authorised')
 
   return (

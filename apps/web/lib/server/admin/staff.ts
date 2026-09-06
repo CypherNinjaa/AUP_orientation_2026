@@ -16,7 +16,7 @@ import { AUDIT_ACTIONS } from '@orientation/core/audit'
 import type { Role, RoleGrantRequest, StaffView } from '@orientation/contracts'
 
 import { writeAudit } from '../audit'
-import { type Actor, setRole } from '../auth'
+import { type Actor, setRole, syncClerkUserStatus } from '../auth'
 import { abort } from '../http'
 
 const VIEW_SELECT = {
@@ -133,7 +133,7 @@ export async function setStaffActive(
 
   const existing = await prisma.user.findUnique({
     where: { id: userId },
-    select: { id: true, role: true, isActive: true },
+    select: { id: true, role: true, isActive: true, clerkUserId: true },
   })
 
   if (existing === null) abort('NOT_FOUND', 'No such account.')
@@ -153,6 +153,9 @@ export async function setStaffActive(
     data: { isActive },
     select: VIEW_SELECT,
   })
+
+  // Synchronize active status and role cache with Clerk identity provider
+  void syncClerkUserStatus(existing.clerkUserId, isActive, existing.role)
 
   // Deactivation is a role-shaped change even though the role column is untouched: it
   // removes every capability the account had. Recorded with the same two verbs so a

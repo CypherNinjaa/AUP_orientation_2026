@@ -1,6 +1,5 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { redirect } from 'next/navigation'
 
 import { prisma } from '@orientation/db'
 
@@ -12,7 +11,7 @@ import { LinkButton } from '@/components/ui/Button'
 import { Icon } from '@/components/ui/Icon'
 import { Container, IconChip, Section, SectionHeading } from '@/components/ui/atoms'
 import { EVENT, GUEST_ALLOWANCE } from '@/lib/event'
-import { getActor } from '@/lib/server/auth'
+import { getActorOrRedirect } from '@/lib/server/auth'
 
 export const metadata: Metadata = {
   title: 'Your pass',
@@ -65,13 +64,7 @@ const CODES = [
 ]
 
 export default async function PassPage() {
-  const actor = await getActor()
-
-  if (actor === null) {
-    // Reachable despite the middleware: a valid Clerk session whose local `User`
-    // row has been deactivated. Sign-in is where that gets explained.
-    redirect('/sign-in?redirect_url=%2Fpass')
-  }
+  const actor = await getActorOrRedirect('/pass')
 
   const registration = await prisma.registration.findUnique({
     where: { userId: actor.id },

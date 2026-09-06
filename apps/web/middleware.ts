@@ -56,8 +56,14 @@ export default clerkMiddleware(async (auth, request) => {
     return NextResponse.redirect(signIn)
   }
 
-  const role = (sessionClaims?.['metadata'] as { role?: string } | undefined)?.role
-    ?? (sessionClaims?.['publicMetadata'] as { role?: string } | undefined)?.role
+  const meta = (sessionClaims?.['metadata'] as { role?: string; isActive?: boolean } | undefined)
+    ?? (sessionClaims?.['publicMetadata'] as { role?: string; isActive?: boolean } | undefined)
+  const role = meta?.role
+  const isActive = meta?.isActive
+
+  if (isActive === false && !request.nextUrl.pathname.startsWith('/deactivated')) {
+    return NextResponse.redirect(new URL('/deactivated', request.url))
+  }
 
   // Fast-path edge check: If the session token explicitly declares the user is a non-admin,
   // we can rewrite early. If the role claim is missing (e.g. Clerk default session token
