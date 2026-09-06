@@ -176,6 +176,19 @@ export async function syncClerkUserStatus(
 ): Promise<void> {
   try {
     const client = await clerkClient()
+    if (isActive) {
+      try {
+        await client.users.unbanUser(clerkUserId)
+      } catch {
+        // Ignored if user was not banned in Clerk
+      }
+    } else {
+      try {
+        await client.users.banUser(clerkUserId)
+      } catch (err) {
+        console.warn('[Clerk] Ban user API call warning (metadata fallback active):', err)
+      }
+    }
     const clerkUser = await client.users.getUser(clerkUserId)
     await client.users.updateUser(clerkUserId, {
       publicMetadata: {

@@ -46,14 +46,31 @@ export async function GET(request: Request): Promise<Response> {
 
     if (!registration) return fail('NOT_FOUND', 'You have not registered yet.')
     if (!registration.pass) {
-      // Not an error state — it is the normal state between submitting and being
-      // approved, and the message is what the student needs to hear.
-      return fail(
-        'NOT_FOUND',
-        registration.status === 'REVISION_REQUESTED'
-          ? 'Your pass is on hold until you retake your photo.'
-          : 'Your pass is issued once your registration is approved.',
-      )
+      let holdMessage = 'Your pass is issued once your registration is approved.'
+      if (registration.status === 'REVISION_REQUESTED') {
+        const note = registration.reviewNote?.toLowerCase() ?? ''
+        const isPhoto =
+          note.includes('photo') ||
+          note.includes('selfie') ||
+          note.includes('face') ||
+          note.includes('dark') ||
+          note.includes('blur') ||
+          note.includes('camera') ||
+          note.includes('orientation') ||
+          note.includes('retake')
+        const isNameMismatch =
+          note.includes('name') || note.includes('admission') || note.includes('record')
+
+        if (isNameMismatch && !isPhoto) {
+          holdMessage = 'Your pass is on hold due to an admissions record mismatch.'
+        } else if (isPhoto) {
+          holdMessage = 'Your pass is on hold until you retake your photo.'
+        } else {
+          holdMessage = 'Your pass is on hold until the requested revision is resolved.'
+        }
+      }
+
+      return fail('NOT_FOUND', holdMessage)
     }
 
     const pass = registration.pass

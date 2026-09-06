@@ -483,6 +483,8 @@ model Pass {
   /// selfie (D7). Names are already printed on the student's own pass; a face
   /// database on ten phones is a different category of loss.
   guestCount Int @default(0)
+  /// QR life: how many times this pass can be scanned by a volunteer.
+  scanLimit  Int @default(1)
 
   issuedAt      DateTime  @default(now())
   revokedAt     DateTime?

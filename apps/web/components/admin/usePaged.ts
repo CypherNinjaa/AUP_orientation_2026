@@ -31,8 +31,8 @@ export interface Paged<T> {
   /** There is another page after the ones held. */
   hasMore: boolean
   loadMore: () => void
-  /** Reload page one for the current filters. */
-  refresh: () => void
+  /** Reload page one for the current filters. Set silent: true to avoid resetting loading spinner. */
+  refresh: (opts?: { silent?: boolean } | unknown) => void
   /** Patch one row in place after a mutation returns its new state. */
   patch: (match: (row: T) => boolean, next: (row: T) => T) => void
 }
@@ -65,14 +65,16 @@ export function usePaged<T>(
     }
   }, [])
 
-  const loadFirst = useCallback(async () => {
+  const loadFirst = useCallback(async (opts?: { silent?: boolean }) => {
     inFlight.current?.abort()
     const controller = new AbortController()
     inFlight.current = controller
     const ticket = (sequence.current += 1)
 
-    setLoading(true)
-    setError(null)
+    if (!opts?.silent) {
+      setLoading(true)
+      setError(null)
+    }
 
     const result = await fetchPage(undefined, controller.signal)
     if (!mounted.current || ticket !== sequence.current) return
@@ -80,10 +82,15 @@ export function usePaged<T>(
     if (result.ok) {
       setItems(result.data.items)
       setCursor(result.data.nextCursor)
-    } else {
+      if (opts?.silent) {
+        setError(null)
+      }
+    } else if (!opts?.silent) {
       setError(result.error)
     }
-    setLoading(false)
+    if (!opts?.silent) {
+      setLoading(false)
+    }
     // `fetchPage` is the caller's and required stable; `deps` is what reloads on a
     // filter change, exactly as in `useResource`.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -111,8 +118,13 @@ export function usePaged<T>(
     })()
   }, [cursor, loadingMore, fetchPage])
 
-  const refresh = useCallback(() => {
-    void loadFirst()
+  const refresh = useCallback((opts?: { silent?: boolean } | unknown) => {
+    const isSilent =
+      typeof opts === 'object' &&
+      opts !== null &&
+      'silent' in opts &&
+      (opts as { silent?: boolean }).silent === true
+    void loadFirst({ silent: isSilent })
   }, [loadFirst])
 
   const patch = useCallback((match: (row: T) => boolean, next: (row: T) => T) => {

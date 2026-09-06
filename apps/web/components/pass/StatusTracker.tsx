@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import type { ReactNode } from 'react'
 
 import type { RegistrationStatus } from '@orientation/contracts'
@@ -77,6 +78,58 @@ function reached(status: RegistrationStatus, checkedIn: boolean): number {
   }
 }
 
+function getRevisionDetails(reviewNote: string | null, revisionCount: number) {
+  const note = reviewNote?.toLowerCase() ?? ''
+
+  const isNameMismatch =
+    note.includes('name') ||
+    note.includes('admission') ||
+    note.includes('record') ||
+    note.includes('admissions records')
+
+  const isPhoto =
+    note.includes('photo') ||
+    note.includes('selfie') ||
+    note.includes('face') ||
+    note.includes('dark') ||
+    note.includes('blur') ||
+    note.includes('camera') ||
+    note.includes('person') ||
+    note.includes('orientation') ||
+    note.includes('sideways') ||
+    note.includes('retake')
+
+  if (isNameMismatch && !isPhoto) {
+    return {
+      title: 'Admissions record mismatch',
+      icon: 'shield' as IconName,
+      tone: 'flame' as const,
+      blurb:
+        'A moderator verified your submission against university admissions records. The name on your registration must match your official admissions record before your orientation pass can be generated.',
+      type: 'name' as const,
+    }
+  }
+
+  if (isPhoto) {
+    return {
+      title: 'Your photo needs taking again',
+      icon: 'camera' as IconName,
+      tone: 'flame' as const,
+      blurb: `Nothing else you filled in has to change, and you keep your place — this is only the photograph.${revisionCount > 1 ? ` This is request number ${String(revisionCount)}.` : ''} Your pass is issued as soon as the new one is accepted.`,
+      type: 'photo' as const,
+    }
+  }
+
+  return {
+    title: 'Action required on your registration',
+    icon: 'alert' as IconName,
+    tone: 'flame' as const,
+    blurb:
+      'A moderator has reviewed your registration and requested changes before your pass can be issued. Please follow what was written below.',
+    type: 'general' as const,
+  }
+}
+
 export function StatusTracker({
   status,
   reviewNote,
@@ -95,40 +148,120 @@ export function StatusTracker({
 
   return (
     <div className="flex flex-col gap-6">
-      {status === 'REVISION_REQUESTED' ? (
-        <Aside
-          tone="flame"
-          icon="camera"
-          title="Your photo needs taking again"
-          note={reviewNote}
-          action={action}
-        >
-          Nothing else you filled in has to change, and you keep your place — this is only the
-          photograph. {revisionCount > 1 ? `This is request number ${String(revisionCount)}. ` : ''}
-          Your pass is issued as soon as the new one is accepted.
-        </Aside>
-      ) : null}
+      {status === 'REVISION_REQUESTED' ? (() => {
+        const rev = getRevisionDetails(reviewNote, revisionCount)
+        return (
+          <Aside
+            tone={rev.tone}
+            icon={rev.icon}
+            title={rev.title}
+            note={reviewNote}
+            action={
+              rev.type === 'photo' ? (
+                <div className="flex flex-col gap-3">
+                  <div className="flex flex-wrap items-center gap-3">
+                    {action}
+                    <Link
+                      href="/register"
+                      className="border-rule text-navy hover:bg-card inline-flex items-center gap-2 rounded-xl border bg-white/80 px-4 py-2.5 text-xs font-bold transition-colors"
+                    >
+                      <Icon name="id" size={14} />
+                      <span>Resubmit Form</span>
+                    </Link>
+                  </div>
+                  <p className="text-ink-faint text-[0.8125rem]">
+                    You can either retake your photo directly above or resubmit your form with updated details.
+                  </p>
+                </div>
+              ) : (
+                <div className="flex flex-col gap-3">
+                  <div className="flex flex-wrap items-center gap-3">
+                    <Link
+                      href="/register"
+                      className="bg-navy text-white hover:bg-navy-light inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-xs font-bold transition-colors shadow-sm"
+                    >
+                      <Icon name="id" size={15} />
+                      <span>Resubmit Form</span>
+                    </Link>
+                    <a
+                      href={`mailto:${EVENT.email}?subject=Registration%20Assistance`}
+                      className="border-rule text-navy hover:bg-card inline-flex items-center gap-2 rounded-xl border bg-white/80 px-4 py-2.5 text-xs font-bold transition-colors"
+                    >
+                      <Icon name="check" size={14} />
+                      <span>Email Support</span>
+                    </a>
+                  </div>
+                  <p className="text-ink-faint text-[0.8125rem]">
+                    You can resubmit your form with updated details or resolve directly at the Gate 1 help desk on orientation morning.
+                  </p>
+                </div>
+              )
+            }
+          >
+            {rev.blurb}
+          </Aside>
+        )
+      })() : null}
 
       {status === 'REJECTED' ? (
-        <Aside tone="danger" icon="alert" title="This registration was not accepted" note={reviewNote}>
-          Nothing is lost and nobody is turned away at the gate for this. Ring{' '}
-          <a href={`tel:${EVENT.helpline.replace(/\s/g, '')}`} className="font-bold underline decoration-1 underline-offset-4">
-            {EVENT.helpline}
-          </a>{' '}
-          or write to{' '}
+        <Aside
+          tone="danger"
+          icon="alert"
+          title="This registration was not accepted"
+          note={reviewNote}
+          action={
+            <div className="flex flex-col gap-3">
+              <div className="flex flex-wrap items-center gap-3">
+                <Link
+                  href="/register"
+                  className="bg-navy text-white hover:bg-navy-light inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-xs font-bold transition-colors shadow-sm"
+                >
+                  <Icon name="id" size={15} />
+                  <span>Resubmit Form</span>
+                </Link>
+                <a
+                  href={`mailto:${EVENT.email}?subject=Registration%20Assistance`}
+                  className="border-rule text-navy hover:bg-card inline-flex items-center gap-2 rounded-xl border bg-white/80 px-4 py-2.5 text-xs font-bold transition-colors"
+                >
+                  <Icon name="check" size={14} />
+                  <span>Email Support</span>
+                </a>
+              </div>
+              <p className="text-ink-faint text-[0.8125rem]">
+                You can resubmit your form with updated details or resolve directly at the Gate 1 help desk on orientation morning.
+              </p>
+            </div>
+          }
+        >
+          Nothing is lost and nobody is turned away at the gate. You can resubmit your registration form
+          with corrected details, write to{' '}
           <a href={`mailto:${EVENT.email}`} className="font-bold underline decoration-1 underline-offset-4">
             {EVENT.email}
-          </a>{' '}
-          and somebody will sort it out with you — the help desk at Gate 1 can also register you in
-          person on the morning.
+          </a>
+          , or visit the help desk at Gate 1 on orientation morning.
         </Aside>
       ) : null}
 
       {status === 'PENDING_REVIEW' ? (
-        <Aside tone="violet" icon="clock" title="Being checked now" note={null}>
+        <Aside
+          tone="violet"
+          icon="clock"
+          title="Being checked now"
+          note={null}
+          action={
+            <div className="flex flex-wrap items-center gap-3">
+              <Link
+                href="/register"
+                className="border-rule text-navy hover:bg-card inline-flex items-center gap-2 rounded-xl border bg-white/80 px-4 py-2 text-xs font-bold transition-colors"
+              >
+                <Icon name="id" size={14} />
+                <span>Resubmit Form</span>
+              </Link>
+            </div>
+          }
+        >
           This is usually done in seconds. If it takes longer somebody is looking at it by hand, and
-          this page changes on its own the moment it is decided — there is nothing to refresh and
-          nothing you need to do.
+          this page changes on its own the moment it is decided — there is nothing to refresh. If you need to make changes, you can resubmit your form at any time.
         </Aside>
       ) : null}
 

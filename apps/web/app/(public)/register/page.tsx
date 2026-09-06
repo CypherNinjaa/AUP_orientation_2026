@@ -28,10 +28,12 @@ export default async function RegisterPage() {
   const [existing, config] = await Promise.all([
     // Deliberately just the id. This page never renders registration detail — it
     // hands over to `/pass`, which reads it properly.
-    prisma.registration.findUnique({ where: { userId: actor.id }, select: { id: true } }),
+    prisma.registration.findUnique({ where: { userId: actor.id }, select: { id: true, status: true } }),
     getConfig(),
   ])
-  if (existing) redirect('/pass')
+  // Only redirect away if the student already has an approved pass.
+  // Any revision, rejection, or resubmission can access the form.
+  if (existing && existing.status === 'APPROVED') redirect('/pass')
 
   const gate = registrationWindow(config)
 

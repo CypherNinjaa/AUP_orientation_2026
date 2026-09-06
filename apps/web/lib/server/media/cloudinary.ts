@@ -426,7 +426,7 @@ async function recordFailure(
 export async function downloadUrl(
   publicId: string,
   cloudName: string,
-  ttlSeconds = 120,
+  _ttlSeconds = 120,
 ): Promise<string | null> {
   const account = await accountFor(cloudName)
   if (!account) {
@@ -434,24 +434,15 @@ export async function downloadUrl(
     return null
   }
 
-  const params: Record<string, string | number> = {
-    public_id: publicId,
-    format: 'jpg',
+  return cloudinary.url(publicId, {
     type: 'authenticated',
-    resource_type: 'image',
-    timestamp: Math.floor(Date.now() / 1_000),
-    expires_at: Math.floor(Date.now() / 1_000) + ttlSeconds,
-  }
-
-  const signature = cloudinary.utils.api_sign_request(params, account.apiSecret)
-
-  const query = new URLSearchParams({
-    ...Object.fromEntries(Object.entries(params).map(([k, v]) => [k, String(v)])),
+    sign_url: true,
+    secure: true,
+    cloud_name: account.cloudName,
     api_key: account.apiKey,
-    signature,
+    api_secret: account.apiSecret,
+    format: 'jpg',
   })
-
-  return `https://api.cloudinary.com/v1_1/${account.cloudName}/image/download?${query.toString()}`
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

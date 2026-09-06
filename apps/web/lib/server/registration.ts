@@ -115,15 +115,45 @@ export async function readDraft(
   actor: Actor,
 ): Promise<{ step: number; data: DraftData; updatedAt: Date } | null> {
   const draft = await prisma.registrationDraft.findUnique({ where: { userId: actor.id } })
-  if (!draft) return null
-  return {
-    step: draft.step,
-    // The column is `Json`, so what comes back is `JsonValue`. It was written by
-    // this app after Zod validation, but a shape written by an older deploy can
-    // still be sitting there — the client re-validates before using it.
-    data: (draft.data ?? {}) as DraftData,
-    updatedAt: draft.updatedAt,
+  if (draft) {
+    return {
+      step: draft.step,
+      // The column is `Json`, so what comes back is `JsonValue`. It was written by
+      // this app after Zod validation, but a shape written by an older deploy can
+      // still be sitting there — the client re-validates before using it.
+      data: (draft.data ?? {}) as DraftData,
+      updatedAt: draft.updatedAt,
+    }
   }
+
+  // If no draft exists, check if user has an existing registration (e.g. revision or resubmission)
+  // to prefill the form so the student does not have to retype everything.
+  const reg = await prisma.registration.findUnique({
+    where: { userId: actor.id },
+    include: {
+      admittedStudent: { select: { formNumber: true } },
+      companions: { orderBy: { position: 'asc' } },
+    },
+  })
+
+  if (reg && reg.admittedStudent) {
+    return {
+      step: 1,
+      data: {
+        formNumber: reg.admittedStudent.formNumber,
+        name: reg.name,
+        program: reg.program,
+        contactNo: reg.contactNo ?? '',
+        companions: reg.companions.map((c) => ({
+          name: c.name,
+          relationship: c.relationship,
+        })),
+      },
+      updatedAt: reg.submittedAt,
+    }
+  }
+
+  return null
 }
 
 export async function saveDraft(actor: Actor, step: number, data: DraftData): Promise<Date> {
@@ -196,7 +226,7 @@ export async function submitRegistration(
     where: { userId: actor.id },
     include: { pass: true },
   })
-  if (existing) {
+  if (existing && existing.status === 'APPROVED') {
     return {
       registrationId: existing.id,
       reference: existing.reference,
@@ -207,7 +237,7 @@ export async function submitRegistration(
 
   const admitted = await prisma.admittedStudent.findUnique({
     where: { formNumber: input.formNumber },
-    select: { id: true, name: true, program: true, isClaimed: true, claimedByUserId: true },
+    select: { id: true, name: true, program: true, programLevel: true, isClaimed: true, claimedByUserId: true },
   })
 
   if (!admitted) {
@@ -221,7 +251,7 @@ export async function submitRegistration(
     })
   }
 
-  const reference = generateReference()
+  const reference = existing ? existing.reference : generateReference()
 
   // Upload before the transaction. See the doc comment above.
   let uploaded
@@ -262,6 +292,61 @@ export async function submitRegistration(
       abort('ALREADY_CLAIMED', 'That form number was registered a moment ago by someone else.', {
         fields: { formNumber: 'Contact the help desk if this is your number.' },
       })
+    }
+
+    if (existing) {
+      if (existing.admittedStudentId !== admitted.id) {
+        await tx.admittedStudent.update({
+          where: { id: existing.admittedStudentId },
+          data: { isClaimed: false, claimedByUserId: null, claimedAt: null },
+        })
+      }
+
+      await tx.companion.deleteMany({ where: { registrationId: existing.id } })
+      if (existing.pass) {
+        await tx.pass.deleteMany({ where: { registrationId: existing.id } })
+      }
+
+      const registration = await tx.registration.update({
+        where: { id: existing.id },
+        data: {
+          admittedStudentId: admitted.id,
+          status,
+          name: input.name,
+          program: admitted.program,
+          contactNo: input.contactNo,
+          selfiePublicId: uploaded.publicId,
+          selfieCloudName: uploaded.cloudName,
+          selfieVersion: uploaded.version,
+          selfieBytes: uploaded.bytes,
+          selfieWidth: uploaded.width,
+          selfieHeight: uploaded.height,
+          selfieUploadedAt: now,
+          faceDetected: input.selfie.faceDetected,
+          consentVersion: input.consentVersion,
+          consentedAt: now,
+          submittedAt: now,
+          reviewNote: null,
+          reviewedById: null,
+          reviewedAt: null,
+          companions: {
+            create: input.companions.map((companion, index) => ({
+              relationship: companion.relationship,
+              name: companion.name,
+              position: index + 1,
+            })),
+          },
+        },
+        include: { companions: { orderBy: { position: 'asc' } } },
+      })
+
+      const pass = autoApprove
+        ? await issuePass(tx, registration.id, input.companions.length)
+        : null
+
+      await tx.registrationDraft.deleteMany({ where: { userId: actor.id } })
+
+      return { registration, pass }
     }
 
     const registration = await tx.registration.create({

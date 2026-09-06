@@ -277,19 +277,16 @@ function Help() {
         </p>
         <div className="mt-5 flex flex-col gap-2.5">
           <a
-            href={`tel:${EVENT.helpline.replace(/\s/g, '')}`}
-            className="flex items-center gap-2.5 font-bold text-white"
-          >
-            <Icon name="phone" size={16} className="text-flame-mid shrink-0" />
-            <span className="tnum">{EVENT.helpline}</span>
-          </a>
-          <a
             href={`mailto:${EVENT.email}`}
-            className="text-sky flex items-center gap-2.5 text-[0.9375rem] font-semibold break-all"
+            className="text-white hover:text-sky flex items-center gap-2.5 text-[0.9375rem] font-semibold break-all transition-colors"
           >
             <Icon name="mail" size={16} className="text-flame-mid shrink-0" />
             {EVENT.email}
           </a>
+          <div className="text-sky/85 flex items-center gap-2.5 text-xs">
+            <Icon name="pin" size={15} className="text-flame-mid shrink-0" />
+            <span>Gate 1 Help Desk, Orientation Morning</span>
+          </div>
         </div>
       </div>
     </div>
@@ -323,11 +320,11 @@ function Broken({ message, onRetry }: { message: string; onRetry: () => void }) 
         Try again
       </Button>
       <p className="text-ink-faint mt-5 text-[0.8125rem] leading-relaxed">
-        Still nothing? Your pass exists regardless of this page — ring{' '}
-        <a href={`tel:${EVENT.helpline.replace(/\s/g, '')}`} className="text-violet-deep font-bold">
-          {EVENT.helpline}
+        Still nothing? Your pass exists regardless of this page — write to{' '}
+        <a href={`mailto:${EVENT.email}`} className="text-violet-deep font-bold underline decoration-1 underline-offset-4">
+          {EVENT.email}
         </a>{' '}
-        and somebody will read you the code.
+        or visit the Gate 1 help desk on orientation morning.
       </p>
     </div>
   )

@@ -51,6 +51,7 @@ import {
 import { ago, fetchModeration, reviewRegistration, stamp } from '@/lib/admin'
 import { fieldError } from '@/lib/api'
 import { cn } from '@/lib/cn'
+import { useRealtime } from '@/lib/client/RealtimeProvider'
 import { useMutation } from '@/lib/client/useResource'
 
 type Filter = 'pending' | 'flagged' | 'all'
@@ -104,6 +105,12 @@ export function ModerationConsole() {
     [filter],
   )
   const queue = usePaged<ModerationItem>(fetchPage, [filter])
+
+  // Live real-time stream subscription
+  useRealtime({
+    'registration.created': () => queue.refresh({ silent: true }),
+    'registration.reviewed': () => queue.refresh({ silent: true }),
+  })
 
   const review = useMutation<{ id: string; body: ReviewRequest }, ReviewResponse>(
     useCallback(({ id, body }: { id: string; body: ReviewRequest }) => reviewRegistration(id, body), []),

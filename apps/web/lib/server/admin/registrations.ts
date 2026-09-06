@@ -24,11 +24,15 @@ import 'server-only'
 
 import { Prisma, prisma } from '@orientation/db'
 import { AUDIT_ACTIONS } from '@orientation/core/audit'
+import { parseEnvelope, signPass } from '@orientation/core/pass'
 import { adminChannel, studentChannel } from '@orientation/core/realtime'
 import {
   RETAKE_REASONS,
+  type AdjustQrLifeRequest,
+  type AdjustQrLifeResponse,
   type ManualCheckInRequest,
   type Page,
+  type RegistrationDetailView,
   type RegistrationListQuery,
   type RegistrationRow,
   type RestorePassRequest,
@@ -36,12 +40,16 @@ import {
   type ReviewRequest,
   type ReviewResponse,
   type RevokePassRequest,
+  type UserStatusRequest,
+  type UserStatusResponse,
 } from '@orientation/contracts'
 
-import type { Actor } from '../auth'
+import { type Actor, syncClerkUserStatus } from '../auth'
 import { writeAudit } from '../audit'
+import { bumpManifestVersion } from '../config'
 import { abort, isCheckConstraintViolation } from '../http'
-import { issuePass, restorePass, revokePass } from '../pass'
+import { issueSelfiePath } from '../media/selfie-url'
+import { getSigningKey, passWindow, issuePass, restorePass, revokePass } from '../pass'
 import { publish } from '../redis'
 import type { RequestMeta } from '../registration'
 
@@ -125,9 +133,9 @@ function buildWhere(query: RegistrationListQuery): Prisma.RegistrationWhereInput
       { reference: { contains: query.q.toUpperCase() } },
       ...(digits.length >= 4
         ? [
-            { admittedStudent: { formNumber: { contains: digits } } },
-            { pass: { code10: { contains: digits } } },
-          ]
+          { admittedStudent: { formNumber: { contains: digits } } },
+          { pass: { code10: { contains: digits } } },
+        ]
         : []),
     ]
   }
@@ -629,3 +637,480 @@ export async function reverseCheckIn(
 
   return { reversedCheckInId: original.id }
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Full Administrative Powers: Inline Detail, QR Life, Undo Review, User Bans
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Fetch comprehensive student data for the inline detail inspector.
+ */
+export async function getRegistrationDetail(
+  id: string,
+  actor: Actor,
+  meta: RequestMeta,
+): Promise<RegistrationDetailView> {
+  const record = await prisma.registration.findUnique({
+    where: { id },
+    include: {
+      user: {
+        select: {
+          id: true,
+          clerkUserId: true,
+          email: true,
+          name: true,
+          role: true,
+          isActive: true,
+        },
+      },
+      admittedStudent: {
+        select: {
+          formNumber: true,
+          name: true,
+          program: true,
+          programLevel: true,
+        },
+      },
+      reviewedBy: {
+        select: {
+          name: true,
+          email: true,
+        },
+      },
+      companions: {
+        orderBy: { position: 'asc' },
+        select: {
+          id: true,
+          name: true,
+          relationship: true,
+          position: true,
+        },
+      },
+      pass: {
+        select: {
+          id: true,
+          code10: true,
+          status: true,
+          guestCount: true,
+          issuedAt: true,
+          qrPayload: true,
+          checkIn: {
+            select: {
+              id: true,
+              recordedAt: true,
+              guestsAdmitted: true,
+              gate: {
+                select: {
+                  code: true,
+                  name: true,
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  })
+
+  if (!record) abort('NOT_FOUND', 'No such registration.')
+
+  let selfieUrl: string | null = null
+  if (record.selfiePublicId) {
+    selfieUrl = issueSelfiePath(record.id, actor.id).path
+    await writeAudit({
+      action: AUDIT_ACTIONS.SELFIE_VIEWED,
+      entityType: 'Registration',
+      entityId: record.id,
+      actor,
+      ip: meta.ip,
+      userAgent: meta.userAgent,
+    })
+  }
+
+  let passDetails: RegistrationDetailView['pass'] = null
+  if (record.pass) {
+    let notBefore: string | null = null
+    let notAfter: string | null = null
+    try {
+      const parsed = parseEnvelope(record.pass.qrPayload)
+      if (parsed) {
+        notBefore = new Date(parsed.notBefore).toISOString()
+        notAfter = new Date(parsed.notAfter).toISOString()
+      }
+    } catch {
+      // Ignored for legacy or test mock envelopes
+    }
+
+    const [scansCount, passLimitRows] = await Promise.all([
+      prisma.scanEvent.count({
+        where: { passId: record.pass.id, outcome: 'ADMITTED' },
+      }),
+      prisma.$queryRaw<Array<{ scanLimit: number }>>`
+        SELECT "scanLimit" FROM "Pass" WHERE id = ${record.pass.id}
+      `,
+    ])
+    const scansUsed = Math.max(scansCount, record.pass.checkIn ? 1 : 0)
+    const scanLimit = passLimitRows[0]?.scanLimit ?? 1
+    const holdingScans = Math.max(0, scanLimit - scansUsed)
+
+    passDetails = {
+      id: record.pass.id,
+      code10: record.pass.code10,
+      status: record.pass.status,
+      guestCount: record.pass.guestCount,
+      scanLimit,
+      scansUsed,
+      holdingScans,
+      issuedAt: record.pass.issuedAt.toISOString(),
+      qrPayload: record.pass.qrPayload,
+      notBefore,
+      notAfter,
+      checkIn: record.pass.checkIn
+        ? {
+          id: record.pass.checkIn.id,
+          gateCode: record.pass.checkIn.gate.code,
+          gateName: record.pass.checkIn.gate.name,
+          recordedAt: record.pass.checkIn.recordedAt.toISOString(),
+          guestsAdmitted: record.pass.checkIn.guestsAdmitted,
+        }
+        : null,
+    }
+  }
+
+  return {
+    id: record.id,
+    reference: record.reference,
+    status: record.status,
+    name: record.name,
+    program: record.program,
+    programLevel: record.admittedStudent.programLevel,
+    formNumber: record.admittedStudent.formNumber,
+    contactNo: record.contactNo,
+    email: record.user.email,
+    userId: record.user.id,
+    userIsActive: record.user.isActive,
+    userRole: record.user.role,
+    selfieUrl,
+    faceDetected: record.faceDetected,
+    submittedAt: record.submittedAt.toISOString(),
+    reviewedAt: record.reviewedAt?.toISOString() ?? null,
+    reviewedBy: record.reviewedBy?.name ?? record.reviewedBy?.email ?? null,
+    reviewNote: record.reviewNote,
+    revisionCount: record.revisionCount,
+    companions: record.companions.map((c) => ({
+      id: c.id,
+      name: c.name,
+      relationship: c.relationship,
+      position: c.position,
+    })),
+    pass: passDetails,
+  }
+}
+
+/**
+ * Extend or reduce QR life (number of volunteer scans allowed) for a pass.
+ */
+export async function adjustPassQrLife(
+  registrationId: string,
+  input: AdjustQrLifeRequest,
+  actor: Actor,
+  meta: RequestMeta,
+): Promise<AdjustQrLifeResponse> {
+  const reg = await prisma.registration.findUnique({
+    where: { id: registrationId },
+    select: {
+      id: true,
+      reference: true,
+      status: true,
+      pass: {
+        select: {
+          id: true,
+          code10: true,
+          qrPayload: true,
+          status: true,
+        },
+      },
+    },
+  })
+
+  if (!reg) abort('NOT_FOUND', 'No such registration.')
+  if (!reg.pass) abort('CONFLICT', 'This registration has no pass issued yet. Approve it first.')
+
+  const pass = reg.pass
+
+  // Calculate new scanLimit (QR Life as integer scans)
+  const currentPassRows = await prisma.$queryRaw<Array<{ scanLimit: number }>>`
+    SELECT "scanLimit" FROM "Pass" WHERE id = ${pass.id}
+  `
+  const currentScanLimit = currentPassRows[0]?.scanLimit ?? 1
+  let newScanLimit = currentScanLimit
+
+  if (input.scanLimit !== undefined) {
+    newScanLimit = Math.max(0, input.scanLimit)
+  } else if (input.deltaScans !== undefined) {
+    newScanLimit = Math.max(0, newScanLimit + input.deltaScans)
+  }
+
+  let currentNotBefore: Date
+  let currentNotAfter: Date
+
+  try {
+    const parsed = parseEnvelope(pass.qrPayload)
+    if (parsed) {
+      currentNotBefore = new Date(parsed.notBefore)
+      currentNotAfter = new Date(parsed.notAfter)
+    } else {
+      const def = passWindow()
+      currentNotBefore = def.notBefore
+      currentNotAfter = def.notAfter
+    }
+  } catch {
+    const def = passWindow()
+    currentNotBefore = def.notBefore
+    currentNotAfter = def.notAfter
+  }
+
+  let newNotBefore = currentNotBefore
+  let newNotAfter = currentNotAfter
+  let reissuedPayload: { payload: string; signedMessage: string; signature: string; keyId: string } | null = null
+
+  if (input.notBefore || input.notAfter || input.deltaDays || input.deltaHours) {
+    if (input.notBefore) newNotBefore = new Date(input.notBefore)
+    if (input.notAfter) newNotAfter = new Date(input.notAfter)
+    else if (input.deltaDays) newNotAfter = new Date(currentNotAfter.getTime() + input.deltaDays * 24 * 60 * 60 * 1000)
+    else if (input.deltaHours) newNotAfter = new Date(currentNotAfter.getTime() + input.deltaHours * 60 * 60 * 1000)
+
+    if (newNotAfter.getTime() > newNotBefore.getTime()) {
+      const key = getSigningKey()
+      reissuedPayload = signPass(key, {
+        code10: pass.code10,
+        notBefore: newNotBefore,
+        notAfter: newNotAfter,
+      })
+    }
+  }
+
+  await prisma.$executeRaw`
+    UPDATE "Pass" SET "scanLimit" = ${newScanLimit} WHERE id = ${pass.id}
+  `
+
+  if (reissuedPayload) {
+    await prisma.pass.update({
+      where: { id: pass.id },
+      data: {
+        qrPayload: reissuedPayload.payload,
+        signedPayload: reissuedPayload.signedMessage,
+        signature: reissuedPayload.signature,
+        keyId: reissuedPayload.keyId,
+      },
+    })
+  }
+
+  const scansCount = await prisma.scanEvent.count({
+    where: { passId: pass.id, outcome: 'ADMITTED' },
+  })
+  const hasCheckIn = await prisma.checkIn.findUnique({ where: { passId: pass.id } })
+  const scansUsed = Math.max(scansCount, hasCheckIn ? 1 : 0)
+  const holdingScans = Math.max(0, newScanLimit - scansUsed)
+
+  await bumpManifestVersion('CONFIG')
+
+  await writeAudit({
+    action: AUDIT_ACTIONS.PASS_REISSUED,
+    entityType: 'Pass',
+    entityId: pass.id,
+    actor,
+    ip: meta.ip,
+    userAgent: meta.userAgent,
+    before: { scanLimit: currentScanLimit },
+    after: {
+      scanLimit: newScanLimit,
+      scansUsed,
+      holdingScans,
+      deltaScans: input.deltaScans,
+      reason: input.reason ?? 'QR life adjusted by administrator',
+    },
+  })
+
+  // Broadcast realtime update to admin consoles
+  await publish(adminChannel(), {
+    type: 'registration.reviewed',
+    approved: true,
+    at: Date.now(),
+  })
+
+  return {
+    passId: pass.id,
+    code10: pass.code10,
+    scanLimit: newScanLimit,
+    scansUsed,
+    holdingScans,
+    notBefore: newNotBefore.toISOString(),
+    notAfter: newNotAfter.toISOString(),
+    qrPayload: reissuedPayload?.payload ?? pass.qrPayload,
+  }
+}
+
+/**
+ * Undo an accept or reject decision, restoring the registration to PENDING_REVIEW.
+ */
+export async function undoRegistrationReview(
+  registrationId: string,
+  actor: Actor,
+  meta: RequestMeta,
+): Promise<{ registrationId: string; status: 'PENDING_REVIEW' }> {
+  const existing = await prisma.registration.findUnique({
+    where: { id: registrationId },
+    select: {
+      id: true,
+      status: true,
+      name: true,
+      pass: { select: { id: true, status: true, code10: true } },
+    },
+  })
+
+  if (!existing) abort('NOT_FOUND', 'No such registration.')
+  if (existing.status === 'PENDING_REVIEW') {
+    abort('CONFLICT', 'Registration is already in pending review state.')
+  }
+  if (existing.status === 'DRAFT') {
+    abort('CONFLICT', 'Draft registrations cannot be unreviewed.')
+  }
+
+  const now = new Date()
+
+  await prisma.$transaction(async (tx) => {
+    await tx.registration.update({
+      where: { id: registrationId },
+      data: {
+        status: 'PENDING_REVIEW',
+        reviewedById: null,
+        reviewedAt: null,
+        reviewNote: null,
+      },
+    })
+
+    if (existing.pass !== null && existing.pass.status === 'ACTIVE') {
+      await tx.pass.update({
+        where: { id: existing.pass.id },
+        data: {
+          status: 'REVOKED',
+          revokedAt: now,
+          revokedById: actor.id,
+          revokedReason: 'Review decision undone by administrator',
+        },
+      })
+    }
+  })
+
+  if (existing.pass !== null && existing.pass.status === 'ACTIVE') {
+    await bumpManifestVersion('REVOCATION')
+  }
+
+  await writeAudit({
+    action: AUDIT_ACTIONS.REGISTRATION_EDITED_BY_ADMIN,
+    entityType: 'Registration',
+    entityId: registrationId,
+    actor,
+    before: { status: existing.status, passStatus: existing.pass?.status ?? null },
+    after: { status: 'PENDING_REVIEW', passStatus: existing.pass ? 'REVOKED' : null, undone: true },
+    ip: meta.ip,
+    userAgent: meta.userAgent,
+  })
+
+  publish(studentChannel(registrationId), {
+    type: 'registration.status',
+    registrationId,
+    status: 'PENDING_REVIEW',
+    hasPass: false,
+    at: now.getTime(),
+  })
+
+  publish(adminChannel(), {
+    type: 'registration.reviewed',
+    approved: false,
+    at: now.getTime(),
+  })
+
+  return {
+    registrationId,
+    status: 'PENDING_REVIEW',
+  }
+}
+
+/**
+ * Ban or unban a user account (synced with Clerk and PostgreSQL).
+ */
+export async function setUserActiveStatus(
+  registrationId: string,
+  input: UserStatusRequest,
+  actor: Actor,
+  meta: RequestMeta,
+): Promise<UserStatusResponse> {
+  const reg = await prisma.registration.findUnique({
+    where: { id: registrationId },
+    select: {
+      id: true,
+      user: {
+        select: {
+          id: true,
+          clerkUserId: true,
+          role: true,
+          isActive: true,
+        },
+      },
+      pass: {
+        select: {
+          id: true,
+          status: true,
+        },
+      },
+    },
+  })
+
+  if (!reg) abort('NOT_FOUND', 'No such registration.')
+  const user = reg.user
+
+  if (user.id === actor.id && !input.isActive) {
+    abort('CONFLICT', 'You cannot ban or deactivate your own administrator account.')
+  }
+
+  if (user.isActive === input.isActive) {
+    abort('CONFLICT', input.isActive ? 'That user account is already active.' : 'That user account is already banned.')
+  }
+
+  await prisma.user.update({
+    where: { id: user.id },
+    data: { isActive: input.isActive },
+  })
+
+  void syncClerkUserStatus(user.clerkUserId, input.isActive, user.role)
+
+  if (!input.isActive && reg.pass?.status === 'ACTIVE') {
+    await revokePass(reg.pass.id, input.reason || 'User account suspended by administrator', actor)
+  }
+
+  await writeAudit({
+    action: input.isActive ? AUDIT_ACTIONS.ROLE_GRANTED : AUDIT_ACTIONS.ROLE_REVOKED,
+    entityType: 'User',
+    entityId: user.id,
+    actor,
+    before: { isActive: user.isActive },
+    after: { isActive: input.isActive, reason: input.reason ?? null },
+    ip: meta.ip,
+    userAgent: meta.userAgent,
+  })
+
+  publish(adminChannel(), {
+    type: 'registration.reviewed',
+    approved: input.isActive,
+    at: Date.now(),
+  })
+
+  return {
+    userId: user.id,
+    clerkUserId: user.clerkUserId,
+    isActive: input.isActive,
+  }
+}
+

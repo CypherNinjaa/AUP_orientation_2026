@@ -79,6 +79,7 @@ export {
   ROSTER_MAX_BYTES,
   ROSTER_MIME_TYPES,
   RETAKE_REASONS,
+  adjustQrLifeRequest,
   auditQuery,
   broadcastRequest,
   cloudinaryAddRequest,
@@ -97,6 +98,9 @@ export {
   rosterRollbackRequest,
   roleGrantRequest,
   settingsUpdateRequest,
+  userStatusRequest,
+  type AdjustQrLifeRequest,
+  type AdjustQrLifeResponse,
   type AuditEntryView,
   type AuditQuery,
   type BroadcastRequest,
@@ -111,6 +115,7 @@ export {
   type ManualCheckInRequest,
   type ModerationItem,
   type ModerationQueueQuery,
+  type RegistrationDetailView,
   type RegistrationListQuery,
   type RegistrationRow,
   type RestorePassRequest,
@@ -132,6 +137,8 @@ export {
   type SettingsUpdateRequest,
   type StaffView,
   type StatsResponse,
+  type UserStatusRequest,
+  type UserStatusResponse,
 } from './admin'
 
 export {

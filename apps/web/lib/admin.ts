@@ -34,6 +34,8 @@
  */
 
 import type {
+  AdjustQrLifeRequest,
+  AdjustQrLifeResponse,
   AuditEntryView,
   AuditQuery,
   BroadcastRequest,
@@ -49,6 +51,7 @@ import type {
   ModerationItem,
   ModerationQueueQuery,
   Page,
+  RegistrationDetailView,
   RegistrationListQuery,
   RegistrationRow,
   RestorePassRequest,
@@ -67,6 +70,8 @@ import type {
   SettingsUpdateRequest,
   StaffView,
   StatsResponse,
+  UserStatusRequest,
+  UserStatusResponse,
 } from '@orientation/contracts'
 
 import { type ApiResult, apiGet, apiPatch, apiPost, apiPut, queryString } from '@/lib/api'
@@ -236,6 +241,36 @@ export function reverseCheckIn(
   body: ReverseCheckInRequest,
 ): Promise<ApiResult<ReverseCheckInResult>> {
   return apiPost<ReverseCheckInResult>(`/api/admin/registrations/${id}/reverse-checkin`, body)
+}
+
+export function fetchRegistrationDetail(
+  id: string,
+  signal?: AbortSignal,
+): Promise<ApiResult<RegistrationDetailView>> {
+  return apiGet<RegistrationDetailView>(`/api/admin/registrations/${id}/detail`, undefined, { signal })
+}
+
+export function adjustQrLife(
+  id: string,
+  body: AdjustQrLifeRequest,
+): Promise<ApiResult<AdjustQrLifeResponse>> {
+  return apiPost<AdjustQrLifeResponse>(`/api/admin/registrations/${id}/qr-life`, body)
+}
+
+export function undoReview(
+  id: string,
+): Promise<ApiResult<{ registrationId: string; status: 'PENDING_REVIEW' }>> {
+  return apiPost<{ registrationId: string; status: 'PENDING_REVIEW' }>(
+    `/api/admin/registrations/${id}/undo-review`,
+    {},
+  )
+}
+
+export function setUserStatus(
+  id: string,
+  body: UserStatusRequest,
+): Promise<ApiResult<UserStatusResponse>> {
+  return apiPost<UserStatusResponse>(`/api/admin/registrations/${id}/user-status`, body)
 }
 
 /* -------------------------------------------------------------------------- */

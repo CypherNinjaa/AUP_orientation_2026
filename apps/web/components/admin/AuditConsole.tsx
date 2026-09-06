@@ -43,6 +43,7 @@ import {
   opsControl,
 } from '@/components/ui/ops'
 import { ago, count, fetchAudit, fetchAuditActions, localInputToIso, stamp } from '@/lib/admin'
+import { useRealtime } from '@/lib/client/RealtimeProvider'
 import { useResource } from '@/lib/client/useResource'
 
 const ROLE_LABEL: Record<Role, string> = {
@@ -50,6 +51,7 @@ const ROLE_LABEL: Record<Role, string> = {
   VOLUNTEER: 'Volunteer',
   STUDENT: 'Student',
 }
+
 
 /** Actor as a person, falling back through the handles the ledger kept. */
 function actor(entry: AuditEntryView): string {
@@ -97,6 +99,15 @@ export function AuditConsole() {
     [action, from, to, piiOnly],
   )
   const entries = usePaged<AuditEntryView>(fetchPage, [action, from, to, piiOnly])
+
+  // Live real-time stream subscription (updates ledger quietly when no item is being inspected)
+  useRealtime({
+    'registration.created': () => { if (!selected) entries.refresh({ silent: true }) },
+    'registration.reviewed': () => { if (!selected) entries.refresh({ silent: true }) },
+    'checkin.recorded': () => { if (!selected) entries.refresh({ silent: true }) },
+    'roster.imported': () => { if (!selected) entries.refresh({ silent: true }) },
+    'scanner.synced': () => { if (!selected) entries.refresh({ silent: true }) },
+  })
 
   return (
     <div className="flex flex-col gap-6">

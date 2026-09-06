@@ -330,6 +330,83 @@ export const reverseCheckInRequest = z.strictObject({
 })
 export type ReverseCheckInRequest = z.infer<typeof reverseCheckInRequest>
 
+export const adjustQrLifeRequest = z.strictObject({
+  deltaScans: z.number().int().min(-50).max(50).optional(),
+  scanLimit: z.number().int().min(0).max(100).optional(),
+  deltaDays: z.number().int().min(-30).max(30).optional(),
+  deltaHours: z.number().int().min(-720).max(720).optional(),
+  notBefore: z.string().datetime().optional(),
+  notAfter: z.string().datetime().optional(),
+  reason: z.string().trim().max(300).optional(),
+})
+export type AdjustQrLifeRequest = z.infer<typeof adjustQrLifeRequest>
+
+export interface AdjustQrLifeResponse {
+  passId: string
+  code10: string
+  scanLimit: number
+  scansUsed: number
+  holdingScans: number
+  notBefore?: string
+  notAfter?: string
+  qrPayload?: string
+}
+
+export const userStatusRequest = z.strictObject({
+  isActive: z.boolean(),
+  reason: z.string().trim().max(300).optional(),
+})
+export type UserStatusRequest = z.infer<typeof userStatusRequest>
+
+export interface UserStatusResponse {
+  userId: string
+  clerkUserId: string
+  isActive: boolean
+}
+
+export interface RegistrationDetailView {
+  id: string
+  reference: string
+  status: RegistrationStatus
+  name: string
+  program: string
+  programLevel: string | null
+  formNumber: string
+  contactNo: string
+  email: string | null
+  userId: string
+  userIsActive: boolean
+  userRole: string
+  selfieUrl: string | null
+  faceDetected: boolean | null
+  submittedAt: string
+  reviewedAt: string | null
+  reviewedBy: string | null
+  reviewNote: string | null
+  revisionCount: number
+  companions: Array<{ id: string; name: string; relationship: string; position: number }>
+  pass: {
+    id: string
+    code10: string
+    status: 'ACTIVE' | 'REVOKED'
+    guestCount: number
+    scanLimit: number
+    scansUsed: number
+    holdingScans: number
+    issuedAt: string
+    qrPayload: string
+    notBefore: string | null
+    notAfter: string | null
+    checkIn: {
+      id: string
+      gateCode: string
+      gateName: string
+      recordedAt: string
+      guestsAdmitted: number
+    } | null
+  } | null
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Moderation queue
 // ─────────────────────────────────────────────────────────────────────────────
