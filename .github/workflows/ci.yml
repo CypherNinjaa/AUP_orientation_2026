@@ -55,7 +55,7 @@ jobs:
       # never needed in CI.
       NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: pk_test_Y2ktcGxhY2Vob2xkZXIuY2xlcmsuYWNjb3VudHMuZGV2JA
       CLERK_SECRET_KEY: sk_test_ci_placeholder
-      SECRETS_KEY: Y2ktb25seS1wbGFjZWhvbGRlci1rZXktMzJieXRlcy0=
+      SECRETS_KEY: secretkey
       NEXT_PUBLIC_SITE_URL: http://localhost:3000
 
     steps:
