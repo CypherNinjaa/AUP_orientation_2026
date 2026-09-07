@@ -34,7 +34,7 @@ import type { RealtimeEvent } from '@orientation/core/realtime'
 
 import { env, isDevelopment } from './env'
 
-const options: RedisOptions = {
+const commandOptions: RedisOptions = {
   /**
    * Bounded backoff, then keep trying slowly.
    *
@@ -56,6 +56,17 @@ const options: RedisOptions = {
   connectTimeout: 5_000,
 }
 
+const subscriberOptions: RedisOptions = {
+  retryStrategy: (times) => Math.min(times * 50, 3_000),
+  /**
+   * Subscriber connections MUST queue subscriptions during connection/reconnection
+   * so channels are subscribed immediately upon ready without throwing stream errors.
+   */
+  enableOfflineQueue: true,
+  maxRetriesPerRequest: null,
+  connectTimeout: 10_000,
+}
+
 /**
  * Survive Next's dev-server module reloads.
  *
@@ -71,7 +82,8 @@ const globalForRedis = globalThis as unknown as {
 }
 
 function create(role: string): Redis {
-  const client = new Redis(env.REDIS_URL, options)
+  const opts = role === 'subscriber' ? subscriberOptions : commandOptions
+  const client = new Redis(env.REDIS_URL, opts)
 
   client.on('error', (error: Error) => {
     // Logged once per distinct message rather than per attempt: `retryStrategy`
@@ -163,26 +175,24 @@ export async function subscribe(
 ): Promise<() => void> {
   const client = getSubscriber()
 
-  if (client.status === 'wait') {
-    try {
-      await client.connect()
-    } catch {
-      // Connect failure logged by error listener
-    }
-  }
-
   let listeners = handlers.get(channel)
   if (!listeners) {
     listeners = new Set()
     handlers.set(channel, listeners)
     try {
-      await client.subscribe(channel)
+      // Don't block SSE stream initialization indefinitely if Redis is unreachable
+      await Promise.race([
+        client.subscribe(channel),
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Redis subscription timed out')), 3_000),
+        ),
+      ])
     } catch (error) {
-      // Redis is down. The stream still opens and still sends heartbeats; the
-      // client simply receives no events until it reconnects and refetches.
+      // Redis is down or unreachable. The stream still opens and still sends heartbeats;
+      // the client simply receives no events until it reconnects and refetches.
       // Better than a 500 on a page that is otherwise fully functional.
       handlers.delete(channel)
-      console.error(`[redis:subscriber] could not subscribe to ${channel}`, error)
+      console.error(`[redis:subscriber] could not subscribe to ${channel}:`, error)
       return () => undefined
     }
   }
