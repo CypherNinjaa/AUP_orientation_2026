@@ -87,19 +87,21 @@ export async function POST(request: Request): Promise<Response> {
       return fail('FORBIDDEN', 'Invalid signature.')
     }
 
-    const clerkUserId = event.data.id
-    if (!clerkUserId) return noContent()
+    const data = event?.data
+    if (!data || !data.id) return noContent()
+
+    const clerkUserId = data.id
 
     switch (event.type) {
       case 'user.created':
       case 'user.updated': {
-        const email = primaryEmail(event.data)
-        const name = displayName(event.data)
+        const email = primaryEmail(data)
+        const name = displayName(data)
         // A Clerk-side ban or lock deactivates the local row too. The role is
         // *not* touched: Postgres is the authority for it (see `lib/server/auth.ts`)
         // and a webhook that reset it would let a Clerk metadata edit grant or
         // remove admin.
-        const isActive = event.data.banned !== true && event.data.locked !== true
+        const isActive = data.banned !== true && data.locked !== true
 
         await prisma.user.upsert({
           where: { clerkUserId },

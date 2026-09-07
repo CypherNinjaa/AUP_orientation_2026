@@ -54,7 +54,6 @@ const options: RedisOptions = {
   enableOfflineQueue: false,
   maxRetriesPerRequest: 2,
   connectTimeout: 5_000,
-  lazyConnect: true,
 }
 
 /**
@@ -163,6 +162,14 @@ export async function subscribe(
   handler: (event: RealtimeEvent) => void,
 ): Promise<() => void> {
   const client = getSubscriber()
+
+  if (client.status === 'wait') {
+    try {
+      await client.connect()
+    } catch {
+      // Connect failure logged by error listener
+    }
+  }
 
   let listeners = handlers.get(channel)
   if (!listeners) {
