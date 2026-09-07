@@ -14,6 +14,7 @@ import { formatCode10 } from '@orientation/core/pass'
 
 import { requireActor } from '@/lib/server/auth'
 import { fail, handle, ok } from '@/lib/server/http'
+import { issueSelfiePath } from '@/lib/server/media/selfie-url'
 import { barcodeSvg, qrSvg } from '@/lib/server/pass-render'
 import { toCompanionSummary, toPassSummary } from '@/lib/server/registration'
 import type { CompanionSummary, PassSummary } from '@orientation/contracts'
@@ -23,7 +24,12 @@ export const dynamic = 'force-dynamic'
 export interface PassRenderResponse {
   pass: PassSummary
   companions: CompanionSummary[]
-  student: { name: string; program: string; reference: string }
+  student: {
+    name: string
+    program: string
+    reference: string
+    photoUrl?: string | null
+  }
   /** Inline SVG. The whole signed envelope, verifiable offline. */
   qrSvg: string
   /** Inline SVG. Code128 of the ten digits only — a lookup key, not a credential. */
@@ -78,6 +84,10 @@ export async function GET(request: Request): Promise<Response> {
     const qr = await qrSvg(pass.qrPayload)
     const barcode = barcodeSvg(pass.code10)
 
+    const photoUrl = registration.selfiePublicId
+      ? issueSelfiePath(registration.id, actor.id, 3600).path
+      : null
+
     const body: PassRenderResponse = {
       pass: toPassSummary(pass, pass.checkIn?.scannedAt ?? null),
       companions: registration.companions.map(toCompanionSummary),
@@ -85,6 +95,7 @@ export async function GET(request: Request): Promise<Response> {
         name: registration.name,
         program: registration.program,
         reference: registration.reference,
+        photoUrl,
       },
       qrSvg: qr,
       barcodeSvg: barcode,

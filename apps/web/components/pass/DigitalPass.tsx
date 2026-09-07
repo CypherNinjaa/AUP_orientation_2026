@@ -91,13 +91,26 @@ export function DigitalPass({ data }: { data: PassRenderResponse }) {
         {/* Identity. Above the codes, because the volunteer reads the name off the
             screen while the camera is still focusing. */}
         <div className="border-rule/50 border-b px-6 py-5 sm:px-8">
-          <h2 className="text-navy text-[1.375rem] leading-tight font-extrabold tracking-[-0.02em] sm:text-[1.625rem]">
-            {student.name}
-          </h2>
-          <p className="text-ink-soft mt-1 text-[0.9375rem] leading-snug">{student.program}</p>
-          <p className="text-ink-faint mt-2 text-[0.8125rem] font-semibold">
-            Reference <span className="text-navy tnum">{student.reference}</span>
-          </p>
+          <div className="flex items-center justify-between gap-4">
+            <div className="min-w-0">
+              <h2 className="text-navy text-[1.375rem] leading-tight font-extrabold tracking-[-0.02em] sm:text-[1.625rem]">
+                {student.name}
+              </h2>
+              <p className="text-ink-soft mt-1 text-[0.9375rem] leading-snug">{student.program}</p>
+              <p className="text-ink-faint mt-2 text-[0.8125rem] font-semibold">
+                Reference <span className="text-navy tnum">{student.reference}</span>
+              </p>
+            </div>
+            {student.photoUrl ? (
+              <div className="relative shrink-0">
+                <img
+                  src={student.photoUrl}
+                  alt={student.name}
+                  className="size-20 sm:size-24 rounded-2xl object-cover ring-2 ring-navy/10 shadow-sm"
+                />
+              </div>
+            ) : null}
+          </div>
         </div>
 
         {/* Codes. */}

@@ -14,6 +14,7 @@ import { prisma } from '@orientation/db'
 
 import { requireActor } from '@/lib/server/auth'
 import { fail, handle, rateLimited } from '@/lib/server/http'
+import { downloadUrl } from '@/lib/server/media/cloudinary'
 import { renderPassPdf } from '@/lib/server/pass-render'
 import { rateLimit } from '@/lib/server/redis'
 
@@ -35,6 +36,25 @@ export async function GET(request: Request): Promise<Response> {
       return fail('NOT_FOUND', 'Your pass is issued once your registration is approved.')
     }
 
+    let photoBytes: Uint8Array | null = null
+    if (registration.selfiePublicId) {
+      try {
+        const url = await downloadUrl(
+          registration.selfiePublicId,
+          registration.selfieCloudName ?? '',
+        )
+        if (url) {
+          const res = await fetch(url, { signal: AbortSignal.timeout(5000) })
+          if (res.ok) {
+            const buffer = await res.arrayBuffer()
+            photoBytes = new Uint8Array(buffer)
+          }
+        }
+      } catch (err) {
+        console.warn('[pass/pdf] failed to fetch selfie bytes for PDF', err)
+      }
+    }
+
     const pdf = await renderPassPdf({
       name: registration.name,
       program: registration.program,
@@ -47,6 +67,7 @@ export async function GET(request: Request): Promise<Response> {
         name: c.name,
       })),
       issuedAt: registration.pass.issuedAt,
+      photoBytes,
     })
 
     // The filename carries the reference rather than the name: a phone's download

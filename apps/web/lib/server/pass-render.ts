@@ -174,6 +174,7 @@ export interface PassPdfInput {
   guestCount: number
   companions: { relationship: CompanionRelationship; name: string }[]
   issuedAt: Date
+  photoBytes?: Uint8Array | null
 }
 
 const RELATIONSHIP_LABEL: Record<CompanionRelationship, string> = {
@@ -223,6 +224,26 @@ export async function renderPassPdf(input: PassPdfInput): Promise<Uint8Array> {
     doc.embedPng(await barcodePng(input.code10)),
   ])
 
+  let studentPhoto = null
+  if (input.photoBytes && input.photoBytes.length > 0) {
+    try {
+      const isPng =
+        input.photoBytes[0] === 0x89 &&
+        input.photoBytes[1] === 0x50 &&
+        input.photoBytes[2] === 0x4e &&
+        input.photoBytes[3] === 0x47
+      studentPhoto = isPng
+        ? await doc.embedPng(input.photoBytes)
+        : await doc.embedJpg(input.photoBytes)
+    } catch {
+      try {
+        studentPhoto = await doc.embedPng(input.photoBytes)
+      } catch (err) {
+        console.warn('[pass-render] could not embed student photo into PDF', err)
+      }
+    }
+  }
+
   // ── header band ───────────────────────────────────────────────────────────
   page.drawRectangle({ x: 0, y: HEIGHT - 74, width: WIDTH, height: 74, color: NAVY })
 
@@ -245,6 +266,30 @@ export async function renderPassPdf(input: PassPdfInput): Promise<Uint8Array> {
     font: regular,
     color: rgb(0.78, 0.82, 0.92),
   })
+
+  // Centered Deeksharambh in header band (Amity Gold)
+  const deekshaText = 'Deeksharambh'
+  const deekshaSize = 18
+  const deekshaWidth = bold.widthOfTextAtSize(deekshaText, deekshaSize)
+  page.drawText(deekshaText, {
+    x: (WIDTH - deekshaWidth) / 2,
+    y: HEIGHT - 46,
+    size: deekshaSize,
+    font: bold,
+    color: rgb(1, 0.82, 0.24), // Amity Gold
+  })
+
+  const orientationText = 'Student Orientation Programme'
+  const orientationSize = 8
+  const orientationWidth = regular.widthOfTextAtSize(orientationText, orientationSize)
+  page.drawText(orientationText, {
+    x: (WIDTH - orientationWidth) / 2,
+    y: HEIGHT - 60,
+    size: orientationSize,
+    font: regular,
+    color: rgb(0.82, 0.86, 0.95),
+  })
+
   page.drawText(winAnsi(EVENT.dateRange), {
     x: WIDTH - 32 - regular.widthOfTextAtSize(winAnsi(EVENT.dateRange), 10),
     y: HEIGHT - 55,
@@ -255,6 +300,7 @@ export async function renderPassPdf(input: PassPdfInput): Promise<Uint8Array> {
 
   // ── identity, left column ─────────────────────────────────────────────────
   let y = HEIGHT - 112
+  const maxTextWidth = studentPhoto ? 220 : 300
 
   const label = (text: string, atY: number) => {
     drawTracked(page, winAnsi(text.toUpperCase()), {
@@ -267,21 +313,59 @@ export async function renderPassPdf(input: PassPdfInput): Promise<Uint8Array> {
     })
   }
 
+  // Draw student photo if available
+  if (studentPhoto) {
+    const photoBoxX = 264
+    const photoBoxY = 216
+    const photoBoxW = 84
+    const photoBoxH = 104
+
+    // Frame with background
+    page.drawRectangle({
+      x: photoBoxX,
+      y: photoBoxY,
+      width: photoBoxW,
+      height: photoBoxH,
+      color: rgb(0.96, 0.97, 0.98),
+      borderColor: HAIRLINE,
+      borderWidth: 0.75,
+    })
+
+    // Preserve aspect ratio inside inner box (80x100)
+    const innerW = 80
+    const innerH = 100
+    const imgRatio = studentPhoto.width / studentPhoto.height
+    let drawW = innerW
+    let drawH = innerH
+    if (imgRatio > innerW / innerH) {
+      drawH = innerW / imgRatio
+    } else {
+      drawW = innerH * imgRatio
+    }
+    const drawX = photoBoxX + (photoBoxW - drawW) / 2
+    const drawY = photoBoxY + (photoBoxH - drawH) / 2
+
+    page.drawImage(studentPhoto, {
+      x: drawX,
+      y: drawY,
+      width: drawW,
+      height: drawH,
+    })
+  }
+
   label('Student', y)
   y -= 20
-  // The name gets whatever size fits. A 44-character name at 20pt overruns the
-  // QR panel, and a pass with the name clipped is a pass a volunteer cannot check.
+  // The name gets whatever size fits.
   const nameText = winAnsi(input.name)
-  const nameSize = [20, 17, 14, 12].find((size) => bold.widthOfTextAtSize(nameText, size) <= 300) ?? 11
+  const nameSize =
+    [20, 17, 14, 12].find((size) => bold.widthOfTextAtSize(nameText, size) <= maxTextWidth) ?? 11
   page.drawText(nameText, { x: 32, y, size: nameSize, font: bold, color: INK })
 
   y -= 26
   label('Programme', y)
   y -= 15
-  // Verbatim from the admissions sheet. Wrapped rather than truncated: the
-  // programme is how a volunteer disambiguates two students with the same name,
-  // and `B.Tech CSE (AI & ML)` cut to `B.Tech CSE (AI` does not.
-  for (const line of wrap(winAnsi(input.program), regular, 10, 300).slice(0, 2)) {
+  // Verbatim from the admissions sheet. Wrapped rather than truncated.
+  for (const line of wrap(winAnsi(input.program), regular, 10, maxTextWidth).slice(0, 2)) {
     page.drawText(line, { x: 32, y, size: 10, font: regular, color: INK })
     y -= 13
   }
