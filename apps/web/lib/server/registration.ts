@@ -81,16 +81,48 @@ export async function lookupFormNumber(
   const row = await prisma.admittedStudent.findUnique({
     where: { formNumber },
     select: {
+      id: true,
       formNumber: true,
       name: true,
       program: true,
       contactNo: true,
       isClaimed: true,
       claimedByUserId: true,
+      registration: {
+        select: { id: true, userId: true },
+      },
     },
   })
 
   if (!row) return { status: 'NOT_FOUND' }
+
+  // A user can only hold a single form number.
+  // Self-heal stale claims: If marked claimed, verify whether that claim is actively held.
+  if (row.isClaimed) {
+    let shouldRelease = false
+    if (!row.registration) {
+      // 1. Orphan claim: marked claimed but no registration exists
+      shouldRelease = true
+    } else if (row.claimedByUserId) {
+      // 2. Claiming user has an active registration on a DIFFERENT form number
+      const userRegistration = await prisma.registration.findUnique({
+        where: { userId: row.claimedByUserId },
+        select: { id: true, admittedStudentId: true },
+      })
+      if (userRegistration && userRegistration.admittedStudentId !== row.id) {
+        shouldRelease = true
+      }
+    }
+
+    if (shouldRelease) {
+      await prisma.admittedStudent.update({
+        where: { id: row.id },
+        data: { isClaimed: false, claimedByUserId: null, claimedAt: null },
+      })
+      row.isClaimed = false
+      row.claimedByUserId = null
+    }
+  }
 
   const preview: AdmittedStudentPreview = {
     formNumber: row.formNumber,
@@ -237,7 +269,17 @@ export async function submitRegistration(
 
   const admitted = await prisma.admittedStudent.findUnique({
     where: { formNumber: input.formNumber },
-    select: { id: true, name: true, program: true, programLevel: true, isClaimed: true, claimedByUserId: true },
+    select: {
+      id: true,
+      name: true,
+      program: true,
+      programLevel: true,
+      isClaimed: true,
+      claimedByUserId: true,
+      registration: {
+        select: { id: true, userId: true },
+      },
+    },
   })
 
   if (!admitted) {
@@ -245,6 +287,32 @@ export async function submitRegistration(
       fields: { formNumber: 'Check the number on your admission letter.' },
     })
   }
+
+  // Self-heal stale claim if this form number was abandoned by a user who registered elsewhere
+  if (admitted.isClaimed) {
+    let shouldRelease = false
+    if (!admitted.registration) {
+      shouldRelease = true
+    } else if (admitted.claimedByUserId) {
+      const userRegistration = await prisma.registration.findUnique({
+        where: { userId: admitted.claimedByUserId },
+        select: { id: true, admittedStudentId: true },
+      })
+      if (userRegistration && userRegistration.admittedStudentId !== admitted.id) {
+        shouldRelease = true
+      }
+    }
+
+    if (shouldRelease) {
+      await prisma.admittedStudent.update({
+        where: { id: admitted.id },
+        data: { isClaimed: false, claimedByUserId: null, claimedAt: null },
+      })
+      admitted.isClaimed = false
+      admitted.claimedByUserId = null
+    }
+  }
+
   if (admitted.isClaimed && admitted.claimedByUserId !== actor.id) {
     abort('ALREADY_CLAIMED', 'That form number has already been registered.', {
       fields: { formNumber: 'Contact the help desk if this is your number.' },
