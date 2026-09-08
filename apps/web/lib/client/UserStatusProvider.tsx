@@ -15,6 +15,7 @@ export interface UserStatusContextValue {
   role: UserRole
   registration: MeResponse['registration'] | null
   meData: MeResponse | null
+  user: ReturnType<typeof useUser>['user'] | null
   refresh: () => Promise<void>
 }
 
@@ -26,6 +27,7 @@ const UserStatusContext = createContext<UserStatusContextValue>({
   role: 'STUDENT',
   registration: null,
   meData: null,
+  user: null,
   refresh: async () => {},
 })
 
@@ -74,9 +76,10 @@ export function UserStatusProvider({ children }: { children: ReactNode }) {
       role,
       registration: meData?.registration ?? null,
       meData,
+      user: user ?? null,
       refresh: loadMe,
     }),
-    [clerkLoaded, isSignedIn, loadingMe, meData, isRegistered, hasPass, role, loadMe],
+    [clerkLoaded, isSignedIn, loadingMe, meData, isRegistered, hasPass, role, user, loadMe],
   )
 
   return <UserStatusContext.Provider value={value}>{children}</UserStatusContext.Provider>

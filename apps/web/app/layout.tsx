@@ -113,7 +113,11 @@ const CLERK_ROUTES = {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <ClerkProvider appearance={CLERK_APPEARANCE} {...CLERK_ROUTES}>
+    <ClerkProvider
+      publishableKey={process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}
+      appearance={CLERK_APPEARANCE}
+      {...CLERK_ROUTES}
+    >
       <html lang="en-IN" suppressHydrationWarning className={`${jakarta.variable} ${caveat.variable}`}>
         <head>
           <script dangerouslySetInnerHTML={{ __html: BOOTSTRAP }} />

@@ -33,6 +33,9 @@
     "db:seed": "node --env-file=.env --import tsx packages/db/prisma/seed.ts",
     "postinstall": "npm run db:generate"
   },
+  "dependencies": {
+    "prisma": "6.19.3"
+  },
   "devDependencies": {
     "prisma": "6.19.3",
     "tsx": "^4.23.13"

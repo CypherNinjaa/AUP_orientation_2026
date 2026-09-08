@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "prisma migrate deploy --schema ../../packages/db/prisma/schema.prisma && next start",
+    "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "models:sync": "node scripts/sync-models.mjs"

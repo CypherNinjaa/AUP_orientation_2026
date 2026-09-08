@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useEffect, useState } from 'react'
-import { useClerk, useUser, UserButton } from '@clerk/nextjs'
+import { SignOutButton, UserButton } from '@clerk/nextjs'
 import { LinkButton } from '@/components/ui/Button'
 import { Icon } from '@/components/ui/Icon'
 import { cn } from '@/lib/cn'
@@ -15,9 +15,7 @@ export function SiteHeader() {
   const pathname = usePathname()
   const [scrolled, setScrolled] = useState(false)
   const [open, setOpen] = useState(false)
-  const { user } = useUser()
-  const { signOut } = useClerk()
-  const { isSignedIn, isRegistered, role } = useUserStatus()
+  const { isSignedIn, isRegistered, role, user } = useUserStatus()
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 12)
@@ -236,17 +234,16 @@ export function SiteHeader() {
               </LinkButton>
             )}
 
-            <button
-              type="button"
-              onClick={async () => {
-                setOpen(false)
-                await signOut({ redirectUrl: '/' })
-              }}
-              className="border-rule/60 text-ink-soft hover:text-danger hover:border-danger/40 flex w-full items-center justify-center gap-2 rounded-full border py-3.5 text-sm font-semibold transition-colors"
-            >
-              <Icon name="logout" size={17} />
-              Sign out
-            </button>
+            <SignOutButton redirectUrl="/">
+              <button
+                type="button"
+                onClick={() => setOpen(false)}
+                className="border-rule/60 text-ink-soft hover:text-danger hover:border-danger/40 flex w-full items-center justify-center gap-2 rounded-full border py-3.5 text-sm font-semibold transition-colors"
+              >
+                <Icon name="logout" size={17} />
+                Sign out
+              </button>
+            </SignOutButton>
           </div>
         ) : (
           <div className="mt-8">
