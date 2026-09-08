@@ -275,6 +275,18 @@ export async function submitRegistration(
   const now = new Date()
 
   const created = await prisma.$transaction(async (tx) => {
+    // If this actor previously claimed a DIFFERENT form number (e.g. resubmitting with a new
+    // form number or recovering from a prior attempt), release that claim first.
+    // Otherwise, setting `claimedByUserId: actor.id` on `admitted.id` violates the
+    // Postgres unique index on `AdmittedStudent.claimedByUserId`.
+    await tx.admittedStudent.updateMany({
+      where: {
+        claimedByUserId: actor.id,
+        id: { not: admitted.id },
+      },
+      data: { isClaimed: false, claimedByUserId: null, claimedAt: null },
+    })
+
     // The claim and the registration in one atomic step. Two students racing on
     // one form number both reach here; the `claimedByUserId` unique index and
     // the conditional `updateMany` below mean exactly one wins.
@@ -295,13 +307,6 @@ export async function submitRegistration(
     }
 
     if (existing) {
-      if (existing.admittedStudentId !== admitted.id) {
-        await tx.admittedStudent.update({
-          where: { id: existing.admittedStudentId },
-          data: { isClaimed: false, claimedByUserId: null, claimedAt: null },
-        })
-      }
-
       await tx.companion.deleteMany({ where: { registrationId: existing.id } })
       if (existing.pass) {
         await tx.pass.deleteMany({ where: { registrationId: existing.id } })
