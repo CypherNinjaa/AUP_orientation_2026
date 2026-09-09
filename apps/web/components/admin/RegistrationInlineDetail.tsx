@@ -33,6 +33,7 @@ import {
 import {
   adjustQrLife,
   ago,
+  deleteRegistration,
   fetchRegistrationDetail,
   manualCheckIn,
   restorePass,
@@ -64,10 +65,11 @@ const STATUS_LABEL: Record<RegistrationStatus, string> = {
 interface Props {
   row: RegistrationRow
   onUpdate: (id: string, patch: (prev: RegistrationRow) => RegistrationRow) => void
+  onDelete?: (id: string) => void
   onClose: () => void
 }
 
-export function RegistrationInlineDetail({ row, onUpdate, onClose }: Props) {
+export function RegistrationInlineDetail({ row, onUpdate, onDelete, onClose }: Props) {
   const [feedback, setFeedback] = useState<string | null>(null)
   const [rejectMode, setRejectMode] = useState(false)
   const [rejectReason, setRejectReason] = useState('')
@@ -78,6 +80,8 @@ export function RegistrationInlineDetail({ row, onUpdate, onClose }: Props) {
   const [banReason, setBanReason] = useState('')
   const [revokeConfirmOpen, setRevokeConfirmOpen] = useState(false)
   const [revokeReason, setRevokeReason] = useState('')
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
+  const [deleteReason, setDeleteReason] = useState('')
 
   const fetchDetail = useCallback(
     (signal: AbortSignal) => fetchRegistrationDetail(row.id, signal),
@@ -134,6 +138,13 @@ export function RegistrationInlineDetail({ row, onUpdate, onClose }: Props) {
     useCallback(
       ({ id, body }: { id: string; body: Parameters<typeof reverseCheckIn>[1] }) =>
         reverseCheckIn(id, body),
+      [],
+    ),
+  )
+  const deleteM = useMutation(
+    useCallback(
+      ({ id, body }: { id: string; body?: Parameters<typeof deleteRegistration>[1] }) =>
+        deleteRegistration(id, body),
       [],
     ),
   )
@@ -397,6 +408,25 @@ export function RegistrationInlineDetail({ row, onUpdate, onClose }: Props) {
     }
   }
 
+  // Completely Delete Registration (Undo registration, release claim)
+  async function handleDeleteRegistration() {
+    const result = await deleteM.run({
+      id: row.id,
+      body: { reason: deleteReason.trim() || undefined },
+    })
+    if (result.ok) {
+      setFeedback(
+        `Registration for ${result.data.name} (${result.data.formNumber}) was completely deleted. Admission record released.`,
+      )
+      setDeleteConfirmOpen(false)
+      if (onDelete) {
+        onDelete(row.id)
+      } else {
+        onClose()
+      }
+    }
+  }
+
   const anyLoading =
     reviewM.pending ||
     undoM.pending ||
@@ -405,7 +435,8 @@ export function RegistrationInlineDetail({ row, onUpdate, onClose }: Props) {
     revokeM.pending ||
     restoreM.pending ||
     checkInM.pending ||
-    reverseCheckInM.pending
+    reverseCheckInM.pending ||
+    deleteM.pending
 
   const activeError =
     reviewM.error ||
@@ -415,7 +446,8 @@ export function RegistrationInlineDetail({ row, onUpdate, onClose }: Props) {
     revokeM.error ||
     restoreM.error ||
     checkInM.error ||
-    reverseCheckInM.error
+    reverseCheckInM.error ||
+    deleteM.error
 
   return (
     <div className="border-t border-b border-ops-line/80 bg-ops-surface/95 px-6 py-6 text-sm text-ops-soft">
@@ -850,6 +882,48 @@ export function RegistrationInlineDetail({ row, onUpdate, onClose }: Props) {
             </div>
           )}
 
+          {/* Sub-form: Complete Deletion Confirmation */}
+          {deleteConfirmOpen && (
+            <div className="flex flex-col gap-3 rounded-xl border border-stop/50 bg-stop/10 p-4">
+              <div className="flex items-center gap-2 text-stop text-sm font-semibold">
+                <Icon name="trash" size={16} />
+                <span>Completely Delete Registration &amp; Release Claim</span>
+              </div>
+              <p className="text-xs text-ops-soft leading-relaxed">
+                This permanently deletes this registration, all companions, digital pass, selfie image, and check-in logs just like it never happened.
+                The student&apos;s admission record (<strong className="font-mono text-ops-ink">{row.formNumber}</strong>) will be <span className="font-semibold text-go">unclaimed</span> so they can re-register afresh.
+              </p>
+              <OpsField label="Reason (Optional audit log note)" htmlFor={`del-reg-${detail.id}`}>
+                <input
+                  id={`del-reg-${detail.id}`}
+                  className={opsControl}
+                  value={deleteReason}
+                  onChange={(e) => setDeleteReason(e.target.value)}
+                  placeholder="e.g. Registered wrong programme / user testing / reset requested..."
+                />
+              </OpsField>
+              <div className="flex items-center gap-2 pt-1">
+                <OpsButton
+                  size="sm"
+                  variant="danger"
+                  onClick={handleDeleteRegistration}
+                  disabled={anyLoading}
+                  icon="trash"
+                >
+                  {deleteM.pending ? 'Deleting Registration…' : 'Confirm Permanent Deletion'}
+                </OpsButton>
+                <OpsButton
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => setDeleteConfirmOpen(false)}
+                  disabled={anyLoading}
+                >
+                  Cancel
+                </OpsButton>
+              </div>
+            </div>
+          )}
+
           {/* Bottom Action Command Bar */}
           <div className="flex flex-wrap items-center justify-between gap-3 border-t border-ops-line/80 pt-4">
             {/* Left Group: Decisions & Undo */}
@@ -970,6 +1044,17 @@ export function RegistrationInlineDetail({ row, onUpdate, onClose }: Props) {
                   Reverse Check-in
                 </OpsButton>
               )}
+
+              {/* Complete Delete Registration */}
+              <OpsButton
+                size="sm"
+                variant="danger"
+                onClick={() => setDeleteConfirmOpen(true)}
+                disabled={anyLoading}
+                icon="trash"
+              >
+                Delete
+              </OpsButton>
 
               <OpsButton size="sm" variant="ghost" onClick={onClose}>
                 Close

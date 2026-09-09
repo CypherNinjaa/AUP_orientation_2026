@@ -48,6 +48,7 @@ import { type Actor, syncClerkUserStatus } from '../auth'
 import { writeAudit } from '../audit'
 import { bumpManifestVersion } from '../config'
 import { abort, isCheckConstraintViolation } from '../http'
+import { destroySelfie } from '../media/cloudinary'
 import { issueSelfiePath } from '../media/selfie-url'
 import { getSigningKey, passWindow, issuePass, restorePass, revokePass } from '../pass'
 import { publish } from '../redis'
@@ -1122,6 +1123,188 @@ export async function setUserActiveStatus(
     userId: user.id,
     clerkUserId: user.clerkUserId,
     isActive: input.isActive,
+  }
+}
+
+export interface DeleteRegistrationResponse {
+  success: true
+  registrationId: string
+  formNumber: string
+  name: string
+}
+
+/**
+ * Completely and permanently delete a registration, undoing the registration
+ * as if it never happened:
+ * 1. Checks and cleans up any Gate CheckIn & ScanEvents associated with the pass
+ * 2. Cascades pass & companion deletions
+ * 3. Deletes Cloudinary selfie asset to free up storage quota
+ * 4. Clears any unfinished RegistrationDraft for the student
+ * 5. Deletes the Registration record from PostgreSQL
+ * 6. Releases the AdmittedStudent claim (isClaimed: false, claimedByUserId: null, claimedAt: null)
+ *    so the student can freely re-register with their form number!
+ * 7. Bumps scanner manifest version if an active pass was removed
+ * 8. Records an immutable audit log entry
+ * 9. Emits realtime events to admin and student channels
+ */
+export async function deleteRegistrationCompletely(
+  registrationId: string,
+  actor: Actor,
+  meta: RequestMeta,
+  reason?: string,
+): Promise<DeleteRegistrationResponse> {
+  const reg = await prisma.registration.findUnique({
+    where: { id: registrationId },
+    include: {
+      admittedStudent: {
+        select: {
+          id: true,
+          formNumber: true,
+          name: true,
+        },
+      },
+      pass: {
+        select: {
+          id: true,
+          code10: true,
+          status: true,
+          checkIn: {
+            select: { id: true, scanEventId: true },
+          },
+        },
+      },
+      companions: {
+        select: { id: true },
+      },
+    },
+  })
+
+  if (!reg) abort('NOT_FOUND', 'No such registration.')
+
+  const formNumber = reg.admittedStudent.formNumber
+  const studentName = reg.name
+  const admittedStudentId = reg.admittedStudent.id
+  const userId = reg.userId
+  const passId = reg.pass?.id
+  const checkInId = reg.pass?.checkIn?.id
+  const selfiePublicId = reg.selfiePublicId
+  const selfieCloudName = reg.selfieCloudName
+  const hadActivePass = reg.pass?.status === 'ACTIVE'
+
+  await prisma.$transaction(async (tx) => {
+    // 1. If a pass exists, handle scan events and checkins
+    if (passId) {
+      if (checkInId) {
+        // Break duplicateAttempts reference pointing to checkIn
+        await tx.scanEvent.updateMany({
+          where: { duplicateOfId: checkInId },
+          data: { duplicateOfId: null },
+        })
+
+        // Break wonCheckIn link
+        await tx.checkIn.update({
+          where: { id: checkInId },
+          data: { scanEventId: null },
+        })
+
+        // Delete check-in record
+        await tx.checkIn.delete({
+          where: { id: checkInId },
+        })
+      }
+
+      // Delete any scan events for this pass
+      await tx.scanEvent.deleteMany({
+        where: { passId },
+      })
+
+      // Delete pass
+      await tx.pass.delete({
+        where: { id: passId },
+      })
+    }
+
+    // 2. Delete companions
+    await tx.companion.deleteMany({
+      where: { registrationId: reg.id },
+    })
+
+    // 3. Clear any active draft for this user
+    if (userId) {
+      await tx.registrationDraft.deleteMany({
+        where: { userId },
+      })
+    }
+
+    // 4. Delete the registration itself
+    await tx.registration.delete({
+      where: { id: reg.id },
+    })
+
+    // 5. Release the AdmittedStudent claim so the student can register again!
+    await tx.admittedStudent.update({
+      where: { id: admittedStudentId },
+      data: {
+        isClaimed: false,
+        claimedByUserId: null,
+        claimedAt: null,
+      },
+    })
+  })
+
+  // 6. Delete Cloudinary selfie if it exists (fire-and-forget in background)
+  if (selfiePublicId && selfieCloudName) {
+    void destroySelfie(selfiePublicId, selfieCloudName).catch((err) => {
+      console.error(`[Cloudinary] Failed to destroy selfie ${selfiePublicId}:`, err)
+    })
+  }
+
+  // 7. Bump scanner manifest version if an active pass was deleted
+  if (hadActivePass) {
+    await bumpManifestVersion('REVOCATION')
+  }
+
+  // 8. Write audit log entry
+  await writeAudit({
+    action: AUDIT_ACTIONS.REGISTRATION_CLAIM_RELEASED,
+    entityType: 'Registration',
+    entityId: reg.id,
+    actor,
+    before: {
+      reference: reg.reference,
+      formNumber,
+      name: studentName,
+      status: reg.status,
+      passCode: reg.pass?.code10 ?? null,
+    },
+    after: {
+      deleted: true,
+      claimReleased: true,
+      reason: reason || 'Deleted by administrator',
+    },
+    ip: meta.ip,
+    userAgent: meta.userAgent,
+  })
+
+  const now = Date.now()
+
+  // 9. Realtime broadcast
+  publish(adminChannel(), {
+    type: 'registration.deleted',
+    registrationId: reg.id,
+    at: now,
+  })
+  publish(studentChannel(reg.id), {
+    type: 'registration.deleted',
+    registrationId: reg.id,
+    at: now,
+  })
+
+  return {
+    success: true,
+    registrationId: reg.id,
+    formNumber,
+    name: studentName,
   }
 }
 

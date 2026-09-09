@@ -184,6 +184,7 @@ export function useEventStream(
  */
 const EVENT_NAMES = [
   'registration.status',
+  'registration.deleted',
   'broadcast',
   'registration.created',
   'registration.reviewed',

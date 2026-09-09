@@ -114,10 +114,16 @@ export function RegistrationsConsole() {
     'registration.created': () => refresh({ silent: true }),
     'registration.reviewed': () => refresh({ silent: true }),
     'checkin.recorded': () => refresh({ silent: true }),
+    'registration.deleted': () => refresh({ silent: true }),
   })
 
   function patchRow(id: string, next: (row: RegistrationRow) => RegistrationRow) {
     regs.patch((row) => row.id === id, next)
+  }
+
+  function removeRow(id: string) {
+    setExpandedId((curr) => (curr === id ? null : curr))
+    refresh({ silent: true })
   }
 
   function toggleExpand(id: string) {
@@ -347,6 +353,7 @@ export function RegistrationsConsole() {
                           <RegistrationInlineDetail
                             row={row}
                             onUpdate={patchRow}
+                            onDelete={removeRow}
                             onClose={() => setExpandedId(null)}
                           />
                         </td>

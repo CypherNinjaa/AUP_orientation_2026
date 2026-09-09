@@ -66,19 +66,25 @@ export function scannerChannel(): string {
  * or programme would put PII into a fan-out path that is deliberately not
  * audited, so the client re-reads `/api/registration/me` on receipt.
  */
-export interface StudentEvent {
-  type: 'registration.status'
-  registrationId: string
-  /**
-   * Every value `RegistrationStatus` can hold, `REJECTED` included. A rejected
-   * student is the one who most needs the screen to change under them — otherwise
-   * they sit watching "under review" until they give up and telephone somebody.
-   */
-  status: 'DRAFT' | 'PENDING_REVIEW' | 'APPROVED' | 'REVISION_REQUESTED' | 'REJECTED'
-  /** True when a pass now exists to fetch. */
-  hasPass: boolean
-  at: number
-}
+export type StudentEvent =
+  | {
+      type: 'registration.status'
+      registrationId: string
+      /**
+       * Every value `RegistrationStatus` can hold, `REJECTED` included. A rejected
+       * student is the one who most needs the screen to change under them — otherwise
+       * they sit watching "under review" until they give up and telephone somebody.
+       */
+      status: 'DRAFT' | 'PENDING_REVIEW' | 'APPROVED' | 'REVISION_REQUESTED' | 'REJECTED'
+      /** True when a pass now exists to fetch. */
+      hasPass: boolean
+      at: number
+    }
+  | {
+      type: 'registration.deleted'
+      registrationId: string
+      at: number
+    }
 
 /** A broadcast, published to `broadcastChannel`. The one event with a body. */
 export interface BroadcastEvent {
@@ -109,6 +115,7 @@ export interface BroadcastEvent {
 export type AdminEvent =
   | { type: 'registration.created'; at: number }
   | { type: 'registration.reviewed'; approved: boolean; at: number }
+  | { type: 'registration.deleted'; registrationId: string; at: number }
   | { type: 'checkin.recorded'; passId: string; gate: string; at: number }
   | { type: 'roster.imported'; importId: string; inserted: number; updated: number; at: number }
   | { type: 'scanner.synced'; deviceId: string; accepted: number; conflicts: number; at: number }

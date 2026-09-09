@@ -22,7 +22,7 @@
 import { prisma } from '@orientation/db'
 import { AUDIT_ACTIONS } from '@orientation/core/audit'
 
-import { getActor } from '@/lib/server/auth'
+import { getActor, type Actor } from '@/lib/server/auth'
 import { auditPiiAccess } from '@/lib/server/audit'
 import { clientIp, fail, handle, userAgent } from '@/lib/server/http'
 import { downloadUrl } from '@/lib/server/media/cloudinary'
@@ -47,17 +47,31 @@ export async function GET(
       return fail('FORBIDDEN', 'That image link is no longer valid. Reload the page.')
     }
 
+    const registration = await prisma.registration.findUnique({
+      where: { id: registrationId },
+      select: {
+        id: true,
+        userId: true,
+        reference: true,
+        selfiePublicId: true,
+        selfieCloudName: true,
+      },
+    })
+
+    if (!registration?.selfiePublicId) {
+      return fail('NOT_FOUND', 'There is no photo on that registration.')
+    }
+
     let actor = await getActor()
-    if (!actor) {
-      const session = await getStudentSessionFromRequest(request)
-      if (session && session.registrationId === registrationId && check.token.audience === registrationId) {
-        actor = {
-          id: registrationId,
-          clerkUserId: 'student-session',
-          role: 'STUDENT',
-          email: null,
-          name: null,
-        }
+    const session = await getStudentSessionFromRequest(request)
+
+    if (!actor && session && session.registrationId === registrationId) {
+      actor = {
+        id: registrationId,
+        clerkUserId: 'student-session',
+        role: 'STUDENT',
+        email: null,
+        name: null,
       }
     }
 
@@ -76,30 +90,45 @@ export async function GET(
         }
       }
     }
-    if (!actor) return fail('UNAUTHENTICATED', 'Sign in to continue.')
 
-    if (check.token.audience !== actor.id) {
+    // Authorization checks:
+    // 1. Staff (Admin / Volunteer) can read any validly signed selfie path
+    const isStaff = actor && (actor.role === 'ADMIN' || actor.role === 'VOLUNTEER')
+
+    // 2. Token issued specifically for student self-serve view (aud === registrationId)
+    const isStudentSelfToken = check.token.audience === registration.id
+
+    // 3. Token issued directly to this user account
+    const isAudienceMatch =
+      actor &&
+      (check.token.audience === actor.id || check.token.audience === registration.userId)
+
+    // 4. Caller owns the student session
+    const isSessionOwner = session && session.registrationId === registration.id
+
+    // 5. Clerk student owns this registration
+    const isClerkOwner =
+      actor &&
+      actor.role === 'STUDENT' &&
+      (registration.userId === actor.id || registration.id === actor.id)
+
+    const isAuthorized =
+      isStaff ||
+      isAudienceMatch ||
+      (isStudentSelfToken &&
+        (isSessionOwner || isClerkOwner || !actor || actor.role === 'STUDENT'))
+
+    if (!isAuthorized) {
+      if (!actor && !session) return fail('UNAUTHENTICATED', 'Sign in to continue.')
       return fail('FORBIDDEN', 'That image link was issued to a different account.')
     }
 
-    const registration = await prisma.registration.findUnique({
-      where: { id: registrationId },
-      select: {
-        id: true,
-        userId: true,
-        reference: true,
-        selfiePublicId: true,
-        selfieCloudName: true,
-      },
-    })
-
-    if (!registration?.selfiePublicId) {
-      return fail('NOT_FOUND', 'There is no photo on that registration.')
-    }
-
-    // A student may only read their own.
-    if (actor.role === 'STUDENT' && registration.userId !== actor.id && registration.id !== actor.id) {
-      return fail('FORBIDDEN', 'That is not your registration.')
+    const auditActor: Actor = actor ?? {
+      id: registration.id,
+      clerkUserId: 'student-session',
+      role: 'STUDENT',
+      email: null,
+      name: null,
     }
 
     /**
@@ -122,10 +151,10 @@ export async function GET(
 
     await auditPiiAccess({
       action: AUDIT_ACTIONS.SELFIE_VIEWED,
-      actor,
+      actor: auditActor,
       entityType: 'Registration',
       entityId: registration.id,
-      after: { reference: registration.reference, viewedAs: actor.role },
+      after: { reference: registration.reference, viewedAs: auditActor.role },
       ip: clientIp(request),
       userAgent: userAgent(request),
     })

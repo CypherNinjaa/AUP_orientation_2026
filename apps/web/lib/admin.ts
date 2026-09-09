@@ -74,7 +74,7 @@ import type {
   UserStatusResponse,
 } from '@orientation/contracts'
 
-import { type ApiResult, apiGet, apiPatch, apiPost, apiPut, queryString } from '@/lib/api'
+import { type ApiResult, apiDelete, apiGet, apiPatch, apiPost, apiPut, queryString } from '@/lib/api'
 
 /* -------------------------------------------------------------------------- */
 /* Route-local response shapes (not in @orientation/contracts)                */
@@ -271,6 +271,16 @@ export function setUserStatus(
   body: UserStatusRequest,
 ): Promise<ApiResult<UserStatusResponse>> {
   return apiPost<UserStatusResponse>(`/api/admin/registrations/${id}/user-status`, body)
+}
+
+export function deleteRegistration(
+  id: string,
+  body?: { reason?: string },
+): Promise<ApiResult<{ success: true; registrationId: string; formNumber: string; name: string }>> {
+  return apiDelete<{ success: true; registrationId: string; formNumber: string; name: string }>(
+    `/api/admin/registrations/${id}`,
+    body,
+  )
 }
 
 /* -------------------------------------------------------------------------- */
