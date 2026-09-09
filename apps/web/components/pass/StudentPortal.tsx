@@ -255,10 +255,10 @@ function OnTheDay() {
         ))}
       </dl>
       <Link
-        href="/information#gate"
-        className="text-violet-deep mt-5 inline-flex items-center gap-1.5 text-[0.875rem] font-bold"
+        href="/schedule"
+        className="text-violet-deep hover:text-violet mt-5 inline-flex items-center gap-1.5 text-[0.875rem] font-bold transition-colors"
       >
-        What happens at the gate
+        Orientation schedule & venue
         <Icon name="chevronRight" size={15} />
       </Link>
     </div>
@@ -273,7 +273,7 @@ function Help() {
         <h2 className="text-[1.125rem] font-bold text-white">Something wrong?</h2>
         <p className="text-sky/85 mt-2 text-[0.9375rem] leading-relaxed">
           A name spelled wrong, a guest to change, a pass that will not load. Any of it can be fixed
-          — before the day, or at the desk in the Gate 1 foyer on the morning.
+          — before the day, or at the desk in the Gyan Bhawan entrance foyer on orientation day.
         </p>
         <div className="mt-5 flex flex-col gap-2.5">
           <a
@@ -285,7 +285,7 @@ function Help() {
           </a>
           <div className="text-sky/85 flex items-center gap-2.5 text-xs">
             <Icon name="pin" size={15} className="text-flame-mid shrink-0" />
-            <span>Gate 1 Help Desk, Orientation Morning</span>
+            <span>Help Desk, Gyan Bhawan Entrance Foyer (2:00 PM Sharp)</span>
           </div>
         </div>
       </div>
@@ -324,7 +324,7 @@ function Broken({ message, onRetry }: { message: string; onRetry: () => void }) 
         <a href={`mailto:${EVENT.email}`} className="text-violet-deep font-bold underline decoration-1 underline-offset-4">
           {EVENT.email}
         </a>{' '}
-        or visit the Gate 1 help desk on orientation morning.
+        or visit the help desk at the Gyan Bhawan entrance foyer on orientation day.
       </p>
     </div>
   )

@@ -11,8 +11,8 @@ export function SchedulePreview() {
         <Reveal>
           <SectionHeading
             eyebrow="Orientation Schedule"
-            title="Your day on campus"
-            lede="A structured single-day programme on 14 September. Clear sessions, guided campus tour, faculty interactions, and lunch provided."
+            title="Your day at Gyan Bhawan"
+            lede="Orientation on 14 September starts at 2:00 PM Sharp (Reporting time) at Gyan Bhawan, Gandhi Maidan. Clear sessions, faculty interactions, and Hi-Tea provided."
             className="mb-12"
           />
           <div data-reveal>

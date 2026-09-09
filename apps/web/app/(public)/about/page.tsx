@@ -52,7 +52,7 @@ export default function AboutPage() {
           <Reveal stagger={0.07}>
             <SectionHeading
               eyebrow="Orientation Day"
-              title="A structured journey from morning to evening"
+              title="A structured journey from afternoon to evening"
               lede="Designed so you leave knowing your faculty, campus layout, degree rules, and fellow classmates."
               align="left"
               className="mb-14 max-w-3xl"

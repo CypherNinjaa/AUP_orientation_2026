@@ -3,7 +3,6 @@
 import Image from 'next/image'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Container, Section } from '@/components/ui/atoms'
-import { LinkButton } from '@/components/ui/Button'
 import { Icon } from '@/components/ui/Icon'
 import { GALLERY } from '@/lib/developer'
 import { DevHeading } from './DevHeading'
@@ -56,11 +55,7 @@ export function BehindTheScenes() {
             </>
           }
           lede="Moments captured while building Orientation 2026."
-        >
-          <LinkButton href="/highlights" variant="secondary" arrow>
-            View More Photos
-          </LinkButton>
-        </DevHeading>
+        />
       </Container>
 
       {/* Full-bleed track so the strip runs to the edge of the viewport, with the

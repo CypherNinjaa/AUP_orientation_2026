@@ -6,8 +6,8 @@ import { BrandMark } from './BrandMark'
 const HELP = [
   { label: 'Register', href: '/register' },
   { label: 'Your pass', href: '/pass' },
+  { label: 'Schedule', href: '/schedule' },
   { label: 'Help desk', href: '/contact' },
-  { label: 'What to bring', href: '/information#bring' },
 ]
 
 const LEGAL = [

@@ -1,6 +1,5 @@
 import { Faq } from '@/components/sections/Faq'
 import { Hero } from '@/components/sections/Hero'
-import { Highlights } from '@/components/sections/Highlights'
 import { LegacyBand } from '@/components/sections/LegacyBand'
 import { Promises } from '@/components/sections/Promises'
 import { SchedulePreview } from '@/components/sections/SchedulePreview'
@@ -15,7 +14,6 @@ export default function HomePage() {
       <LegacyBand />
       <WhyItMatters />
       <SchedulePreview />
-      <Highlights />
       <Welcome />
       <Faq />
     </>

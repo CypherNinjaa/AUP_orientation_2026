@@ -147,17 +147,17 @@ export default function ContactPage() {
 
             <Link
               data-reveal
-              href="/information"
+              href="/schedule"
               className="bg-card ring-rule/25 shadow-soft hover:ring-violet/50 hover:shadow-card group flex flex-col rounded-3xl p-8 ring-1 transition-all duration-300 ease-[var(--ease-out-soft)] hover:-translate-y-0.5"
             >
-              <IconChip name="note" tint="flame" size={52} />
-              <h2 className="text-headline mt-6">Already on the way?</h2>
+              <IconChip name="calendar" tint="flame" size={52} />
+              <h2 className="text-headline mt-6">Looking for timings & venue?</h2>
               <p className="text-ink-soft mt-2 flex-1 leading-relaxed">
-                What to bring, how to reach Bailey Road, what happens at Gate 1, and what to do if
-                your phone dies before you get there.
+                Reporting starts at 2:00 PM Sharp on 14 September at Gyan Bhawan, Gandhi Maidan.
+                Followed by induction ceremony and Hi-Tea.
               </p>
               <span className="text-violet-deep mt-6 flex items-center gap-2 font-bold">
-                Practical information
+                View schedule & venue
                 <span className="transition-transform duration-300 group-hover:translate-x-1">
                   <Icon name="arrowRight" size={18} />
                 </span>

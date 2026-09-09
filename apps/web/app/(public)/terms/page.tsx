@@ -73,9 +73,9 @@ export default function TermsPage() {
                 the university under its ordinary conduct process.
               </li>
               <li>
-                Lost your phone, no signal, flat battery? Go to the help desk at Gate 1 with a photo
+                Lost your phone, no signal, flat battery? Go to the help desk at the entrance foyer with a photo
                 ID. You will be found on the list and let in. See{' '}
-                <Link href="/information#gate">what happens at the gate</Link>.
+                <Link href="/schedule">orientation details</Link>.
               </li>
             </ul>
 

@@ -120,8 +120,8 @@ export default function AccessibilityPage() {
             </ul>
             <p>
               Asking early means it is arranged rather than improvised. Asking late is still much
-              better than not asking — the desk at Gate 1 can sort most things on the morning.{' '}
-              <Link href="/information#practicals">Food, dress and access</Link> covers the general
+              better than not asking — the desk at the entrance can sort most things on the morning.{' '}
+              <Link href="/schedule">The schedule page</Link> covers the general
               picture.
             </p>
 

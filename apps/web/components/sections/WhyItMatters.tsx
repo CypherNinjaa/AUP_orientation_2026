@@ -50,8 +50,8 @@ export function WhyItMatters() {
               ))}
             </ul>
 
-            <LinkButton data-reveal href="/information" variant="secondary" arrow>
-              Full arrival checklist
+            <LinkButton data-reveal href="/schedule" variant="secondary" arrow>
+              See full schedule
             </LinkButton>
           </div>
 

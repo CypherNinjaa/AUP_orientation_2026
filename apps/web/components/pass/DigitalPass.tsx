@@ -166,9 +166,9 @@ export function DigitalPass({ data }: { data: PassRenderResponse }) {
 
       <p className="text-ink-faint mx-auto max-w-[52ch] text-center text-[0.8125rem] leading-relaxed">
         A screenshot works. Download the PDF for a backup —{' '}
-        <a href="/information#gate" className="text-violet-deep font-semibold">
-          a downloaded pass clears the gate exactly like the screen
-        </a>
+        <span className="text-navy font-semibold">
+          a downloaded pass clears the entrance exactly like the screen
+        </span>
         . Neither needs a signal.
       </p>
     </div>

@@ -4,12 +4,11 @@ import { redirect } from 'next/navigation'
 import { prisma } from '@orientation/db'
 
 import { RegisterWizard } from '@/components/register/RegisterWizard'
-import { CtaBand } from '@/components/sections/CtaBand'
 import { Reveal } from '@/components/motion/Reveal'
 import { PageHeader } from '@/components/site/PageHeader'
 import { Icon } from '@/components/ui/Icon'
 import { Container, IconChip, Section, SectionHeading } from '@/components/ui/atoms'
-import { EVENT, REGISTER_STEPS } from '@/lib/event'
+import { EVENT } from '@/lib/event'
 import { getActor } from '@/lib/server/auth'
 import { getStudentSession } from '@/lib/server/student-session'
 import {
@@ -58,45 +57,33 @@ export default async function RegisterPage() {
           </>
         }
         note="one pass for orientation day"
-        lede={`Four short steps and you are done. One pass covers orientation day (${EVENT.dateRange}), and it brings ${config.maxCompanions === 1 ? 'somebody' : `up to ${String(config.maxCompanions)} people`} in with you.`}
-        aside={
-          <div className="bg-card ring-rule/25 shadow-card rounded-3xl p-7 ring-1 sm:p-8">
-            <h2 className="text-label text-flame flex items-center gap-2.5 uppercase">
-              <span className="bg-flame-mid h-px w-7" />
-              Have this ready
-            </h2>
-            <ul className="divide-rule/40 mt-5 divide-y">
-              {REGISTER_STEPS.map((s) => (
-                <li key={s.title} className="flex items-start gap-3.5 py-3.5 first:pt-0 last:pb-0">
-                  <span className="bg-leaf-tint text-leaf mt-0.5 grid size-6 shrink-0 place-items-center rounded-full">
-                    <Icon name="check" size={13} strokeWidth={2.6} />
-                  </span>
-                  <span className="text-ink-soft text-[0.9375rem] leading-snug">{s.need}</span>
-                </li>
-              ))}
-            </ul>
-            <p className="text-ink-faint mt-5 text-[0.8125rem] leading-relaxed">
-              Nothing else. No documents to scan, no fee, no printing.
-            </p>
-            <div className="border-rule/40 mt-5 border-t pt-4">
-              <p className="text-navy text-xs font-bold">Already registered?</p>
-              <p className="text-ink-soft mt-1 text-xs">
-                Need to view, download, or reprint your pass?
-              </p>
-              <Link
-                href="/pass#recover"
-                className="mt-2 inline-flex items-center gap-1.5 text-xs font-bold text-violet-deep hover:text-violet"
-              >
-                <Icon name="search" size={14} />
-                Access or recover pass &rarr;
-              </Link>
-            </div>
-          </div>
-        }
-      />
+        lede={`Four short steps and you are done. One pass covers orientation day (${EVENT.dateRange} · 2:00 PM Sharp at ${EVENT.venue.name}, ${EVENT.venue.street}), admitting ${config.maxCompanions === 1 ? 'somebody' : `up to ${String(config.maxCompanions)} people`} in with you.`}
+      >
+        <div className="flex flex-wrap items-center gap-4 text-sm">
+          <span className="text-ink-soft flex items-center gap-1.5">
+            <span className="bg-leaf-tint text-leaf grid size-5 place-items-center rounded-full">
+              <Icon name="check" size={12} strokeWidth={2.8} />
+            </span>
+            No physical documents required
+          </span>
+          <span className="text-ink-soft flex items-center gap-1.5">
+            <span className="bg-leaf-tint text-leaf grid size-5 place-items-center rounded-full">
+              <Icon name="check" size={12} strokeWidth={2.8} />
+            </span>
+            Takes under 2 minutes
+          </span>
+          <Link
+            href="/pass#recover"
+            className="text-violet-deep hover:text-violet inline-flex items-center gap-1 font-bold transition-colors"
+          >
+            <Icon name="search" size={14} />
+            Already registered? Find pass &rarr;
+          </Link>
+        </div>
+      </PageHeader>
 
       {/* ---- the form ------------------------------------------------------ */}
-      <Section id="form-section">
+      <Section id="form-section" className="py-12 md:py-16">
         <Container>
           {/* The camera and the four screens both need JavaScript, so there is no
               honest progressive-enhancement story here — only an honest fallback.
@@ -153,15 +140,6 @@ export default async function RegisterPage() {
           </Reveal>
         </Container>
       </Section>
-
-      <CtaBand
-        icon="note"
-        tint="flame"
-        title="While you wait"
-        body="What to bring, how to reach Bailey Road, and what happens at Gate 1 on orientation morning."
-        cta="Practical information"
-        href="/information"
-      />
     </>
   )
 }

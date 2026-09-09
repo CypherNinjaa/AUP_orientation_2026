@@ -489,7 +489,7 @@ export function RegisterWizard({
 
               {step === LAST ? (
                 <Button type="submit" size="lg" disabled={submitting}>
-                  {submitting ? 'Sending…' : 'Submit registration'}
+                  {submitting ? 'Submitting…' : 'Submit'}
                 </Button>
               ) : (
                 <Button type="submit" size="lg" arrow>
@@ -1264,8 +1264,8 @@ function Submitted({
           <Icon name="qr" size={19} />
           {pass ? 'Open your pass' : 'Follow it on your pass page'}
         </LinkButton>
-        <LinkButton href="/information" variant="secondary" size="lg" arrow>
-          What to bring
+        <LinkButton href="/schedule" variant="secondary" size="lg" arrow>
+          Orientation schedule
         </LinkButton>
       </div>
     </div>

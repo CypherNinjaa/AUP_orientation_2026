@@ -10,7 +10,7 @@ import { DAYS, EVENT, SCHEDULE_NOTES, SESSION_COUNT } from '@/lib/event'
 
 export const metadata: Metadata = {
   title: 'Schedule',
-  description: `Hour by hour for ${EVENT.programme} ${EVENT.year} on ${EVENT.dateRange} — ${SESSION_COUNT} sessions, with venues.`,
+  description: `Schedule for ${EVENT.programme} ${EVENT.year} on ${EVENT.dateRange} at ${EVENT.venue.name}, ${EVENT.venue.street} — starting from 2:00 PM Sharp.`,
 }
 
 export default function SchedulePage() {
@@ -20,15 +20,15 @@ export default function SchedulePage() {
         crumb="Schedule"
         eyebrow={`${EVENT.institution} · ${EVENT.year}`}
         title="Schedule"
-        note="hour by hour, 14 September"
-        lede={`Every session, with the room it happens in. ${SESSION_COUNT} in total on orientation day — nothing here is optional, and nothing here runs twice.`}
+        note="14 September · Starts 2:00 PM Sharp"
+        lede={`Orientation begins at 2:00 PM Sharp (Reporting time) at ${EVENT.venue.name}, ${EVENT.venue.street}. Followed by the induction ceremony and Hi-Tea.`}
         aside={
           <dl className="bg-card ring-rule/30 shadow-card divide-rule/40 divide-y rounded-3xl px-7 py-2 ring-1">
             {[
               { icon: 'calendar' as const, label: 'Date', value: EVENT.dateRange },
-              { icon: 'clock' as const, label: 'Timings', value: '08:30 to 17:30 (Gates open 08:30)' },
-              { icon: 'pin' as const, label: 'Venue', value: `${EVENT.venue.name} — Gate 1` },
-              { icon: 'utensils' as const, label: 'Lunch', value: 'Provided on orientation day' },
+              { icon: 'clock' as const, label: 'Timings', value: 'Starts 2:00 PM Sharp (Reporting time: 2:00 PM)' },
+              { icon: 'pin' as const, label: 'Venue', value: `${EVENT.venue.name}, ${EVENT.venue.street}` },
+              { icon: 'utensils' as const, label: 'Refreshment', value: 'Hi-Tea provided' },
             ].map((r) => (
               <div key={r.label} className="flex items-start gap-4 py-5">
                 <IconChip name={r.icon} tint="violet" size={36} />
@@ -119,8 +119,8 @@ export default function SchedulePage() {
                       <Icon name="download" size={16} />
                       Add to calendar
                     </LinkButton>
-                    <LinkButton href="/information" variant="quiet" size="sm" className="text-white">
-                      What to bring
+                    <LinkButton href="/register" variant="quiet" size="sm" className="text-white">
+                      Get your pass
                     </LinkButton>
                   </div>
                 </div>

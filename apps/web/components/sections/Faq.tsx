@@ -43,7 +43,7 @@ export function Faq() {
               type="search"
               value={q}
               onChange={(e) => setQ(e.target.value)}
-              placeholder="Search — “selfie”, “guest”, “lunch”"
+              placeholder="Search — “selfie”, “guest”, “hi-tea”"
               aria-label="Search the questions"
               className="bg-paper ring-rule/60 placeholder:text-ink-faint focus:bg-card focus:ring-violet h-14 w-full rounded-full pr-5 pl-12 text-base ring-1 transition-all duration-300 focus:ring-2 focus:outline-none sm:text-[0.9375rem]"
             />
