@@ -10,14 +10,19 @@ import { SocialLinks } from '@/components/developer/SocialLinks'
 import { TechStack } from '@/components/developer/TechStack'
 
 export const metadata: Metadata = {
-  title: 'Developer',
+  title: 'Vikash Kumar — Lead Developer | Orientation 2026',
   description:
-    'The build behind Orientation 2026 — the journey, the stack, the architecture and the code.',
-  /* The name, links and photographs are real now; the five figures in
-     DeveloperStats are still invented. Kept out of search results until those are
-     measured or the section goes — publishing made-up counts as facts is the one
-     thing left on this page that would be worth indexing and shouldn't be. */
-  robots: { index: false, follow: false },
+    'The engineer and architect behind Amity University Patna Orientation 2026 — stack, architecture, offline verification engine, and live operations.',
+  alternates: {
+    canonical: '/developer',
+  },
+  openGraph: {
+    title: 'Vikash Kumar — Lead Developer | Orientation 2026',
+    description:
+      'The engineer and architect behind Amity University Patna Orientation 2026 — stack, architecture, offline verification engine, and live operations.',
+    url: '/developer',
+    images: ['/assets/developer/developer-photo.webp'],
+  },
 }
 
 export default function DeveloperPage() {

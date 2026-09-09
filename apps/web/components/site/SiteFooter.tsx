@@ -36,7 +36,10 @@ export function SiteFooter() {
             <p className="hand text-flame-mid mt-5 text-2xl">See you on campus.</p>
           </div>
 
-          <FooterColumn title="Explore" links={NAV.slice(1)} />
+          <FooterColumn
+            title="Explore"
+            links={[...NAV.slice(1), { label: 'Meet developer', href: '/developer' }]}
+          />
           <FooterColumn title="Get ready" links={HELP} />
 
           <div>
@@ -67,9 +70,21 @@ export function SiteFooter() {
         </div>
 
         <div className="border-navy-line/25 mt-14 flex flex-col gap-4 border-t pt-7 text-sm sm:flex-row sm:items-center sm:justify-between">
-          <p>
-            © {EVENT.year} {EVENT.institution}. All rights reserved.
-          </p>
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2.5 sm:gap-3.5">
+            <p>
+              © {EVENT.year} {EVENT.institution}. All rights reserved.
+            </p>
+            <span className="hidden sm:inline text-sky/30" aria-hidden>•</span>
+            <Link
+              href="/developer"
+              className="inline-flex items-center gap-1.5 text-xs font-semibold text-sky/85 hover:text-white transition-all duration-300 bg-white/5 hover:bg-white/10 px-3 py-1 rounded-full border border-white/10 group w-fit"
+            >
+              <span>Designed & Built with</span>
+              <span className="text-berry-deep group-hover:scale-125 transition-transform" aria-hidden>❤️</span>
+              <span>by</span>
+              <span className="text-white font-bold underline decoration-flame/60 underline-offset-2">Vikash</span>
+            </Link>
+          </div>
           <ul className="flex flex-wrap gap-x-6 gap-y-2">
             {LEGAL.map((l) => (
               <li key={l.href}>
@@ -78,6 +93,11 @@ export function SiteFooter() {
                 </Link>
               </li>
             ))}
+            <li>
+              <Link href="/developer" className="text-sky/90 hover:text-white font-medium">
+                Developer
+              </Link>
+            </li>
           </ul>
         </div>
       </div>

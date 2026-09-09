@@ -7,7 +7,14 @@ import { Icon } from '@/components/ui/Icon'
 import { Container, Eyebrow, HandNote } from '@/components/ui/atoms'
 import { EVENT, NAV } from '@/lib/event'
 
-export const metadata: Metadata = { title: 'Page not found' }
+export const metadata: Metadata = {
+  title: 'Page Not Found',
+  description: 'The requested page could not be found.',
+  robots: {
+    index: false,
+    follow: false,
+  },
+}
 
 /**
  * The 404.

@@ -14,9 +14,18 @@ import {
 import { ABOUT_EXPECT, EVENT, SESSION_COUNT, WHO_RUNS_IT, WHY_THREE_DAYS } from '@/lib/event'
 
 export const metadata: Metadata = {
-  title: 'About',
+  title: 'About the Orientation Programme 2026',
   description:
-    'What happens on orientation day, how the sessions are structured, and who you will be dealing with when you arrive.',
+    'Learn about Amity University Patna Orientation Programme 2026, session structures, faculty interactions, campus culture, and what to expect on orientation day.',
+  alternates: {
+    canonical: '/about',
+  },
+  openGraph: {
+    title: 'About Orientation Programme 2026 | Amity University Patna',
+    description:
+      'Learn about Amity University Patna Orientation Programme 2026, session structures, faculty interactions, campus culture, and what to expect on orientation day.',
+    url: '/about',
+  },
 }
 
 /** Morning violet, afternoon flame, evening navy — the three phases of orientation day. */

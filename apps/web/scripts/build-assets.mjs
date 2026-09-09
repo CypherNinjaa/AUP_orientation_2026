@@ -59,35 +59,33 @@ function crop(src, ratio, outWidth) {
 }
 
 /* ---- hero artwork ---------------------------------------------------------
-   A transparent cut-out: the subject on their own gradient blob, with a `</>`
-   chip, a paper plane and a dot grid floating around it. Nothing is cropped —
-   the whole alpha shape is the composition. Displayed at up to ~630 CSS px, so
-   1200 is a touch under 2×. */
+   The real portrait of the developer at his desk workstation, high quality WebP. */
+await emit(
+  'public/assets/developer/developer-photo.webp',
+  sharp(`${SRC}/developer .png`).resize({ width: 1145, withoutEnlargement: true }).webp({ quality: 90 }),
+)
 await emit(
   'public/assets/developer/hero-art.webp',
-  sharp(`${SRC}/hero image.png`).resize({ width: 1200 }).webp({ quality: 82, alphaQuality: 90 }),
+  sharp(`${SRC}/developer .png`).resize({ width: 1145, withoutEnlargement: true }).webp({ quality: 90 }),
 )
 
 /* ---- avatar --------------------------------------------------------------
-   The same photograph, cropped square to head-and-shoulders for the 44px
-   circle on the profile card. The wide artwork above would put a 6px face in
-   the middle of a blob. Numbers are fractions of the source so they survive a
-   re-export at a different size. */
+   Cropped square head-and-shoulders from the real developer photograph. */
 {
-  const src = `${SRC}/hero image.png`
-  const { width, height } = await sharp(src).metadata()
-  const box = Math.round(height * 0.58)
+  const src = `${SRC}/developer .png`
+  const { width } = await sharp(src).metadata()
+  const box = Math.min(1040, width)
   await emit(
     'public/assets/developer/avatar.webp',
     sharp(src)
       .extract({
-        left: Math.round(width * 0.478 - box / 2),
-        top: Math.round(height * 0.33 - box / 2),
+        left: Math.round((width - box) / 2),
+        top: 60,
         width: box,
         height: box,
       })
-      .resize({ width: 176 })
-      .webp({ quality: 88, alphaQuality: 90 }),
+      .resize({ width: 400 })
+      .webp({ quality: 92 }),
   )
 }
 

@@ -5,9 +5,18 @@ import { Container, Section } from '@/components/ui/atoms'
 import { EVENT, GUEST_ALLOWANCE } from '@/lib/event'
 
 export const metadata: Metadata = {
-  title: 'Terms of use',
+  title: 'Terms of Use',
   description:
-    'The rules for registering, for the pass you get, and for bringing a guest to orientation.',
+    'The rules for registering, for the entry pass, and for attending the Amity University Patna Orientation Programme.',
+  alternates: {
+    canonical: '/terms',
+  },
+  openGraph: {
+    title: 'Terms of Use | Amity University Patna',
+    description:
+      'The rules for registering, for the entry pass, and for attending the Amity University Patna Orientation Programme.',
+    url: '/terms',
+  },
 }
 
 export default function TermsPage() {

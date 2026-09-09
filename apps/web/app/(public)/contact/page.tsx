@@ -10,8 +10,16 @@ import { Container, IconChip, Section, SectionHeading } from '@/components/ui/at
 import { CONTACT_CHANNELS, EVENT } from '@/lib/event'
 
 export const metadata: Metadata = {
-  title: 'Contact',
-  description: `Call the orientation desk, email ${EVENT.email}, find the campus, or send a message — someone answers within one working day.`,
+  title: 'Contact Orientation Helpdesk & Campus Info',
+  description: `Contact the Amity University Patna Orientation Programme 2026 helpline, email support (${EVENT.email}), campus address, and enquiry desk for assistance.`,
+  alternates: {
+    canonical: '/contact',
+  },
+  openGraph: {
+    title: 'Contact Orientation Helpdesk | Amity University Patna',
+    description: `Contact the Amity University Patna Orientation Programme 2026 helpline, email support (${EVENT.email}), campus address, and enquiry desk for assistance.`,
+    url: '/contact',
+  },
 }
 
 export default function ContactPage() {

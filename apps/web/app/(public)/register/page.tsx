@@ -19,8 +19,16 @@ import {
 } from '@/lib/server/config'
 
 export const metadata: Metadata = {
-  title: 'Register',
-  description: `Register for ${EVENT.programme} ${EVENT.year} — four short steps, one pass for orientation day, and seats on it for the family coming with you.`,
+  title: 'Student Registration & Entry Pass 2026',
+  description: `Online registration for Amity University Patna Orientation Programme 2026. Register your admission details and get your official entry pass for Gyan Bhawan.`,
+  alternates: {
+    canonical: '/register',
+  },
+  openGraph: {
+    title: 'Student Registration & Entry Pass 2026 | Amity University Patna',
+    description: `Online registration for Amity University Patna Orientation Programme 2026. Register your admission details and get your official entry pass for Gyan Bhawan.`,
+    url: '/register',
+  },
 }
 
 export default async function RegisterPage() {

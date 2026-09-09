@@ -10,8 +10,16 @@ import { getActor } from '@/lib/server/auth'
 import { getStudentSession } from '@/lib/server/student-session'
 
 export const metadata: Metadata = {
-  title: 'Your pass',
-  description: `Your entry pass for ${EVENT.programme} ${EVENT.year} — how it scans, what it covers, and what a volunteer can see on it.`,
+  title: 'Student Entry Pass & QR Code',
+  description: `Access and download your digital entry pass and QR code for ${EVENT.institution} ${EVENT.programme} ${EVENT.year}.`,
+  alternates: {
+    canonical: '/pass',
+  },
+  openGraph: {
+    title: 'Student Entry Pass & QR Code | Amity University Patna',
+    description: `Access and download your digital entry pass and QR code for ${EVENT.institution} ${EVENT.programme} ${EVENT.year}.`,
+    url: '/pass',
+  },
 }
 
 export const dynamic = 'force-dynamic'

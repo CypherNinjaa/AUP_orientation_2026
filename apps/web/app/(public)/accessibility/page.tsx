@@ -4,9 +4,18 @@ import { Container, Section } from '@/components/ui/atoms'
 import { EVENT } from '@/lib/event'
 
 export const metadata: Metadata = {
-  title: 'Accessibility',
+  title: 'Accessibility Statement',
   description:
-    'How this site is built to be usable, what is still unfinished, and how to get what you need on the day.',
+    'Accessibility commitments, assistive support, and campus accommodation for Amity University Patna Orientation Programme.',
+  alternates: {
+    canonical: '/accessibility',
+  },
+  openGraph: {
+    title: 'Accessibility Statement | Amity University Patna',
+    description:
+      'Accessibility commitments, assistive support, and campus accommodation for Amity University Patna Orientation Programme.',
+    url: '/accessibility',
+  },
 }
 
 export default function AccessibilityPage() {

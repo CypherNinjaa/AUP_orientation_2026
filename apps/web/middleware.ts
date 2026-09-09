@@ -23,30 +23,24 @@
  * link goes out, and adding a Clerk session read to each of those is latency spent
  * to learn something none of them needs.
  */
-import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server'
+import { clerkMiddleware } from '@clerk/nextjs/server'
 import { NextResponse } from 'next/server'
 
-/** Signed in, staff/admin/volunteer role. */
-const requiresStaffAuth = createRouteMatcher([
-  '/admin(.*)',
-  '/volunteer(.*)',
-])
-
-const requiresVolunteer = createRouteMatcher(['/volunteer(.*)'])
-const requiresAdmin = createRouteMatcher(['/admin(.*)'])
-
 export default clerkMiddleware(async (auth, request) => {
-  if (process.env.NODE_ENV === 'development' && request.nextUrl.pathname.startsWith('/volunteer')) {
+  const { pathname } = request.nextUrl
+
+  if (process.env.NODE_ENV === 'development' && pathname.startsWith('/volunteer')) {
     return NextResponse.next()
   }
 
-  if (!requiresStaffAuth(request)) return
+  const isStaffAuth = pathname.startsWith('/admin') || pathname.startsWith('/volunteer')
+  if (!isStaffAuth) return
 
   const { userId, sessionClaims } = await auth()
 
   if (!userId) {
     const signIn = new URL('/staff/sign-in', request.url)
-    signIn.searchParams.set('redirect_url', request.nextUrl.pathname + request.nextUrl.search)
+    signIn.searchParams.set('redirect_url', pathname + request.nextUrl.search)
     return NextResponse.redirect(signIn)
   }
 
@@ -55,7 +49,7 @@ export default clerkMiddleware(async (auth, request) => {
   const role = meta?.role
   const isActive = meta?.isActive
 
-  if (isActive === false && !request.nextUrl.pathname.startsWith('/deactivated')) {
+  if (isActive === false && !pathname.startsWith('/deactivated')) {
     return NextResponse.redirect(new URL('/deactivated', request.url))
   }
 
@@ -63,11 +57,11 @@ export default clerkMiddleware(async (auth, request) => {
   // we can rewrite early. If the role claim is missing (e.g. Clerk default session token
   // where custom JWT templates aren't configured), do NOT block here: let the request
   // reach the server layout (AdminLayout / VolunteerPage), which checks Postgres directly.
-  if (requiresAdmin(request) && role && role !== 'ADMIN') {
+  if (pathname.startsWith('/admin') && role && role !== 'ADMIN') {
     return NextResponse.rewrite(new URL('/not-authorised', request.url))
   }
 
-  if (requiresVolunteer(request) && role && role !== 'VOLUNTEER' && role !== 'ADMIN') {
+  if (pathname.startsWith('/volunteer') && role && role !== 'VOLUNTEER' && role !== 'ADMIN') {
     return NextResponse.rewrite(new URL('/not-authorised', request.url))
   }
 

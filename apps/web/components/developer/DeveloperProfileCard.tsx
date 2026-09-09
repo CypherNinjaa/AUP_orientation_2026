@@ -23,7 +23,7 @@ export function DeveloperProfileCard({ className, ...rest }: ComponentPropsWitho
           <Image src={DEVELOPER.avatar} alt="" fill sizes="44px" className="object-cover" />
         </span>
         <span className="min-w-0">
-          <span className="text-navy block truncate text-sm font-bold">{DEVELOPER.name}</span>
+          <span className="text-navy block truncate text-sm font-bold">{DEVELOPER.fullName}</span>
           <span className="text-berry-deep block truncate text-xs font-semibold">
             {DEVELOPER.role}
           </span>

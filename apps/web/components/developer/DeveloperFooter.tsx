@@ -38,7 +38,7 @@ export function DeveloperFooter() {
         <p className="text-sky/85 flex items-center gap-1.5 text-xs">
           Built with <span aria-hidden>❤️</span>
           <span className="sr-only">love</span> by
-          <span className="font-semibold text-white">{DEVELOPER.name}</span>
+          <span className="font-semibold text-white">{DEVELOPER.fullName}</span>
         </p>
       </Container>
     </footer>

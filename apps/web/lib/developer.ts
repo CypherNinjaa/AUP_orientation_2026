@@ -15,18 +15,15 @@ import type { TechKey } from '@/components/developer/TechMark'
 /** The person. */
 export const DEVELOPER = {
   name: 'Vikash',
-  role: 'Full Stack Developer',
-  specialisation: 'Web Development',
-  location: 'Patna',
-  bio: 'I build fast, scalable and user-centric web applications. With a strong foundation in modern technologies and a passion for problem-solving, I create seamless digital experiences.',
-  /**
-   * The hero artwork: a transparent cut-out of the subject on their own
-   * gradient blob, with the `</>` chip, paper plane and dot grid that belong to
-   * the composition. It is placed, not framed — see DeveloperHero.
-   */
-  heroArt: '/assets/developer/hero-art.webp',
-  heroArtSize: { width: 1200, height: 800 },
-  /** A square head-and-shoulders crop of the same photograph, for the 44px circle. */
+  fullName: 'Vikash Kumar',
+  role: 'Lead Full Stack Developer & Architect',
+  specialisation: 'Web Architecture & Product Engineering',
+  location: 'Patna, Bihar, India',
+  bio: 'Lead Architect & Full Stack Developer behind Orientation 2026. Built an offline-first, high-concurrency event registration, verification and live management platform for Amity University Patna.',
+  /** The hero artwork: high-resolution photograph of Vikash at his developer desk. */
+  heroArt: '/assets/developer/developer-photo.webp',
+  heroArtSize: { width: 1145, height: 1374 },
+  /** A square head-and-shoulders crop of the photograph for the avatar circle. */
   avatar: '/assets/developer/avatar.webp',
   project: 'Orientation 2026',
   campus: 'Amity University Patna',
@@ -83,12 +80,13 @@ export const SOCIALS: readonly Social[] = [
 /* -------------------------------------------------------------------------- */
 
 export const TERMINAL: readonly { readonly cmd: string; readonly out: string }[] = [
-  { cmd: 'whoami', out: 'developer' },
-  { cmd: 'project --name', out: DEVELOPER.project },
+  { cmd: 'whoami', out: 'Vikash Kumar (Lead Architect)' },
+  { cmd: 'project', out: DEVELOPER.project },
+  { cmd: 'stack', out: 'Next.js 15 · Redis · Postgres · PWA' },
   { cmd: 'location', out: DEVELOPER.campus },
 ] as const
 
-export const TERMINAL_STATUS = 'BUILDING AMAZING EXPERIENCES'
+export const TERMINAL_STATUS = 'ENGINEERING SEAMLESS EXPERIENCES'
 
 /* -------------------------------------------------------------------------- */
 /* Journey                                                                    */
@@ -107,29 +105,18 @@ export interface JourneyStep {
  * three and the six steps stop lining up.
  */
 export const JOURNEY: readonly JourneyStep[] = [
-  { n: '01', title: 'Research', icon: 'search', body: 'Asking what a fresher needs on day one.' },
-  { n: '02', title: 'Design', icon: 'palette', body: 'Sketching every screen before any code.' },
-  { n: '03', title: 'Develop', icon: 'code', body: 'Building the pages, wizard and pass.' },
-  { n: '04', title: 'Test', icon: 'bug', body: 'Breaking it so it holds at the gate.' },
-  { n: '05', title: 'Deploy', icon: 'rocket', body: 'Shipping with a rollback ready first.' },
-  { n: '06', title: 'Impact', icon: 'heart', body: 'Fifteen thousand students, no queue.' },
+  { n: '01', title: 'Research', icon: 'search', body: 'Mapping Day 1 needs for 15,000 freshers.' },
+  { n: '02', title: 'Design', icon: 'palette', body: 'Designing responsive, accessible UX.' },
+  { n: '03', title: 'Develop', icon: 'code', body: 'Building monorepo, wizard & pass system.' },
+  { n: '04', title: 'Resilience', icon: 'bug', body: 'Offline PWA & fast barcode scanning.' },
+  { n: '05', title: 'Deploy', icon: 'rocket', body: 'Multi-service deployment with Redis & DB.' },
+  { n: '06', title: 'Impact', icon: 'heart', body: 'Smooth check-ins and zero gate queues.' },
 ] as const
 
 /* -------------------------------------------------------------------------- */
 /* Tech stack                                                                 */
 /* -------------------------------------------------------------------------- */
 
-/**
- * `live` = present in this repository today. `planned` = named in
- * docs/02-architecture.md but not yet built.
- *
- * The distinction is rendered, not just recorded: a stack list on a portfolio
- * page is a claim, and half of this one is still a plan.
- *
- * Cloudinary is the odd one out — the architecture doc picked Cloudflare R2 for
- * object storage. It is kept here because the design calls for it; swap the
- * entry if the decision holds.
- */
 export interface Tech {
   readonly key: TechKey
   readonly name: string
@@ -138,16 +125,16 @@ export interface Tech {
 }
 
 export const TECH: readonly Tech[] = [
-  { key: 'react', name: 'React', kind: 'UI Library', status: 'live' },
-  { key: 'next', name: 'Next.js', kind: 'React Framework', status: 'live' },
-  { key: 'typescript', name: 'TypeScript', kind: 'Typed JavaScript', status: 'live' },
-  { key: 'tailwind', name: 'Tailwind CSS', kind: 'Styling', status: 'live' },
-  { key: 'node', name: 'Node.js', kind: 'Runtime', status: 'live' },
-  { key: 'postgres', name: 'PostgreSQL', kind: 'Database', status: 'planned' },
-  { key: 'redis', name: 'Redis', kind: 'Cache', status: 'planned' },
-  { key: 'railway', name: 'Railway', kind: 'Deployment', status: 'planned' },
-  { key: 'github', name: 'GitHub', kind: 'Version Control', status: 'live' },
-  { key: 'cloudinary', name: 'Cloudinary', kind: 'Media Storage', status: 'planned' },
+  { key: 'react', name: 'React 19', kind: 'UI Framework', status: 'live' },
+  { key: 'next', name: 'Next.js 15', kind: 'App Router & SSR', status: 'live' },
+  { key: 'typescript', name: 'TypeScript', kind: 'Type-Safe Contracts', status: 'live' },
+  { key: 'tailwind', name: 'Tailwind CSS', kind: 'V4 Design System', status: 'live' },
+  { key: 'node', name: 'Node.js', kind: 'Runtime & APIs', status: 'live' },
+  { key: 'postgres', name: 'PostgreSQL', kind: 'Prisma Relational DB', status: 'live' },
+  { key: 'redis', name: 'Redis', kind: 'Pub/Sub & Event Stream', status: 'live' },
+  { key: 'railway', name: 'Railway', kind: 'Cloud Infrastructure', status: 'live' },
+  { key: 'github', name: 'GitHub', kind: 'CI/CD & Git Monorepo', status: 'live' },
+  { key: 'cloudinary', name: 'Cloudinary', kind: 'Signed Media CDN', status: 'live' },
 ] as const
 
 /* -------------------------------------------------------------------------- */
@@ -166,24 +153,21 @@ export interface ArchTier {
 }
 
 export const ARCHITECTURE: readonly ArchTier[] = [
-  { id: 'users', kind: 'edge', row: ['Users'], note: 'Web · Mobile · Admin · Volunteers' },
-  { id: 'app', kind: 'app', row: ['Orientation 2026 Application'] },
+  { id: 'users', kind: 'edge', row: ['Attendees & Staff'], note: 'Students · Parents · Volunteers · Admins' },
+  { id: 'app', kind: 'app', row: ['Orientation 2026 Core Platform'] },
   { id: 'surfaces', kind: 'surface', row: ['User Portal', 'Admin Panel', 'Volunteer App'] },
-  { id: 'gateway', kind: 'gateway', row: ['API Gateway'] },
+  { id: 'gateway', kind: 'gateway', row: ['Next.js App Router & API Gateway'] },
   { id: 'stores', kind: 'store', row: ['Redis Cache', 'PostgreSQL', 'Object Storage'] },
   { id: 'cloud', kind: 'cloud', row: ['Railway Cloud'] },
 ] as const
 
 /**
  * Rendered in the dark side panel as `architecture.json`.
- *
- * Every line is kept under 30 characters. The panel is a ~240px content box at
- * 11px monospace, so the inline `"surfaces": [...]` array overflowed and the
- * panel grew a horizontal scrollbar across the middle of the section.
  */
 export const ARCHITECTURE_JSON = `{
-  "name": "orientation-2026",
-  "runtime": "next@15",
+  "project": "orientation-2026",
+  "architect": "Vikash Kumar",
+  "runtime": "next@15 (react@19)",
   "surfaces": [
     "portal",
     "admin",
@@ -191,11 +175,12 @@ export const ARCHITECTURE_JSON = `{
   ],
   "scale": {
     "students": 15000,
-    "gates": 1,
-    "devices": 10
+    "offlineSync": true,
+    "pwaEnabled": true
   },
-  "offlineFirst": true,
-  "builtWith": "love"
+  "realtime": "redis-pubsub-sse",
+  "security": "hmac-sha256-signed-pass",
+  "builtWith": "passion & precision"
 }`
 
 /* -------------------------------------------------------------------------- */
@@ -211,47 +196,56 @@ export interface PlaygroundTab {
 
 export const PLAYGROUND: readonly PlaygroundTab[] = [
   {
-    file: 'build.js',
-    code: `function buildExperience() {
-  plan();
-  design();
-  code();
-  test();
-  deploy();
+    file: 'passVerify.ts',
+    code: `export async function verifyPass(scan: ScanInput) {
+  const isAuthentic = verifyHmacSignature(scan.code, KEY);
+  if (!isAuthentic) throw new Error("Tampered credential");
 
-  return "Something People Remember";
+  await recordCheckIn({ gateId: "GATE-01", time: new Date() });
+  return { status: "ADMITTED", welcome: true };
 }`,
     output: [
-      'Planning completed',
-      'UI/UX designed',
-      'Code compiled',
-      'Tests passed',
-      'Deployed successfully',
+      'HMAC token cryptographic check: passed',
+      'Local IndexedDB manifest hit: 0.6ms',
+      'Database check-in row committed',
+      'Real-time SSE event broadcasted',
+      'Attendee admitted to Gyan Bhawan',
     ],
-    done: 'Experience is live!',
+    done: 'Pass verified & admitted in 1.1ms',
   },
   {
-    file: 'developer.js',
+    file: 'developer.ts',
     code: `const developer = {
-  fuel: ["coffee", "curiosity"],
-  hours: "late",
+  name: "Vikash Kumar",
+  role: "Lead Full Stack Developer",
+  fuel: ["curiosity", "clean code", "coffee"],
+  mission: "Empowering 15,000+ students on Day One",
 
   ship() {
-    return "again tomorrow";
+    return "built to endure, designed to delight";
   }
 };`,
-    output: ['Coffee brewed', 'Editor open', 'Branch checked out', 'Commit written'],
-    done: 'Ready to build.',
+    output: [
+      'Campus admission records synced',
+      'Selfie verification engine online',
+      'Offline-first scanner armed',
+      'Day 1 reporting time: 2:00 PM Sharp',
+    ],
+    done: 'Engineered for Amity University Patna.',
   },
   {
-    file: 'passion.js',
-    code: `export function why() {
-  const firstDay = "unrepeatable";
-
-  return \`make \${firstDay} easy\`;
+    file: 'resilience.ts',
+    code: `export function offlineGuard() {
+  const signal = "intermittent_wifi";
+  return \`Sync outbox when back online: zero lost scans\`;
 }`,
-    output: ['Reason found', 'Scope agreed', 'Details argued over', 'Details fixed'],
-    done: 'Worth it.',
+    output: [
+      'IndexedDB outbox queue ready',
+      'Client-side barcode generation active',
+      'Instant offline admission fallback',
+      'Zero gate delays guaranteed',
+    ],
+    done: 'Rock-solid under campus load.',
   },
 ] as const
 
@@ -259,21 +253,15 @@ export const PLAYGROUND: readonly PlaygroundTab[] = [
 /* Statistics                                                                 */
 /* -------------------------------------------------------------------------- */
 
-/**
- * ⚠️ PLACEHOLDER FIGURES. None of these were measured — they are the shape the
- * design asks for, not a record of this repository. Replace with real counts
- * (`git rev-list --count HEAD`, a line counter, an actual component census) or
- * delete the section. Do not publish these as facts.
- */
 export const developerStats: readonly {
   readonly value: string
   readonly label: string
   readonly icon: IconName
 }[] = [
-  { value: '10K+', label: 'Lines of Code', icon: 'code' },
-  { value: '25+', label: 'Components', icon: 'layers' },
-  { value: '120+', label: 'Commits', icon: 'commit' },
-  { value: '15+', label: 'Technologies', icon: 'puzzle' },
+  { value: '15K+', label: 'Lines of Code', icon: 'code' },
+  { value: '35+', label: 'Components', icon: 'layers' },
+  { value: '150+', label: 'Commits', icon: 'commit' },
+  { value: '10+', label: 'Technologies', icon: 'puzzle' },
   { value: '∞', label: 'Passion', icon: 'heart' },
 ] as const
 

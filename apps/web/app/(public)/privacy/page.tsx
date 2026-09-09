@@ -5,9 +5,18 @@ import { Container, Section } from '@/components/ui/atoms'
 import { EVENT } from '@/lib/event'
 
 export const metadata: Metadata = {
-  title: 'Privacy policy',
+  title: 'Privacy Policy',
   description:
-    'What this site collects when you register for orientation, why the selfie is asked for, how long it is kept, and how to have it deleted.',
+    'What this site collects when you register for orientation, why data is collected, how long it is kept, and how to have it deleted.',
+  alternates: {
+    canonical: '/privacy',
+  },
+  openGraph: {
+    title: 'Privacy Policy | Amity University Patna',
+    description:
+      'What this site collects when you register for orientation, why data is collected, how long it is kept, and how to have it deleted.',
+    url: '/privacy',
+  },
 }
 
 export default function PrivacyPage() {

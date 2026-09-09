@@ -9,8 +9,16 @@ import { Container, IconChip, Section } from '@/components/ui/atoms'
 import { DAYS, EVENT, SCHEDULE_NOTES, SESSION_COUNT } from '@/lib/event'
 
 export const metadata: Metadata = {
-  title: 'Schedule',
-  description: `Schedule for ${EVENT.programme} ${EVENT.year} on ${EVENT.dateRange} at ${EVENT.venue.name}, ${EVENT.venue.street} — starting from 2:00 PM Sharp.`,
+  title: 'Orientation Schedule & Reporting Time 2026',
+  description: `Official schedule and reporting details for Amity University Patna Orientation Programme 2026. Reporting at 2:00 PM Sharp on ${EVENT.dateRange} at ${EVENT.venue.name}, ${EVENT.venue.street}.`,
+  alternates: {
+    canonical: '/schedule',
+  },
+  openGraph: {
+    title: 'Orientation Schedule & Reporting Time 2026 | Amity University Patna',
+    description: `Official schedule and reporting details for Amity University Patna Orientation Programme 2026. Reporting at 2:00 PM Sharp on ${EVENT.dateRange} at ${EVENT.venue.name}, ${EVENT.venue.street}.`,
+    url: '/schedule',
+  },
 }
 
 export default function SchedulePage() {

@@ -4,6 +4,7 @@ import { Caveat, Plus_Jakarta_Sans } from 'next/font/google'
 import type { ReactNode } from 'react'
 import { MotionProvider } from '@/components/motion/MotionProvider'
 import { UserStatusProvider } from '@/lib/client/UserStatusProvider'
+import { JsonLd } from '@/components/seo/JsonLd'
 import { EVENT } from '@/lib/event'
 import './globals.css'
 
@@ -33,32 +34,59 @@ const caveat = Caveat({
  * subdomain is not known ahead of time; a custom domain overrides it explicitly.
  */
 const SITE_ORIGIN = new URL(
-  process.env.NEXT_PUBLIC_SITE_URL ??
-    (process.env.RAILWAY_PUBLIC_DOMAIN !== undefined
-      ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}`
-      : 'http://localhost:3000'),
+  process.env.NEXT_PUBLIC_SITE_URL && !process.env.NEXT_PUBLIC_SITE_URL.includes('localhost')
+    ? process.env.NEXT_PUBLIC_SITE_URL
+    : 'https://orientation.amitypatnaevents.in',
 ).origin
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_ORIGIN),
   title: {
-    default: `${EVENT.programme} ${EVENT.year} — ${EVENT.institution}`,
-    template: `%s — Orientation ${EVENT.year}`,
+    default: 'Orientation Programme 2026 | Amity University Patna',
+    template: `%s | Amity University Patna`,
   },
   description:
-    'The day that turns a campus you have never seen into the place you belong. ' +
-    `${EVENT.institution} welcomes the ${EVENT.year} intake — ${EVENT.dateRange}.`,
+    'Official Amity University Patna Orientation Programme 2026 portal. Access event schedules, reporting times, Gyan Bhawan venue info, and student digital passes.',
   applicationName: `Orientation ${EVENT.year}`,
   authors: [{ name: EVENT.institution }],
+  alternates: {
+    canonical: '/',
+  },
   openGraph: {
     type: 'website',
     url: SITE_ORIGIN,
     siteName: `${EVENT.institution} — Orientation ${EVENT.year}`,
-    title: `Orientation ${EVENT.year}`,
-    description: `Deeksharambh — Student Orientation Programme. ${EVENT.dateRange} at ${EVENT.institution}.`,
+    title: 'Orientation Programme 2026 | Amity University Patna',
+    description:
+      'Official Amity University Patna Orientation Programme 2026 portal. Access event schedules, reporting times, Gyan Bhawan venue info, and student digital passes.',
     locale: 'en_IN',
+    images: [
+      {
+        url: '/opengraph-image.png',
+        width: 1200,
+        height: 630,
+        alt: `${EVENT.institution} ${EVENT.programme} ${EVENT.year}`,
+      },
+    ],
   },
-  robots: { index: true, follow: true },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Orientation Programme 2026 | Amity University Patna',
+    description:
+      'Official Amity University Patna Orientation Programme 2026 portal. Access event schedules, reporting times, Gyan Bhawan venue info, and student digital passes.',
+    images: ['/opengraph-image.png'],
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
 }
 
 export const viewport: Viewport = {
@@ -121,6 +149,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       <html lang="en-IN" suppressHydrationWarning className={`${jakarta.variable} ${caveat.variable}`}>
         <head>
           <script dangerouslySetInnerHTML={{ __html: BOOTSTRAP }} />
+          <JsonLd siteUrl={SITE_ORIGIN} />
         </head>
         <body>
           <a

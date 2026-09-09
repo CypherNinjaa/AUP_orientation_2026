@@ -65,49 +65,45 @@ export function DeveloperHero() {
             </ul>
           </div>
 
-          {/* ---- art ------------------------------------------------------- */}
-          <div className="relative lg:py-14">
-            {/* No frame, no ring, no offset panels.
-                The supplied artwork is a transparent cut-out: the subject
-                already sits on their own gradient blob, with a `</>` chip, a
-                paper plane and a dot grid arranged around them. A rounded
-                white frame over that would crop the paper plane and the dots
-                off the composition and cut a hard edge through the blob, and
-                the two offset panels that used to sit behind the picture were
-                there to seat an opaque rectangle — there is no rectangle now.
-                So the artwork is placed rather than framed, and the only
-                decoration left is the section wash above, which it sits in. */}
-            <div className="relative mx-auto w-full max-w-[27rem] lg:max-w-[34rem]">
+          {/* ---- art & showcase ------------------------------------------- */}
+          <div className="relative lg:py-12">
+            {/* Ambient back-glow matching the photo's warm aesthetic */}
+            <div
+              aria-hidden
+              className="absolute -inset-4 rounded-[2.5rem] bg-gradient-to-tr from-violet-600/25 via-berry/20 to-flame/30 blur-2xl opacity-70 -z-10"
+            />
+
+            {/* Framed showcase portrait */}
+            <div className="relative mx-auto w-full max-w-[26rem] lg:max-w-[28.5rem] overflow-hidden rounded-[2rem] shadow-2xl ring-1 ring-white/25 bg-navy/90 group">
               <Image
                 src={DEVELOPER.heroArt}
                 width={DEVELOPER.heroArtSize.width}
                 height={DEVELOPER.heroArtSize.height}
-                alt=""
+                alt={`${DEVELOPER.fullName} — ${DEVELOPER.role}`}
                 priority
-                className="h-auto w-full"
+                className="h-auto w-full object-cover transition-transform duration-700 ease-[var(--ease-out-soft)] group-hover:scale-[1.02]"
               />
+
+              {/* Status badge over the photo */}
+              <div className="absolute top-4 left-4 inline-flex items-center gap-2 rounded-full bg-navy/70 backdrop-blur-md px-3.5 py-1.5 text-xs font-semibold text-white/95 border border-white/20 shadow-lg">
+                <span className="size-2 rounded-full bg-leaf animate-pulse" />
+                <span>Lead Architect & Full Stack</span>
+              </div>
             </div>
 
-            {/* Static below lg, floated at lg. The wrapper is not a positioned
-                ancestor, so the absolute children resolve against the art box.
-                Each card is pushed outward past the column edge so it clips one
-                corner of the artwork rather than sitting on top of it — the
-                picture is the subject here, the cards are annotations on it. */}
+            {/* Floating interactive cards positioned harmoniously around the portrait */}
             <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:mt-0 lg:block">
               <CodeCard
                 data-reveal
-                className="lg:absolute lg:top-1 lg:-right-2 lg:z-10 lg:w-[14.5rem]"
+                className="lg:absolute lg:-top-5 lg:-right-6 lg:z-20 lg:w-[15rem] shadow-glass"
               />
               <DeveloperProfileCard
                 data-reveal
-                className="lg:absolute lg:top-[48%] lg:-right-4 lg:z-10 lg:w-[13.5rem]"
+                className="lg:absolute lg:top-[44%] lg:-right-10 lg:z-20 lg:w-[15.5rem] shadow-glass"
               />
               <TerminalCard
                 data-reveal
-                /* Capped and centred rather than stretched across both columns:
-                   the terminal is a fixed eight-row block about 235px wide, so a
-                   full-width card just adds empty dark space to its right. */
-                className="sm:col-span-2 sm:mx-auto sm:max-w-md lg:absolute lg:bottom-1 lg:-left-5 lg:z-10 lg:w-[16.5rem] lg:max-w-none"
+                className="sm:col-span-2 sm:mx-auto sm:max-w-md lg:absolute lg:-bottom-6 lg:-left-8 lg:z-20 lg:w-[18.5rem] lg:max-w-none shadow-glass"
               />
             </div>
           </div>
