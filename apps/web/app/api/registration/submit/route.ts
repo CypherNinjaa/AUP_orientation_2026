@@ -11,17 +11,19 @@
  */
 import { submitRequest, type SubmitRequest } from '@orientation/contracts'
 
-import { requireActor } from '@/lib/server/auth'
+import { getActor } from '@/lib/server/auth'
 import { getConfig, registrationClosedMessage, registrationWindow } from '@/lib/server/config'
 import { clientIp, fail, handle, ok, rateLimited, readJson, userAgent } from '@/lib/server/http'
 import { rateLimit } from '@/lib/server/redis'
 import { submitRegistration } from '@/lib/server/registration'
+import { buildStudentSessionCookieHeader } from '@/lib/server/student-session'
 
 export const dynamic = 'force-dynamic'
 
 export async function POST(request: Request): Promise<Response> {
   return handle(async () => {
-    const actor = await requireActor(request)
+    const actor = await getActor()
+    const ip = clientIp(request) ?? '127.0.0.1'
 
     const config = await getConfig()
     const window = registrationWindow(config)
@@ -29,16 +31,21 @@ export async function POST(request: Request): Promise<Response> {
       return fail('REGISTRATION_CLOSED', registrationClosedMessage(window))
     }
 
-    const limit = await rateLimit(`submit:${actor.id}`, 5, 3600)
+    const limitKey = actor ? `submit:${actor.id}` : `submit:ip:${ip}`
+    const limit = await rateLimit(limitKey, 5, 3600)
     if (!limit.ok) return rateLimited(limit)
 
     const body = await readJson<SubmitRequest>(request, submitRequest)
 
     const result = await submitRegistration(actor, body, {
-      ip: clientIp(request),
+      ip,
       userAgent: userAgent(request),
     })
 
-    return ok(result, { status: 201 })
+    const headers = result.sessionToken
+      ? { 'set-cookie': buildStudentSessionCookieHeader(result.sessionToken) }
+      : undefined
+
+    return ok(result, { status: 201, headers })
   })
 }

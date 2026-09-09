@@ -53,11 +53,25 @@ export default function SignInPage() {
   return (
     <div className="flex flex-col gap-7">
       <div>
-        <Eyebrow>Welcome back</Eyebrow>
+        <Eyebrow>Account Access</Eyebrow>
         <h2 className="text-navy mt-3 text-3xl font-extrabold tracking-[-0.03em]">Sign in</h2>
-        <p className="text-ink-soft mt-2">
-          Use the email you applied with. If you have not registered for a pass yet, signing in is
-          the first step.
+        <p className="text-ink-soft mt-2 text-sm leading-relaxed">
+          Staff and volunteers can sign in below.
+        </p>
+      </div>
+
+      <div className="bg-amber-500/10 border-amber-500/30 rounded-xl border p-4 text-xs text-amber-950 dark:text-amber-200">
+        <p className="font-semibold">Are you a student?</p>
+        <p className="mt-1 text-ink-soft">
+          Students do not need an account! You can{' '}
+          <a href="/register" className="font-bold underline hover:text-navy">
+            register for your pass directly
+          </a>{' '}
+          or{' '}
+          <a href="/pass" className="font-bold underline hover:text-navy">
+            access your existing pass
+          </a>
+          .
         </p>
       </div>
 

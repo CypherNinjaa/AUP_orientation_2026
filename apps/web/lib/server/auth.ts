@@ -218,7 +218,9 @@ export async function getActor(): Promise<Actor | null> {
 export async function getActorOrRedirect(redirectTo?: string): Promise<Actor> {
   const { userId } = await auth()
   if (!userId) {
-    redirect(`/sign-in${redirectTo ? `?redirect_url=${encodeURIComponent(redirectTo)}` : ''}`)
+    const isStaffTarget = redirectTo?.startsWith('/admin') || redirectTo?.startsWith('/volunteer')
+    const targetBase = isStaffTarget ? '/staff/sign-in' : '/sign-in'
+    redirect(`${targetBase}${redirectTo ? `?redirect_url=${encodeURIComponent(redirectTo)}` : ''}`)
   }
 
   const actor = await getActor()

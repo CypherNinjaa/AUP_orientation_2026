@@ -39,10 +39,6 @@ export function UserStatusProvider({ children }: { children: ReactNode }) {
   const role = (user?.publicMetadata?.role as UserRole | undefined) ?? 'STUDENT'
 
   const loadMe = useCallback(async () => {
-    if (!isSignedIn) {
-      setMeData(null)
-      return
-    }
     setLoadingMe(true)
     try {
       const res = await fetchMe()
@@ -56,13 +52,11 @@ export function UserStatusProvider({ children }: { children: ReactNode }) {
     } finally {
       setLoadingMe(false)
     }
-  }, [isSignedIn])
+  }, [])
 
   useEffect(() => {
-    if (clerkLoaded) {
-      void loadMe()
-    }
-  }, [clerkLoaded, loadMe])
+    void loadMe()
+  }, [loadMe])
 
   const isRegistered = Boolean(meData?.registration)
   const hasPass = Boolean(meData?.pass)

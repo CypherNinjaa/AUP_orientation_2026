@@ -153,6 +153,17 @@ async function request<T>(
   const headers: Record<string, string> = { accept: 'application/json', ...options.headers }
   if (body !== undefined && !isForm) headers['content-type'] = 'application/json'
 
+  if (typeof window !== 'undefined') {
+    try {
+      const studentSession = localStorage.getItem('orientation2026:student:session')
+      if (studentSession && !headers['x-student-session']) {
+        headers['x-student-session'] = studentSession
+      }
+    } catch {
+      // Ignore storage restrictions
+    }
+  }
+
   const { signal, done } = withTimeout(options.signal, timeoutFor(path, options.timeoutMs))
 
   let response: Response

@@ -36,6 +36,7 @@ import {
   type LookupResponse,
   type MeResponse,
   type PassSummary,
+  type RecoverPassResponse,
   type SelfieReplaceResponse,
   type SubmitRequest,
   type SubmitResponse,
@@ -49,6 +50,7 @@ import { CloudinaryUnavailableError, uploadSelfie } from './media/cloudinary'
 import { issueSelfiePath } from './media/selfie-url'
 import { issuePass } from './pass'
 import { publish } from './redis'
+import { createStudentSessionToken } from './student-session'
 import { studentChannel } from '@orientation/core/realtime'
 
 /** Request metadata carried into the audit log. */
@@ -75,7 +77,7 @@ export interface RequestMeta {
  * comment.
  */
 export async function lookupFormNumber(
-  actor: Actor,
+  actor: Actor | null,
   formNumber: string,
 ): Promise<LookupResponse> {
   const row = await prisma.admittedStudent.findUnique({
@@ -132,7 +134,7 @@ export async function lookupFormNumber(
   }
 
   if (!row.isClaimed) return { status: 'AVAILABLE', student: preview }
-  if (row.claimedByUserId === actor.id) return { status: 'CLAIMED_BY_YOU', student: preview }
+  if (actor && row.claimedByUserId === actor.id) return { status: 'CLAIMED_BY_YOU', student: preview }
 
   // Deliberately no preview. Somebody else's name is not this caller's to see
   // just because they guessed the number next to their own.
@@ -229,15 +231,13 @@ export async function discardDraft(actor: Actor): Promise<void> {
  * moderated and a student who cannot be verified at the gate.
  */
 export async function submitRegistration(
-  actor: Actor,
+  actor: Actor | null,
   input: SubmitRequest,
   meta: RequestMeta,
 ): Promise<SubmitResponse> {
   const config = await getConfig()
 
   if (input.consentVersion !== config.consentVersion) {
-    // Refused rather than silently corrected. Recording agreement to text the
-    // student never read is worse than making them read the current text.
     abort(
       'CONSENT_VERSION_MISMATCH',
       'The consent notice has been updated. Reload the page and read it again before submitting.',
@@ -250,21 +250,12 @@ export async function submitRegistration(
     })
   }
 
-  // An existing registration is the common case for a double-submit — a student
-  // double-tapping the button, or a retried request after a flaky connection.
-  // Returning what already exists is friendlier than a 409 and is safe, because
-  // nothing here is being changed.
-  const existing = await prisma.registration.findUnique({
-    where: { userId: actor.id },
-    include: { pass: true },
-  })
-  if (existing && existing.status === 'APPROVED') {
-    return {
-      registrationId: existing.id,
-      reference: existing.reference,
-      status: existing.status,
-      pass: existing.pass ? toPassSummary(existing.pass, null) : null,
-    }
+  let existing = null
+  if (actor) {
+    existing = await prisma.registration.findUnique({
+      where: { userId: actor.id },
+      include: { pass: true },
+    })
   }
 
   const admitted = await prisma.admittedStudent.findUnique({
@@ -277,7 +268,7 @@ export async function submitRegistration(
       isClaimed: true,
       claimedByUserId: true,
       registration: {
-        select: { id: true, userId: true },
+        include: { pass: true },
       },
     },
   })
@@ -313,10 +304,36 @@ export async function submitRegistration(
     }
   }
 
-  if (admitted.isClaimed && admitted.claimedByUserId !== actor.id) {
-    abort('ALREADY_CLAIMED', 'That form number has already been registered.', {
-      fields: { formNumber: 'Contact the help desk if this is your number.' },
-    })
+  // Check claim conflict or re-submission:
+  if (admitted.isClaimed) {
+    if (actor && admitted.claimedByUserId === actor.id) {
+      existing = admitted.registration ?? existing
+    } else if (admitted.registration) {
+      // For unauthenticated flow (or device recovery), verify if the phone matches
+      const normInput = normalisePhone(input.contactNo)?.slice(-10)
+      const normReg = normalisePhone(admitted.registration.contactNo)?.slice(-10)
+      if (normInput && normReg && normInput === normReg) {
+        existing = admitted.registration
+      } else {
+        abort('ALREADY_CLAIMED', 'That form number has already been registered.', {
+          fields: { formNumber: 'Contact the help desk if this is your number.' },
+        })
+      }
+    } else {
+      abort('ALREADY_CLAIMED', 'That form number has already been registered.', {
+        fields: { formNumber: 'Contact the help desk if this is your number.' },
+      })
+    }
+  }
+
+  if (existing && existing.status === 'APPROVED') {
+    return {
+      registrationId: existing.id,
+      reference: existing.reference,
+      status: existing.status,
+      pass: existing.pass ? toPassSummary(existing.pass, null) : null,
+      sessionToken: createStudentSessionToken(existing),
+    }
   }
 
   const reference = existing ? existing.reference : generateReference()
@@ -343,29 +360,26 @@ export async function submitRegistration(
   const now = new Date()
 
   const created = await prisma.$transaction(async (tx) => {
-    // If this actor previously claimed a DIFFERENT form number (e.g. resubmitting with a new
-    // form number or recovering from a prior attempt), release that claim first.
-    // Otherwise, setting `claimedByUserId: actor.id` on `admitted.id` violates the
-    // Postgres unique index on `AdmittedStudent.claimedByUserId`.
-    await tx.admittedStudent.updateMany({
-      where: {
-        claimedByUserId: actor.id,
-        id: { not: admitted.id },
-      },
-      data: { isClaimed: false, claimedByUserId: null, claimedAt: null },
-    })
+    if (actor) {
+      await tx.admittedStudent.updateMany({
+        where: {
+          claimedByUserId: actor.id,
+          id: { not: admitted.id },
+        },
+        data: { isClaimed: false, claimedByUserId: null, claimedAt: null },
+      })
+    }
 
-    // The claim and the registration in one atomic step. Two students racing on
-    // one form number both reach here; the `claimedByUserId` unique index and
-    // the conditional `updateMany` below mean exactly one wins.
     const claim = await tx.admittedStudent.updateMany({
       where: {
         id: admitted.id,
-        // Either unclaimed, or already claimed by this same user (a retry after a
-        // transaction that failed *after* the claim landed).
-        OR: [{ isClaimed: false }, { claimedByUserId: actor.id }],
+        OR: [
+          { isClaimed: false },
+          ...(actor ? [{ claimedByUserId: actor.id }] : []),
+          ...(existing ? [{ id: admitted.id }] : []),
+        ],
       },
-      data: { isClaimed: true, claimedByUserId: actor.id, claimedAt: now },
+      data: { isClaimed: true, claimedByUserId: actor ? actor.id : null, claimedAt: now },
     })
 
     if (claim.count === 0) {
@@ -417,7 +431,9 @@ export async function submitRegistration(
         ? await issuePass(tx, registration.id, input.companions.length)
         : null
 
-      await tx.registrationDraft.deleteMany({ where: { userId: actor.id } })
+      if (actor) {
+        await tx.registrationDraft.deleteMany({ where: { userId: actor.id } })
+      }
 
       return { registration, pass }
     }
@@ -425,15 +441,10 @@ export async function submitRegistration(
     const registration = await tx.registration.create({
       data: {
         reference,
-        userId: actor.id,
+        userId: actor ? actor.id : null,
         admittedStudentId: admitted.id,
         status,
-        // The student's confirmed spelling, not the sheet's. The name on the pass
-        // has to be the one they answer to at the gate.
         name: input.name,
-        // The programme is *not* accepted from the client. It is the sheet's, read
-        // server-side — a field the student cannot edit has no business arriving
-        // in a request body.
         program: admitted.program,
         contactNo: input.contactNo,
         selfiePublicId: uploaded.publicId,
@@ -462,16 +473,23 @@ export async function submitRegistration(
       ? await issuePass(tx, registration.id, input.companions.length)
       : null
 
-    // The draft has served its purpose. Deleted inside the transaction so a
-    // failed submit leaves the student's work exactly where it was.
-    await tx.registrationDraft.deleteMany({ where: { userId: actor.id } })
+    if (actor) {
+      await tx.registrationDraft.deleteMany({ where: { userId: actor.id } })
+    }
 
     return { registration, pass }
   })
 
+  const auditActor = actor ?? {
+    id: created.registration.id,
+    role: 'STUDENT' as const,
+    email: null,
+    name: input.name,
+  }
+
   await writeAudit({
     action: AUDIT_ACTIONS.REGISTRATION_SUBMITTED,
-    actor,
+    actor: auditActor,
     entityType: 'Registration',
     entityId: created.registration.id,
     after: {
@@ -488,7 +506,7 @@ export async function submitRegistration(
 
   await writeAudit({
     action: AUDIT_ACTIONS.SELFIE_UPLOADED,
-    actor,
+    actor: auditActor,
     entityType: 'Registration',
     entityId: created.registration.id,
     after: {
@@ -511,11 +529,14 @@ export async function submitRegistration(
     at: now.getTime(),
   })
 
+  const sessionToken = createStudentSessionToken(created.registration)
+
   return {
     registrationId: created.registration.id,
     reference,
     status,
     pass: created.pass ? toPassSummary(created.pass, null) : null,
+    sessionToken,
   }
 }
 
@@ -536,12 +557,13 @@ export async function submitRegistration(
  * intact instead of leaving the record with none.
  */
 export async function replaceSelfie(
-  actor: Actor,
+  actorOrRegistrationId: Actor | string,
   input: { image: string; faceDetected: boolean },
   meta: RequestMeta,
 ): Promise<SelfieReplaceResponse> {
+  const isId = typeof actorOrRegistrationId === 'string'
   const registration = await prisma.registration.findUnique({
-    where: { userId: actor.id },
+    where: isId ? { id: actorOrRegistrationId } : { userId: actorOrRegistrationId.id },
     select: { id: true, reference: true, status: true, revisionCount: true, selfiePublicId: true },
   })
 
@@ -587,9 +609,13 @@ export async function replaceSelfie(
     },
   })
 
+  const auditActor = isId
+    ? { id: registration.id, role: 'STUDENT' as const, email: null, name: null }
+    : actorOrRegistrationId
+
   await writeAudit({
     action: AUDIT_ACTIONS.SELFIE_REPLACED,
-    actor,
+    actor: auditActor,
     entityType: 'Registration',
     entityId: registration.id,
     before: { publicId: registration.selfiePublicId, revisionCount: registration.revisionCount },
@@ -606,12 +632,71 @@ export async function replaceSelfie(
     at: now.getTime(),
   })
 
-  const signed = issueSelfiePath(registration.id, actor.id)
+  const audience = isId ? registration.id : actorOrRegistrationId.id
+  const signed = issueSelfiePath(registration.id, audience)
 
   return {
     status: updated.status,
     selfieUploadedAt: now.toISOString(),
     selfieUrl: signed.path,
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Pass Recovery — Form Number + Contact Number
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Pass Recovery: Look up registration by Form Number and verify registered Contact Number.
+ * On match, returns a freshly signed session token allowing instant device recovery.
+ */
+export async function recoverRegistration(
+  formNumber: string,
+  contactNo: string,
+): Promise<RecoverPassResponse> {
+  const admitted = await prisma.admittedStudent.findUnique({
+    where: { formNumber },
+    include: {
+      registration: {
+        select: {
+          id: true,
+          reference: true,
+          status: true,
+          contactNo: true,
+          accessSecret: true,
+        },
+      },
+    },
+  })
+
+  if (!admitted || !admitted.registration) {
+    abort(
+      'NOT_FOUND',
+      'No registration was found for this form number. Please complete registration first.',
+    )
+  }
+
+  const reg = admitted.registration
+  const normInput = normalisePhone(contactNo)
+  const normReg = normalisePhone(reg.contactNo)
+
+  const input10 = normInput?.slice(-10)
+  const reg10 = normReg?.slice(-10)
+
+  if (!input10 || !reg10 || input10 !== reg10) {
+    abort(
+      'FORBIDDEN',
+      'The mobile number does not match the contact number registered for this form number.',
+    )
+  }
+
+  const sessionToken = createStudentSessionToken(reg)
+
+  return {
+    sessionToken,
+    registrationId: reg.id,
+    status: reg.status,
+    reference: reg.reference,
   }
 }
 
@@ -622,24 +707,26 @@ export async function replaceSelfie(
 /**
  * Everything the student portal needs, in one read.
  *
- * One query with two includes rather than four round trips, because this runs on
- * every load of the student dashboard and again on every SSE reconnect.
+ * Supports lookup by Clerk Actor OR by student registrationId (for non-Clerk student session).
  */
-export async function readMe(actor: Actor): Promise<MeResponse> {
+export async function readMe(actorOrRegistrationId: Actor | string): Promise<MeResponse> {
   const config = await getConfig()
+  const isId = typeof actorOrRegistrationId === 'string'
 
   const [registration, draft] = await Promise.all([
     prisma.registration.findUnique({
-      where: { userId: actor.id },
+      where: isId ? { id: actorOrRegistrationId } : { userId: actorOrRegistrationId.id },
       include: {
         companions: { orderBy: { position: 'asc' } },
         pass: { include: { checkIn: { select: { scannedAt: true } } } },
       },
     }),
-    prisma.registrationDraft.findUnique({
-      where: { userId: actor.id },
-      select: { step: true },
-    }),
+    isId
+      ? null
+      : prisma.registrationDraft.findUnique({
+          where: { userId: actorOrRegistrationId.id },
+          select: { step: true },
+        }),
   ])
 
   if (!registration) {

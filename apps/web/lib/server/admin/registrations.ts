@@ -786,10 +786,10 @@ export async function getRegistrationDetail(
     programLevel: record.admittedStudent.programLevel,
     formNumber: record.admittedStudent.formNumber,
     contactNo: record.contactNo,
-    email: record.user.email,
-    userId: record.user.id,
-    userIsActive: record.user.isActive,
-    userRole: record.user.role,
+    email: record.user?.email ?? null,
+    userId: record.user?.id ?? record.id,
+    userIsActive: record.user?.isActive ?? true,
+    userRole: record.user?.role ?? 'STUDENT',
     selfieUrl,
     faceDetected: record.faceDetected,
     submittedAt: record.submittedAt.toISOString(),
@@ -1070,6 +1070,17 @@ export async function setUserActiveStatus(
 
   if (!reg) abort('NOT_FOUND', 'No such registration.')
   const user = reg.user
+
+  if (!user) {
+    if (!input.isActive && reg.pass?.status === 'ACTIVE') {
+      await revokePass(reg.pass.id, input.reason || 'Registration suspended by administrator', actor)
+    }
+    return {
+      userId: reg.id,
+      clerkUserId: '',
+      isActive: input.isActive,
+    }
+  }
 
   if (user.id === actor.id && !input.isActive) {
     abort('CONFLICT', 'You cannot ban or deactivate your own administrator account.')

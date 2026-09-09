@@ -18,20 +18,23 @@ import { requireActor } from '@/lib/server/auth'
 import { clientIp, handle, ok, rateLimited, readJson, userAgent } from '@/lib/server/http'
 import { rateLimit } from '@/lib/server/redis'
 import { replaceSelfie } from '@/lib/server/registration'
+import { getStudentSessionFromRequest } from '@/lib/server/student-session'
 
 export const dynamic = 'force-dynamic'
 
 export async function PUT(request: Request): Promise<Response> {
   return handle(async () => {
-    const actor = await requireActor(request)
+    const session = await getStudentSessionFromRequest(request)
+    const actor = session ? null : await requireActor(request)
 
-    const limit = await rateLimit(`selfie:${actor.id}`, 10, 3600)
+    const limitKey = session ? `selfie:student:${session.registrationId}` : `selfie:${actor!.id}`
+    const limit = await rateLimit(limitKey, 10, 3600)
     if (!limit.ok) return rateLimited(limit)
 
     const body = await readJson<SelfieReplaceRequest>(request, selfieReplaceRequest)
 
     const result = await replaceSelfie(
-      actor,
+      session ? session.registrationId : actor!,
       { image: body.image, faceDetected: body.faceDetected },
       { ip: clientIp(request), userAgent: userAgent(request) },
     )

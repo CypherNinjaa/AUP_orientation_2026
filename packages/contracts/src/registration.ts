@@ -256,6 +256,25 @@ export interface SubmitResponse {
   status: RegistrationStatus
   /** Present when the system auto-approved and issued a pass immediately. */
   pass: PassSummary | null
+  /** Session token for student auth without Clerk */
+  sessionToken?: string
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Pass Recovery — Form Number + Contact Number
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const recoverPassRequest = z.strictObject({
+  formNumber,
+  contactNo: phone10,
+})
+export type RecoverPassRequest = z.infer<typeof recoverPassRequest>
+
+export interface RecoverPassResponse {
+  sessionToken: string
+  registrationId: string
+  status: RegistrationStatus
+  reference: string
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

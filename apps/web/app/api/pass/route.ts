@@ -12,11 +12,12 @@
 import { prisma } from '@orientation/db'
 import { formatCode10 } from '@orientation/core/pass'
 
-import { requireActor } from '@/lib/server/auth'
+import { getActor } from '@/lib/server/auth'
 import { fail, handle, ok } from '@/lib/server/http'
 import { issueSelfiePath } from '@/lib/server/media/selfie-url'
 import { barcodeSvg, qrSvg } from '@/lib/server/pass-render'
 import { toCompanionSummary, toPassSummary } from '@/lib/server/registration'
+import { getStudentSessionFromRequest } from '@/lib/server/student-session'
 import type { CompanionSummary, PassSummary } from '@orientation/contracts'
 
 export const dynamic = 'force-dynamic'
@@ -40,10 +41,15 @@ export interface PassRenderResponse {
 
 export async function GET(request: Request): Promise<Response> {
   return handle(async () => {
-    const actor = await requireActor(request)
+    const session = await getStudentSessionFromRequest(request)
+    const actor = session ? null : await getActor()
+
+    if (!session && !actor) {
+      return fail('UNAUTHENTICATED', 'No active pass session. Please find your pass using your Form Number.')
+    }
 
     const registration = await prisma.registration.findUnique({
-      where: { userId: actor.id },
+      where: session ? { id: session.registrationId } : { userId: actor!.id },
       include: {
         companions: { orderBy: { position: 'asc' } },
         pass: { include: { checkIn: { select: { scannedAt: true } } } },
@@ -84,8 +90,9 @@ export async function GET(request: Request): Promise<Response> {
     const qr = await qrSvg(pass.qrPayload)
     const barcode = barcodeSvg(pass.code10)
 
+    const audience = session ? registration.id : actor!.id
     const photoUrl = registration.selfiePublicId
-      ? issueSelfiePath(registration.id, actor.id, 3600).path
+      ? issueSelfiePath(registration.id, audience, 3600).path
       : null
 
     const body: PassRenderResponse = {

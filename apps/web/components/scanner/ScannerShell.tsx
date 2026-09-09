@@ -783,7 +783,7 @@ function Handover({ queued }: { queued: number }) {
         }
         setGoing(true)
         void clearIdentifyingData()
-          .then(() => clerk.signOut({ redirectUrl: '/sign-in' }))
+          .then(() => clerk.signOut({ redirectUrl: '/staff/sign-in' }))
           .catch(() => {
             setGoing(false)
             setArmed(false)

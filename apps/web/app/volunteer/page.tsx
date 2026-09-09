@@ -35,7 +35,7 @@ export default async function VolunteerPage({
 
   if (actor === null) {
     if (userId) redirect('/deactivated')
-    redirect('/sign-in?redirect_url=%2Fvolunteer')
+    redirect('/staff/sign-in?redirect_url=%2Fvolunteer')
   }
   if (actor.role === 'STUDENT') redirect('/not-authorised')
 

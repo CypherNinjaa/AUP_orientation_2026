@@ -18,7 +18,7 @@
 import { lookupRequest, type LookupRequest } from '@orientation/contracts'
 import { AUDIT_ACTIONS } from '@orientation/core/audit'
 
-import { requireActor } from '@/lib/server/auth'
+import { getActor } from '@/lib/server/auth'
 import { writeAudit } from '@/lib/server/audit'
 import { getConfig, registrationClosedMessage, registrationWindow } from '@/lib/server/config'
 import { clientIp, fail, handle, ok, rateLimited, readJson, userAgent } from '@/lib/server/http'
@@ -32,7 +32,8 @@ const PER_HOUR = 60
 
 export async function POST(request: Request): Promise<Response> {
   return handle(async () => {
-    const actor = await requireActor(request)
+    const actor = await getActor()
+    const ip = clientIp(request) ?? '127.0.0.1'
 
     const config = await getConfig()
     const window = registrationWindow(config)
@@ -40,10 +41,13 @@ export async function POST(request: Request): Promise<Response> {
       return fail('REGISTRATION_CLOSED', registrationClosedMessage(window))
     }
 
-    const minute = await rateLimit(`lookup:m:${actor.id}`, PER_MINUTE, 60)
+    const mKey = actor ? `lookup:m:${actor.id}` : `lookup:m:ip:${ip}`
+    const hKey = actor ? `lookup:h:${actor.id}` : `lookup:h:ip:${ip}`
+
+    const minute = await rateLimit(mKey, PER_MINUTE, 60)
     if (!minute.ok) return rateLimited(minute)
 
-    const hour = await rateLimit(`lookup:h:${actor.id}`, PER_HOUR, 3600)
+    const hour = await rateLimit(hKey, PER_HOUR, 3600)
     if (!hour.ok) {
       await writeAudit({
         action: AUDIT_ACTIONS.ACCESS_DENIED,
@@ -51,7 +55,7 @@ export async function POST(request: Request): Promise<Response> {
         entityType: 'Endpoint',
         entityId: '/api/registration/lookup',
         after: { reason: 'hourly lookup limit exceeded', limit: PER_HOUR },
-        ip: clientIp(request),
+        ip,
         userAgent: userAgent(request),
       })
       return rateLimited(hour)

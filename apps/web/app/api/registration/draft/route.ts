@@ -20,16 +20,18 @@
  */
 import { draftSaveRequest, type DraftResponse, type DraftSaveRequest } from '@orientation/contracts'
 
-import { requireActor } from '@/lib/server/auth'
+import { getActor } from '@/lib/server/auth'
 import { fail, handle, noContent, ok, rateLimited, readJson } from '@/lib/server/http'
 import { rateLimit } from '@/lib/server/redis'
 import { discardDraft, readDraft, saveDraft } from '@/lib/server/registration'
 
 export const dynamic = 'force-dynamic'
 
-export async function GET(request: Request): Promise<Response> {
+export async function GET(_request: Request): Promise<Response> {
   return handle(async () => {
-    const actor = await requireActor(request)
+    const actor = await getActor()
+    if (!actor) return fail('NOT_FOUND', 'No saved draft.')
+
     const draft = await readDraft(actor)
     if (!draft) return fail('NOT_FOUND', 'No saved draft.')
 
@@ -44,7 +46,18 @@ export async function GET(request: Request): Promise<Response> {
 
 export async function PUT(request: Request): Promise<Response> {
   return handle(async () => {
-    const actor = await requireActor(request)
+    const actor = await getActor()
+    const body = await readJson<DraftSaveRequest>(request, draftSaveRequest)
+
+    if (!actor) {
+      // Unauthenticated student relies on browser localStorage; acknowledge cleanly with 200 OK
+      const response: DraftResponse = {
+        step: body.step,
+        data: body.data,
+        updatedAt: new Date().toISOString(),
+      }
+      return ok(response)
+    }
 
     // The client debounces to roughly one save every two seconds while typing, so
     // 60 a minute is a comfortable ceiling that still stops a wedged component
@@ -53,7 +66,6 @@ export async function PUT(request: Request): Promise<Response> {
     const limit = await rateLimit(`draft:${actor.id}`, 60, 60)
     if (!limit.ok) return rateLimited(limit)
 
-    const body = await readJson<DraftSaveRequest>(request, draftSaveRequest)
     const updatedAt = await saveDraft(actor, body.step, body.data)
 
     const response: DraftResponse = {
@@ -65,10 +77,12 @@ export async function PUT(request: Request): Promise<Response> {
   })
 }
 
-export async function DELETE(request: Request): Promise<Response> {
+export async function DELETE(_request: Request): Promise<Response> {
   return handle(async () => {
-    const actor = await requireActor(request)
-    await discardDraft(actor)
+    const actor = await getActor()
+    if (actor) {
+      await discardDraft(actor)
+    }
     return noContent()
   })
 }

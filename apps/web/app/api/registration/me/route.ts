@@ -10,15 +10,25 @@
  * than anywhere else: a shared cache holding this response for even a few seconds
  * would serve one student's registration to the next visitor.
  */
-import { requireActor } from '@/lib/server/auth'
-import { handle, ok } from '@/lib/server/http'
+import { getActor } from '@/lib/server/auth'
+import { fail, handle, ok } from '@/lib/server/http'
 import { readMe } from '@/lib/server/registration'
+import { getStudentSessionFromRequest } from '@/lib/server/student-session'
 
 export const dynamic = 'force-dynamic'
 
 export async function GET(request: Request): Promise<Response> {
   return handle(async () => {
-    const actor = await requireActor(request)
-    return ok(await readMe(actor))
+    const session = await getStudentSessionFromRequest(request)
+    if (session) {
+      return ok(await readMe(session.registrationId))
+    }
+
+    const actor = await getActor()
+    if (actor) {
+      return ok(await readMe(actor))
+    }
+
+    return fail('UNAUTHENTICATED', 'No active student session found.')
   })
 }

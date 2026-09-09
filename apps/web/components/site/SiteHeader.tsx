@@ -90,68 +90,66 @@ export function SiteHeader() {
         </nav>
 
         <div className="flex items-center gap-2.5">
-          {/* Action button: changes depending on whether signed in and registered */}
-          {isSignedIn ? (
-            <>
-              {isRegistered ? (
-                <div className="hidden sm:block">
-                  <LinkButton href="/pass" size="sm" arrow>
-                    Your pass
-                  </LinkButton>
-                </div>
-              ) : (
-                <div className="hidden sm:block">
-                  <LinkButton href="/register" size="sm" arrow>
-                    Complete registration
-                  </LinkButton>
-                </div>
-              )}
-
-              {/* Clerk User Button for account management and sign out */}
-              <div className="flex items-center">
-                <UserButton
-                  userProfileMode="modal"
-                  appearance={{
-                    elements: {
-                      avatarBox: 'size-9 ring-2 ring-violet-deep/20 hover:ring-violet-deep transition-all duration-300',
-                      userButtonTrigger: 'focus:outline-none focus:ring-2 focus:ring-violet-deep rounded-full',
-                    },
-                  }}
-                >
-                  <UserButton.MenuItems>
-                    <UserButton.Link
-                      label="Your Digital Pass"
-                      labelIcon={<Icon name="id" size={16} />}
-                      href="/pass"
-                    />
-                    <UserButton.Link
-                      label="Orientation Schedule"
-                      labelIcon={<Icon name="calendar" size={16} />}
-                      href="/schedule"
-                    />
-                    {role === 'ADMIN' && (
-                      <UserButton.Link
-                        label="Admin Console"
-                        labelIcon={<Icon name="terminal" size={16} />}
-                        href="/admin"
-                      />
-                    )}
-                    {role === 'VOLUNTEER' && (
-                      <UserButton.Link
-                        label="Gate Scanner"
-                        labelIcon={<Icon name="qr" size={16} />}
-                        href="/volunteer"
-                      />
-                    )}
-                  </UserButton.MenuItems>
-                </UserButton>
-              </div>
-            </>
-          ) : (
+          {/* Action button: changes depending on whether registered */}
+          {isRegistered ? (
             <div className="hidden sm:block">
-              <LinkButton href="/register" size="sm" arrow>
-                Register now
+              <LinkButton href="/pass" size="sm" arrow>
+                Your pass
               </LinkButton>
+            </div>
+          ) : (
+            <div className="hidden items-center gap-2 sm:flex">
+              <Link
+                href="/pass#recover"
+                className="px-2.5 py-1 text-xs font-semibold text-ink-soft hover:text-navy transition-colors"
+              >
+                Find pass
+              </Link>
+              <LinkButton href="/register" size="sm" arrow>
+                Get your pass
+              </LinkButton>
+            </div>
+          )}
+
+          {/* If signed in (e.g. staff member), show Clerk User Button */}
+          {isSignedIn && (
+            <div className="flex items-center">
+              <UserButton
+                userProfileMode="modal"
+                appearance={{
+                  elements: {
+                    avatarBox: 'size-9 ring-2 ring-violet-deep/20 hover:ring-violet-deep transition-all duration-300',
+                    userButtonTrigger: 'focus:outline-none focus:ring-2 focus:ring-violet-deep rounded-full',
+                  },
+                }}
+              >
+                <UserButton.MenuItems>
+                  <UserButton.Link
+                    label="Your Digital Pass"
+                    labelIcon={<Icon name="id" size={16} />}
+                    href="/pass"
+                  />
+                  <UserButton.Link
+                    label="Orientation Schedule"
+                    labelIcon={<Icon name="calendar" size={16} />}
+                    href="/schedule"
+                  />
+                  {role === 'ADMIN' && (
+                    <UserButton.Link
+                      label="Admin Console"
+                      labelIcon={<Icon name="terminal" size={16} />}
+                      href="/admin"
+                    />
+                  )}
+                  {role === 'VOLUNTEER' && (
+                    <UserButton.Link
+                      label="Gate Scanner"
+                      labelIcon={<Icon name="qr" size={16} />}
+                      href="/volunteer"
+                    />
+                  )}
+                </UserButton.MenuItems>
+              </UserButton>
             </div>
           )}
 
@@ -222,18 +220,27 @@ export function SiteHeader() {
           })}
         </nav>
 
-        {isSignedIn ? (
-          <div className="mt-8 flex flex-col gap-3">
-            {isRegistered ? (
-              <LinkButton href="/pass" size="lg" arrow className="w-full">
-                View your pass
-              </LinkButton>
-            ) : (
+        <div className="mt-8 flex flex-col gap-3">
+          {isRegistered ? (
+            <LinkButton href="/pass" size="lg" arrow className="w-full">
+              Your pass
+            </LinkButton>
+          ) : (
+            <div className="flex flex-col gap-2.5">
               <LinkButton href="/register" size="lg" arrow className="w-full">
-                Complete registration
+                Get your pass
               </LinkButton>
-            )}
+              <Link
+                href="/pass#recover"
+                onClick={() => setOpen(false)}
+                className="py-1 text-center text-xs font-bold text-violet-deep hover:underline"
+              >
+                Already registered? Find your pass &rarr;
+              </Link>
+            </div>
+          )}
 
+          {isSignedIn && (
             <SignOutButton redirectUrl="/">
               <button
                 type="button"
@@ -244,14 +251,8 @@ export function SiteHeader() {
                 Sign out
               </button>
             </SignOutButton>
-          </div>
-        ) : (
-          <div className="mt-8">
-            <LinkButton href="/register" size="lg" arrow className="w-full">
-              Register now
-            </LinkButton>
-          </div>
-        )}
+          )}
+        </div>
 
         <p className="text-ink-soft mt-6 text-center text-sm">
           Questions? Call{' '}

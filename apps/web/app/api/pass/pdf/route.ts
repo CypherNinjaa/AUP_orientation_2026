@@ -12,23 +12,30 @@
  */
 import { prisma } from '@orientation/db'
 
-import { requireActor } from '@/lib/server/auth'
+import { getActor } from '@/lib/server/auth'
 import { fail, handle, rateLimited } from '@/lib/server/http'
 import { downloadUrl } from '@/lib/server/media/cloudinary'
 import { renderPassPdf } from '@/lib/server/pass-render'
 import { rateLimit } from '@/lib/server/redis'
+import { getStudentSessionFromRequest } from '@/lib/server/student-session'
 
 export const dynamic = 'force-dynamic'
 
 export async function GET(request: Request): Promise<Response> {
   return handle(async () => {
-    const actor = await requireActor(request)
+    const session = await getStudentSessionFromRequest(request)
+    const actor = session ? null : await getActor()
 
-    const limit = await rateLimit(`pass-pdf:${actor.id}`, 10, 3600)
+    if (!session && !actor) {
+      return fail('UNAUTHENTICATED', 'No active pass session. Please find your pass using your Form Number.')
+    }
+
+    const limitKey = session ? `pass-pdf:student:${session.registrationId}` : `pass-pdf:${actor!.id}`
+    const limit = await rateLimit(limitKey, 10, 3600)
     if (!limit.ok) return rateLimited(limit)
 
     const registration = await prisma.registration.findUnique({
-      where: { userId: actor.id },
+      where: session ? { id: session.registrationId } : { userId: actor!.id },
       include: { companions: { orderBy: { position: 'asc' } }, pass: true },
     })
 

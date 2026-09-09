@@ -1,11 +1,18 @@
 'use client'
 
+import Link from 'next/link'
 import { useEffect, useRef, useState } from 'react'
 import type { ReactNode, RefObject } from 'react'
 import gsap from 'gsap'
 import { useGSAP } from '@gsap/react'
 
-import type { ApiError, CompanionInput, CompanionRelationship, SubmitResponse } from '@orientation/contracts'
+import type {
+  ApiError,
+  CompanionInput,
+  CompanionRelationship,
+  RecoverPassResponse,
+  SubmitResponse,
+} from '@orientation/contracts'
 
 import { SelfieCapture, type Shot } from '@/components/register/SelfieCapture'
 import { Stepper } from '@/components/register/Stepper'
@@ -13,7 +20,7 @@ import { HandNote } from '@/components/ui/atoms'
 import { Button, LinkButton } from '@/components/ui/Button'
 import { CheckBox, Field, SelectInput, TextInput } from '@/components/ui/Field'
 import { Icon } from '@/components/ui/Icon'
-import { fieldError, isRetryable } from '@/lib/api'
+import { apiPost, fieldError, isRetryable } from '@/lib/api'
 import { cn } from '@/lib/cn'
 import { COMPANION_RELATIONSHIPS, EVENT, REGISTER_STEPS } from '@/lib/event'
 import {
@@ -344,6 +351,13 @@ export function RegisterWizard({
     setSubmitting(false)
 
     if (result.ok) {
+      if (result.data.sessionToken) {
+        try {
+          localStorage.setItem('orientation2026:student:session', result.data.sessionToken)
+        } catch {
+          // Ignore storage restrictions
+        }
+      }
       // The draft has served its purpose. Both copies go.
       void dropDraft()
       moved.current = true
@@ -494,6 +508,89 @@ export function RegisterWizard({
 /* Step 1 — about you                                                        */
 /* -------------------------------------------------------------------------- */
 
+function ClaimedPassRecovery({ formNumber }: { formNumber: string }) {
+  const [contactNo, setContactNo] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  async function handleRecover(e: React.FormEvent) {
+    e.preventDefault()
+    setError(null)
+
+    const cleanPhone = contactNo.replace(/\D/g, '')
+    if (cleanPhone.length < 10) {
+      setError('Please enter your valid 10-digit registered mobile number.')
+      return
+    }
+
+    setBusy(true)
+    const res = await apiPost<RecoverPassResponse>('/api/pass/recover', {
+      formNumber: formNumber.trim(),
+      contactNo: cleanPhone.slice(-10),
+    })
+    setBusy(false)
+
+    if (!res.ok) {
+      setError(res.error.message || 'Mobile number did not match the registered contact number.')
+      return
+    }
+
+    if (res.data.sessionToken) {
+      try {
+        localStorage.setItem('orientation2026:student:session', res.data.sessionToken)
+      } catch {
+        // Ignore storage restrictions
+      }
+    }
+
+    window.location.href = '/pass'
+  }
+
+  return (
+    <div className="mt-4 rounded-2xl bg-paper/95 p-4 ring-1 ring-rule/50">
+      <p className="text-xs font-semibold text-navy">
+        Already registered? Enter your 10-digit mobile number to access your pass:
+      </p>
+      <form onSubmit={handleRecover} className="mt-2.5 flex flex-col gap-2.5 sm:flex-row sm:items-center">
+        <div className="flex-1">
+          <input
+            type="tel"
+            value={contactNo}
+            onChange={(e) => setContactNo(e.target.value)}
+            placeholder="10-digit registered mobile number"
+            autoComplete="tel"
+            className="w-full rounded-xl border border-rule/70 bg-card px-3.5 py-2 text-xs text-navy placeholder:text-ink-faint focus:border-violet focus:outline-none focus:ring-2 focus:ring-violet/20"
+            required
+          />
+        </div>
+        <Button type="submit" size="sm" disabled={busy} className="shrink-0 justify-center">
+          {busy ? (
+            <span className="flex items-center gap-1.5">
+              <Icon name="loader" size={14} className="animate-spin" />
+              Locating…
+            </span>
+          ) : (
+            <span className="flex items-center gap-1.5">
+              <Icon name="qr" size={14} />
+              Access Pass
+            </span>
+          )}
+        </Button>
+      </form>
+      {error ? <p className="mt-2 text-xs font-medium text-flame">{error}</p> : null}
+
+      <div className="mt-3 flex items-center justify-between border-t border-rule/40 pt-2.5 text-[0.8125rem]">
+        <Link
+          href={`/pass?formNumber=${encodeURIComponent(formNumber)}#recover`}
+          className="font-semibold text-violet-deep hover:underline"
+        >
+          Open pass recovery page &rarr;
+        </Link>
+      </div>
+    </div>
+  )
+}
+
 function AboutPanel({
   draft,
   errors,
@@ -514,6 +611,17 @@ function AboutPanel({
 
   return (
     <div className="mt-7">
+      <div className="mb-5 flex items-center justify-between rounded-2xl bg-paper-tint/90 px-4 py-2.5 text-xs text-ink-soft ring-1 ring-rule/40">
+        <span>Already registered on another phone or device?</span>
+        <Link
+          href="/pass#recover"
+          className="ml-2 flex shrink-0 items-center gap-1 font-bold text-violet-deep hover:text-violet"
+        >
+          <Icon name="search" size={13} />
+          Find your pass &rarr;
+        </Link>
+      </div>
+
       <Field
         label="Application form number"
         htmlFor="formNumber"
@@ -566,13 +674,24 @@ function AboutPanel({
       ) : null}
 
       {claim.kind === 'claimed' ? (
-        <Note tone="warn" icon="shield" title="Somebody has already registered with that number">
-          We are not going to say who. If it is your number, that is worth a phone call rather than
-          another try —{' '}
-          <a href={`tel:${EVENT.helpline.replace(/\s/g, '')}`} className="text-violet-deep font-semibold">
-            {EVENT.helpline}
-          </a>
-          . The help desk in the Gate 1 foyer can also do it on the morning.
+        <Note tone="warn" icon="shield" title="This application form is already registered">
+          <p>
+            A registration has already been created for form{' '}
+            <strong className="font-semibold text-navy">{draft.formNumber}</strong>.
+          </p>
+          <p className="mt-1 text-xs text-ink-soft">
+            If this is you, enter your registered 10-digit mobile number below to access or download your pass immediately:
+          </p>
+
+          <ClaimedPassRecovery formNumber={draft.formNumber} />
+
+          <p className="mt-3.5 text-xs text-ink-faint">
+            Haven&apos;t registered yet? If someone else used your number by mistake, ring{' '}
+            <a href={`tel:${EVENT.helpline.replace(/\s/g, '')}`} className="font-semibold text-violet-deep hover:underline">
+              {EVENT.helpline}
+            </a>
+            . The help desk in the Gate 1 foyer can also assist on orientation morning.
+          </p>
         </Note>
       ) : null}
 

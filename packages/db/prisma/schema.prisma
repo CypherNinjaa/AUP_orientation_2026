@@ -322,8 +322,9 @@ model Registration {
   /// aloud over a phone because it admits nobody.
   reference String @unique
 
-  userId            String @unique
-  admittedStudentId String @unique
+  userId            String? @unique
+  accessSecret      String  @default(cuid())
+  admittedStudentId String  @unique
 
   status RegistrationStatus @default(PENDING_REVIEW)
 
@@ -377,7 +378,7 @@ model Registration {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  user            User            @relation("RegistrationOwner", fields: [userId], references: [id], onDelete: Cascade)
+  user            User?           @relation("RegistrationOwner", fields: [userId], references: [id], onDelete: SetNull)
   admittedStudent AdmittedStudent @relation(fields: [admittedStudentId], references: [id], onDelete: Restrict)
   reviewedBy      User?           @relation("RegistrationReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
   companions      Companion[]

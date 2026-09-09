@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { prisma } from '@orientation/db'
 
@@ -9,7 +10,8 @@ import { PageHeader } from '@/components/site/PageHeader'
 import { Icon } from '@/components/ui/Icon'
 import { Container, IconChip, Section, SectionHeading } from '@/components/ui/atoms'
 import { EVENT, REGISTER_STEPS } from '@/lib/event'
-import { getActorOrRedirect } from '@/lib/server/auth'
+import { getActor } from '@/lib/server/auth'
+import { getStudentSession } from '@/lib/server/student-session'
 import {
   type RegistrationWindow,
   getConfig,
@@ -23,17 +25,25 @@ export const metadata: Metadata = {
 }
 
 export default async function RegisterPage() {
-  const actor = await getActorOrRedirect('/register')
+  const session = await getStudentSession()
+  const actor = session ? null : await getActor()
 
   const [existing, config] = await Promise.all([
-    // Deliberately just the id. This page never renders registration detail — it
-    // hands over to `/pass`, which reads it properly.
-    prisma.registration.findUnique({ where: { userId: actor.id }, select: { id: true, status: true } }),
+    session
+      ? prisma.registration.findUnique({
+          where: { id: session.registrationId },
+          select: { id: true, status: true },
+        })
+      : actor
+        ? prisma.registration.findUnique({
+            where: { userId: actor.id },
+            select: { id: true, status: true },
+          })
+        : null,
     getConfig(),
   ])
-  // Only redirect away if the student already has an approved pass.
-  // Any revision, rejection, or resubmission can access the form.
-  if (existing && existing.status === 'APPROVED') redirect('/pass')
+
+  if (existing) redirect('/pass')
 
   const gate = registrationWindow(config)
 
@@ -68,6 +78,19 @@ export default async function RegisterPage() {
             <p className="text-ink-faint mt-5 text-[0.8125rem] leading-relaxed">
               Nothing else. No documents to scan, no fee, no printing.
             </p>
+            <div className="border-rule/40 mt-5 border-t pt-4">
+              <p className="text-navy text-xs font-bold">Already registered?</p>
+              <p className="text-ink-soft mt-1 text-xs">
+                Need to view, download, or reprint your pass?
+              </p>
+              <Link
+                href="/pass#recover"
+                className="mt-2 inline-flex items-center gap-1.5 text-xs font-bold text-violet-deep hover:text-violet"
+              >
+                <Icon name="search" size={14} />
+                Access or recover pass &rarr;
+              </Link>
+            </div>
           </div>
         }
       />

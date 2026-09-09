@@ -186,7 +186,7 @@ export function Hero() {
               </LinkButton>
             ) : (
               <LinkButton href="/register" size="lg" arrow className="w-full sm:w-auto">
-                Register now
+                Get your Pass
               </LinkButton>
             )}
             <LinkButton

@@ -26,11 +26,8 @@
 import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server'
 import { NextResponse } from 'next/server'
 
-/** Signed in, any role. */
-const requiresSignIn = createRouteMatcher([
-  '/register(.*)',
-  '/pass(.*)',
-  '/dashboard(.*)',
+/** Signed in, staff/admin/volunteer role. */
+const requiresStaffAuth = createRouteMatcher([
   '/admin(.*)',
   '/volunteer(.*)',
 ])
@@ -43,15 +40,12 @@ export default clerkMiddleware(async (auth, request) => {
     return NextResponse.next()
   }
 
-  if (!requiresSignIn(request)) return
+  if (!requiresStaffAuth(request)) return
 
   const { userId, sessionClaims } = await auth()
 
   if (!userId) {
-    // `redirectToSignIn` would work, but building the URL here keeps the
-    // return-to behaviour explicit: a student who followed a link to their pass
-    // lands back on their pass, not on a dashboard they then have to navigate from.
-    const signIn = new URL('/sign-in', request.url)
+    const signIn = new URL('/staff/sign-in', request.url)
     signIn.searchParams.set('redirect_url', request.nextUrl.pathname + request.nextUrl.search)
     return NextResponse.redirect(signIn)
   }

@@ -27,6 +27,7 @@ import { auditPiiAccess } from '@/lib/server/audit'
 import { clientIp, fail, handle, userAgent } from '@/lib/server/http'
 import { downloadUrl } from '@/lib/server/media/cloudinary'
 import { verifySelfieToken } from '@/lib/server/media/selfie-url'
+import { getStudentSessionFromRequest } from '@/lib/server/student-session'
 
 export const dynamic = 'force-dynamic'
 
@@ -47,6 +48,19 @@ export async function GET(
     }
 
     let actor = await getActor()
+    if (!actor) {
+      const session = await getStudentSessionFromRequest(request)
+      if (session && session.registrationId === registrationId && check.token.audience === registrationId) {
+        actor = {
+          id: registrationId,
+          clerkUserId: 'student-session',
+          role: 'STUDENT',
+          email: null,
+          name: null,
+        }
+      }
+    }
+
     if (!actor && process.env.NODE_ENV === 'development') {
       const devVolunteer = await prisma.user.findFirst({
         where: { role: { in: ['VOLUNTEER', 'ADMIN'] }, isActive: true },
@@ -83,11 +97,8 @@ export async function GET(
       return fail('NOT_FOUND', 'There is no photo on that registration.')
     }
 
-    // A student may only read their own. The signature already binds the path to
-    // this account, so this is the second lock on the same door — it catches the
-    // case where a student is handed a path for a registration that is not theirs
-    // by a bug on the issuing side.
-    if (actor.role === 'STUDENT' && registration.userId !== actor.id) {
+    // A student may only read their own.
+    if (actor.role === 'STUDENT' && registration.userId !== actor.id && registration.id !== actor.id) {
       return fail('FORBIDDEN', 'That is not your registration.')
     }
 
