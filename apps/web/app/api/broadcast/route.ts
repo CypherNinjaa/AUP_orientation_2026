@@ -15,16 +15,29 @@
  * `STUDENT` reads the student feed, anyone with a staff role reads the volunteer
  * feed, and `ALL` reaches both by virtue of the query in `listActiveBroadcasts`.
  */
-import { requireActor } from '@/lib/server/auth'
+import { getActor } from '@/lib/server/auth'
 import { listActiveBroadcasts } from '@/lib/server/admin/broadcast'
 import { handle, ok } from '@/lib/server/http'
+import { getStudentSessionFromRequest } from '@/lib/server/student-session'
 
 export const dynamic = 'force-dynamic'
 
 export async function GET(request: Request): Promise<Response> {
   return handle(async () => {
-    const actor = await requireActor(request)
-    const audience = actor.role === 'STUDENT' ? 'STUDENTS' : 'VOLUNTEERS'
-    return ok(await listActiveBroadcasts(audience))
+    // 1. Authenticated via student session (cookie or header)
+    const session = await getStudentSessionFromRequest(request)
+    if (session) {
+      return ok(await listActiveBroadcasts('STUDENTS'))
+    }
+
+    // 2. Authenticated via Clerk actor (volunteers, admins, or signed-in users)
+    const actor = await getActor()
+    if (actor) {
+      const audience = actor.role === 'STUDENT' ? 'STUDENTS' : 'VOLUNTEERS'
+      return ok(await listActiveBroadcasts(audience))
+    }
+
+    // 3. Fallback for public visitors / unregistered attendees
+    return ok(await listActiveBroadcasts('STUDENTS'))
   })
 }

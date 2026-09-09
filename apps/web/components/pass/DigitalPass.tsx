@@ -236,9 +236,6 @@ function Guests({
  * `orientation-pass.pdf`. Neither is something a nineteen-year-old should have to
  * interpret. Fetching means the refusal can be a sentence, in place, and the pass
  * stays on screen behind it.
- *
- * The filename is taken from `content-disposition` so the server stays the one
- * authority on it, with the reference as a fallback.
  */
 function Download({ reference }: { reference: string }) {
   const [state, setState] = useState<'idle' | 'working' | 'done'>('idle')

@@ -10,12 +10,13 @@ import { cn } from '@/lib/cn'
 import { NAV } from '@/lib/event'
 import { useUserStatus } from '@/lib/client/UserStatusProvider'
 import { BrandMark } from './BrandMark'
+import { StudentProfileMenu } from './StudentProfileMenu'
 
 export function SiteHeader() {
   const pathname = usePathname()
   const [scrolled, setScrolled] = useState(false)
   const [open, setOpen] = useState(false)
-  const { isSignedIn, isRegistered, role, user } = useUserStatus()
+  const { isSignedIn, isRegistered, registration, role, user } = useUserStatus()
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 12)
@@ -90,13 +91,14 @@ export function SiteHeader() {
         </nav>
 
         <div className="flex items-center gap-2.5">
-          {/* Action button: changes depending on whether registered */}
+          {/* Action button & profile: changes depending on whether registered */}
           {isRegistered ? (
-            <div className="hidden sm:block">
-              <LinkButton href="/pass" size="sm" arrow>
-                Your pass
-              </LinkButton>
-            </div>
+            <StudentProfileMenu
+              name={registration?.name || 'Student'}
+              program={registration?.program || '2026 Intake'}
+              reference={registration?.reference}
+              photoUrl={registration?.photoUrl}
+            />
           ) : (
             <div className="hidden items-center gap-2 sm:flex">
               <Link
@@ -110,6 +112,7 @@ export function SiteHeader() {
               </LinkButton>
             </div>
           )}
+
 
           {/* If signed in (e.g. staff member), show Clerk User Button */}
           {isSignedIn && (
@@ -238,6 +241,29 @@ export function SiteHeader() {
                 Already registered? Find your pass &rarr;
               </Link>
             </div>
+          )}
+
+          {isRegistered && !isSignedIn && (
+            <button
+              type="button"
+              onClick={async () => {
+                setOpen(false)
+                try {
+                  if (typeof window !== 'undefined') {
+                    localStorage.removeItem('orientation2026:student:session')
+                    localStorage.removeItem('orientation2026:register:draft:v2')
+                    localStorage.removeItem('orientation2026:register:draft:v1')
+                  }
+                  await fetch('/api/pass/clear-session', { method: 'POST' }).catch(() => null)
+                } finally {
+                  window.location.href = '/'
+                }
+              }}
+              className="border-rule/60 text-ink-soft hover:text-danger hover:border-danger/40 flex w-full items-center justify-center gap-2 rounded-full border py-3 text-sm font-semibold transition-colors"
+            >
+              <Icon name="logout" size={17} />
+              Logout
+            </button>
           )}
 
           {isSignedIn && (

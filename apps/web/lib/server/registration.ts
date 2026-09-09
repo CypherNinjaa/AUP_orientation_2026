@@ -754,6 +754,9 @@ export async function readMe(actorOrRegistrationId: Actor | string): Promise<MeR
       // payload is a string somebody will eventually try to build a URL from.
       hasSelfie: registration.selfiePublicId !== null,
       faceDetected: registration.faceDetected,
+      photoUrl: registration.selfiePublicId
+        ? issueSelfiePath(registration.id, isId ? registration.id : actorOrRegistrationId.id, 3600).path
+        : null,
     },
     companions: registration.companions.map(toCompanionSummary),
     pass: registration.pass

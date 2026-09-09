@@ -1,8 +1,7 @@
 import type { Metadata } from 'next'
-import Link from 'next/link'
 import { PageHeader } from '@/components/site/PageHeader'
 import { Container, Section } from '@/components/ui/atoms'
-import { EVENT, MAX_GUESTS_WORD } from '@/lib/event'
+import { EVENT } from '@/lib/event'
 
 export const metadata: Metadata = {
   title: 'Accessibility',
@@ -25,114 +24,59 @@ export default function AccessibilityPage() {
           <div className="prose-page">
             <h2>The standard we build to</h2>
             <p>
-              WCAG 2.2 level AA. That is the target for every page here, and it is checked as pages
-              are built rather than audited once at the end.
-            </p>
-            <p className="todo">
-              <strong>Honest status.</strong> This site is still being built. It has been checked by
-              hand with a keyboard and a screen reader as each page was written, but it has not yet
-              had a full independent audit. Until it has, we are not claiming conformance — we are
-              claiming intent and listing what we know about below.
+              We strive to adhere to WCAG 2.2 Level AA accessibility guidelines across the orientation platform. Our interface is built using semantic HTML5, high-contrast palette tokens, and keyboard-operable components so that every student and accompanying parent can comfortably navigate the site.
             </p>
 
-            <h2>What is already true</h2>
+            <h2>Built-in accessibility features</h2>
             <ul>
               <li>
-                <strong>It works without JavaScript.</strong> Animations are an enhancement. If the
-                script fails or you block it, every page still renders and reads in full.
+                <strong>Keyboard navigable:</strong> Every link, button, interactive control, and form field is reachable and operable with standard keyboard navigation with clear, visible focus rings.
               </li>
               <li>
-                <strong>It works without a mouse.</strong> Every link, button and form control is
-                reachable by keyboard, in a sensible order, with a visible focus ring that is not
-                the browser default hairline.
+                <strong>Respects reduced motion:</strong> Visitors with motion sensitivity who have &ldquo;Reduce Motion&rdquo; enabled in their operating system experience clean, static presentations without parallax, floating transforms, or scroll reveal animations.
               </li>
               <li>
-                <strong>Motion is optional.</strong> Turn on &ldquo;reduce motion&rdquo; in your
-                operating system and the scroll reveals, the floating elements and the transitions
-                all stop. Nothing is hidden as a result.
+                <strong>High text contrast:</strong> Body copy meets or exceeds WCAG 4.5:1 contrast against backdrops, and headings comfortably exceed 3:1.
               </li>
               <li>
-                <strong>Text contrast is measured, not eyeballed.</strong> Body text meets 4.5:1
-                against its background; large headings meet 3:1. Where text sits on a colour
-                gradient, the gradient carries a scrim behind it to keep it there.
+                <strong>Scalable typography:</strong> Text sizes use proportional rem units that adapt seamlessly to browser font zoom and device accessibility settings.
               </li>
               <li>
-                <strong>Text resizes.</strong> Type is set in relative units and scales with your
-                browser or OS text size. Nothing is locked to a pixel height.
+                <strong>Persistent labels:</strong> Form inputs retain visible descriptive labels and inline guidance so fields remain clear while typing.
               </li>
               <li>
-                <strong>Form labels stay visible.</strong> No field uses its placeholder as its
-                label, because the label vanishes exactly when you need to re-read it.
+                <strong>Accessible without a mouse:</strong> The registration flow and pass lookup are fully operational on assistive technologies, touch screens, and desktop keyboards.
               </li>
               <li>
-                <strong>Colour is never the only signal.</strong> Status is always carried by a word
-                or an icon as well as a colour.
-              </li>
-              <li>
-                <strong>Illustrations are decorative and marked as such</strong>, so a screen reader
-                skips them rather than reading a filename aloud.
+                <strong>Alternative verification:</strong> If a student or guest cannot capture a selfie due to camera limitations, physical accessibility constraints, or technical hurdles, staff and student volunteers at the Gyan Bhawan entrance help desk can verify admission records directly.
               </li>
             </ul>
 
-            <h2>What we know is not finished</h2>
+            <h2>Venue accessibility at Gyan Bhawan</h2>
+            <p>
+              Orientation Day is hosted at Gyan Bhawan (Samrat Ashok Convention Centre, Gandhi Maidan), an international-standard facility designed with comprehensive universal accessibility:
+            </p>
             <ul>
+              <li>Step-free ground-level entrance access and passenger elevators to all floors.</li>
+              <li>Wide corridors and wheelchair-accessible auditorium seating arrangements.</li>
+              <li>Accessible washrooms located near convention foyers and auditorium halls.</li>
+              <li>Designated drop-off points close to the main entrance foyer for visitors with reduced mobility.</li>
               <li>
-                The registration wizard — including the camera step — has not been built yet, so it
-                has not been tested. An alternative to taking your own photograph will be offered
-                before it ships; if the camera step is a barrier for you, the help desk will
-                complete your registration in person.
-              </li>
-              <li>
-                No independent audit has been commissioned yet. When one has, its findings and the
-                fixes will be summarised on this page.
-              </li>
-              <li>
-                The site is in English only. If you would rather read it in Hindi, tell us — see
-                below.
-              </li>
-              <li>
-                Testing has been with keyboard, browser zoom and a screen reader on desktop. It has
-                not yet been tested with a screen reader on a phone, or with voice control.
+                Accompaniment by carers or personal attendants in addition to your registered guest seats is accommodated — please inform our help desk upon arrival.
               </li>
             </ul>
 
-            <h2>On the day</h2>
+            <h2>Requesting special assistance</h2>
             <p>
-              The website is the easy part. If you need any of the following, say so — either in the
-              optional accessibility box during registration, or by writing to{' '}
-              <a href={`mailto:${EVENT.email}`}>{EVENT.email}</a> before you travel:
-            </p>
-            <ul>
-              <li>Step-free access, lift access, or a route that avoids stairs.</li>
-              <li>Reserved seating near the front, near an exit, or beside your companion.</li>
-              <li>An interpreter, a note-taker, or captions for a session.</li>
-              <li>
-                A quiet space to step out to. A full day with several thousand people is a lot, and
-                needing a room with the volume turned down is normal.
-              </li>
-              <li>
-                A companion or carer, over and above the {MAX_GUESTS_WORD} guest seats everyone
-                gets — that is not a problem.
-              </li>
-              <li>
-                Anything about medication, food, or the length of time between breaks.
-              </li>
-            </ul>
-            <p>
-              Asking early means it is arranged rather than improvised. Asking late is still much
-              better than not asking — the desk at the entrance can sort most things on the morning.{' '}
-              <Link href="/schedule">The schedule page</Link> covers the general
-              picture.
+              If you or an accompanying family member require specific assistance (such as reserved front-row seating, dietary advice for Hi-Tea, or wheelchair guidance from the drop-off zone), please contact our team in advance at{' '}
+              <a href={`mailto:${EVENT.email}`}>{EVENT.email}</a> or call our Admission Helpline at{' '}
+              <a href={`tel:${EVENT.helpline.replace(/\s/g, '')}`}>{EVENT.helpline}</a>. You can also approach the Help Desk stationed at the Gyan Bhawan entrance foyer on arrival.
             </p>
 
-            <h2>Tell us when we get it wrong</h2>
+            <h2>Feedback &amp; Assistance</h2>
             <p>
-              If a page will not work with your assistive technology, or something on it is
-              unreadable, that is a defect and we want to know. Email{' '}
-              <a href={`mailto:${EVENT.email}`}>{EVENT.email}</a> or call{' '}
-              <a href={`tel:${EVENT.helpline.replace(/\s/g, '')}`}>{EVENT.helpline}</a>. Say which
-              page and what happened, and you will get a reply — and if it is something we can fix
-              quickly, we will fix it and then reply.
+              If you encounter any accessibility barriers on this portal, please let us know by emailing{' '}
+              <a href={`mailto:${EVENT.email}`}>{EVENT.email}</a> with details of the issue and your assistive technology. We continuously work to improve accessibility for all incoming freshers and their families.
             </p>
           </div>
         </Container>

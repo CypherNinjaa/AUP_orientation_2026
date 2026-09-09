@@ -104,7 +104,19 @@ export function useEventStream(
     const connect = (): void => {
       if (closed) return
 
-      source = new EventSource('/api/stream', { withCredentials: true })
+      let streamUrl = '/api/stream'
+      if (typeof window !== 'undefined') {
+        try {
+          const session = localStorage.getItem('orientation2026:student:session')
+          if (session) {
+            streamUrl += `?session=${encodeURIComponent(session)}`
+          }
+        } catch {
+          // Ignore storage restrictions
+        }
+      }
+
+      source = new EventSource(streamUrl, { withCredentials: true })
       openedAt = Date.now()
 
       source.onopen = () => {

@@ -53,6 +53,14 @@ export function StudentPortal() {
 
 function PortalBody() {
   const me = useResource<MeResponse>(useCallback((signal: AbortSignal) => fetchMe(signal), []), [])
+  const passContainerRef = useCallback((node: HTMLDivElement | null) => {
+    if (node) {
+      // Smoothly scroll down to make the pass prominent
+      const yOffset = -24
+      const y = node.getBoundingClientRect().top + window.pageYOffset + yOffset
+      window.scrollTo({ top: Math.max(0, y), behavior: 'smooth' })
+    }
+  }, [])
 
   const registration = me.data?.registration ?? null
   const hasPass = me.data?.pass != null
@@ -141,7 +149,7 @@ function PortalBody() {
       <Container>
         <div className="grid gap-10 lg:grid-cols-[1.35fr_0.65fr] lg:gap-12">
           {/* Left: the pass if there is one, the line to it if there is not. */}
-          <div className="flex min-w-0 flex-col gap-10">
+          <div ref={passContainerRef} id="pass-credential" className="flex min-w-0 flex-col gap-10">
             {passData !== null ? (
               <DigitalPass data={passData} />
             ) : (

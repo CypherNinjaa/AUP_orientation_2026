@@ -106,6 +106,14 @@ export async function verifyStudentSessionToken(token: string): Promise<StudentS
  * Reads a token from a Request (Cookie header, Authorization header, or x-student-session).
  */
 export function extractTokenFromRequest(request: Request): string | null {
+  try {
+    const url = new URL(request.url)
+    const queryToken = url.searchParams.get('session') || url.searchParams.get('token')
+    if (queryToken) return queryToken.trim()
+  } catch {
+    // Ignore URL parse error
+  }
+
   const customHeader = request.headers.get('x-student-session')
   if (customHeader) return customHeader.trim()
 

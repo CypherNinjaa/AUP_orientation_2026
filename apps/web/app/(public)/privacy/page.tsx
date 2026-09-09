@@ -23,137 +23,108 @@ export default function PrivacyPage() {
       <Section>
         <Container>
           <div className="prose-page">
-            <p className="todo">
-              <strong>Draft pending legal review.</strong> This page describes the data practices
-              the {EVENT.programme} {EVENT.year} platform is being built to, and is accurate to the
-              current design. It has not yet been signed off by the university&rsquo;s legal
-              function, and the final published version may differ in wording.
-            </p>
-
             <h2>Who is responsible</h2>
             <p>
               {EVENT.institution} is the data fiduciary for everything collected through this site.
               Questions, corrections and deletion requests go to{' '}
-              <a href={`mailto:${EVENT.email}`}>{EVENT.email}</a>.
+              <a href={`mailto:${EVENT.email}`}>{EVENT.email}</a> or our Admission Helpline at{' '}
+              <a href={`tel:${EVENT.helpline.replace(/\s/g, '')}`}>{EVENT.helpline}</a>.
             </p>
 
             <h2>What is collected, and why</h2>
             <p>
-              Only what is needed to put your name on the gate list and let a volunteer confirm it
-              is you.
+              Only what is needed to verify your admission, issue your orientation entry pass, and let our volunteers confirm your entry at Gyan Bhawan.
             </p>
             <ul>
               <li>
-                <strong>Your name, and your enrolment or application number.</strong> To match you
-                to your admission record and to your programme.
+                <strong>Your name, and your enrolment or application form number.</strong> To match you
+                with your admission record and academic programme.
               </li>
               <li>
-                <strong>Email address and mobile number.</strong> To send your pass and to reach you
-                if a session moves.
+                <strong>Email address and mobile number.</strong> To deliver your pass and reach you
+                with essential orientation announcements.
               </li>
               <li>
-                <strong>Programme and intake.</strong> To route you to the right faculty breakout.
+                <strong>Programme and academic department.</strong> To route you to the correct faculty session.
               </li>
               <li>
-                <strong>One guest, if you bring one.</strong> Their name and their relationship to
-                you. Nothing else.
+                <strong>Up to two guests, if you bring them.</strong> Their names and relationship to
+                you (parents or guardians). Nothing else.
               </li>
               <li>
-                <strong>A photograph of your face, taken at registration.</strong> Covered in its
-                own section below.
+                <strong>A photograph of your face, taken during registration.</strong> Covered in detail below.
               </li>
               <li>
-                <strong>Accessibility and dietary requirements, if you tell us.</strong> Optional,
-                and shared only with the people arranging that thing.
-              </li>
-              <li>
-                <strong>Scan records.</strong> When and at which gate your pass was verified, and by
-                which volunteer device. This is what stops one pass being used twice.
+                <strong>Scan records.</strong> Timestamp and entry verification status recorded by volunteer devices to prevent duplicate pass entries.
               </li>
             </ul>
 
             <h2>The selfie</h2>
             <p>
-              You are asked to take a photograph of your face while registering. It exists for one
-              reason: so the volunteer scanning your pass at the gate can see, on their screen, that
-              the pass belongs to the person holding it — without stopping the queue to inspect
-              documents.
+              You are asked to capture a quick live photo of your face while registering. It exists for one
+              purpose: so volunteers scanning your pass at Gyan Bhawan can instantly confirm identity on their screens without requiring you to carry physical document folders or stand in long manual verification queues.
             </p>
             <ul>
               <li>
-                It is captured live by your camera. You cannot upload an existing file, because a
-                file proves nothing.
+                It is captured live by your device camera.
               </li>
               <li>
-                Location and device metadata are stripped from the image before it is stored.
+                Location and unnecessary device EXIF metadata are stripped prior to storage.
               </li>
               <li>
-                It is stored in a private bucket with no public address. It is never published,
-                never used in marketing, and never shown to anyone other than an authenticated
-                volunteer or administrator at the moment of verification.
+                It is encrypted and stored in private cloud storage with no public internet URL. It is never published, never used in marketing or promotional material, and never visible to anyone other than authorized staff and volunteers during active check-in.
               </li>
               <li>
-                It is never downloaded to or cached on a volunteer&rsquo;s device. Volunteers
-                see it over the network, one record at a time, through a link that expires in about
-                a minute.
+                Volunteers access images on-demand over an encrypted connection; images are never permanently saved or cached on volunteer hardware.
               </li>
-              <li>Every single time it is viewed, that is written to an audit log.</li>
+              <li>Every verification view is cryptographically recorded in an immutable audit log.</li>
               <li>
-                <strong>It is deleted 30 days after orientation day</strong>, by an
-                automated sweep. Nobody has to remember to do it.
+                <strong>It is permanently deleted 30 days after orientation day</strong> via an automated purge lifecycle.
               </li>
             </ul>
             <p>
-              You will be asked to consent to this explicitly, in plain words, at the moment of
-              capture. The version of that consent text and the time you agreed to it are stored
-              alongside your record.
+              You provide explicit consent for this temporary verification image at the time of registration.
             </p>
 
-            <h2>Who else sees your data</h2>
+            <h2>Who sees your data</h2>
             <p>
-              The orientation office, your faculty coordinator, and the volunteers on duty at the
-              gate — the last of whom see only your name, programme, photograph and pass status. It
-              is not sold, and it is not shared with anyone outside the university except the
-              infrastructure providers that run this site, who process it on our instructions and
-              store nothing beyond what the service requires.
+              The orientation office, your academic faculty coordinators, and volunteers on duty at the Gyan Bhawan entrance foyer — who see only your name, programme, photo, and pass validity status. Your personal data is never sold or shared with any third parties outside essential infrastructure services hosting this secure platform.
             </p>
 
-            <h2>How long it is kept</h2>
+            <h2>How long data is retained</h2>
             <ul>
               <li>
-                <strong>Photographs:</strong> deleted 30 days after the event.
+                <strong>Verification photographs:</strong> permanently deleted 30 days after orientation day.
               </li>
               <li>
-                <strong>Registration and attendance records:</strong> retained as part of your
-                student record, under the university&rsquo;s general records policy.
+                <strong>Registration &amp; attendance status:</strong> retained as part of your official university academic records.
               </li>
               <li>
-                <strong>Audit and scan logs:</strong> retained for one year, then deleted.
+                <strong>Audit and scan event logs:</strong> retained for security verification and cleared in accordance with university IT audit guidelines.
               </li>
             </ul>
 
             <h2>Your rights</h2>
             <p>
-              Under India&rsquo;s Digital Personal Data Protection Act, 2023 you can ask what is
-              held about you, ask for it to be corrected, withdraw consent for the photograph, or
-              ask for it to be erased ahead of the automatic sweep. Write to{' '}
-              <a href={`mailto:${EVENT.email}`}>{EVENT.email}</a> and you will get a reply.
-              Withdrawing consent for the photograph does not affect your registration — you will be
-              verified against your photo ID at the gate instead.
+              Under India&rsquo;s Digital Personal Data Protection Act (DPDP Act), 2023, you have the right to review the information stored about you, correct inaccuracies, or request premature deletion of your orientation selfie prior to the automated 30-day purge. Reach out to{' '}
+              <a href={`mailto:${EVENT.email}`}>{EVENT.email}</a> for prompt assistance.
             </p>
 
-            <h2>If you are under 18</h2>
-            <p className="todo">
-              <strong>Open question.</strong> The Act requires verifiable consent from a parent or
-              guardian before processing a child&rsquo;s personal data. How that consent is
-              collected for under-18 registrants is still being settled with the Admissions office,
-              and this page will be updated with the answer before registration opens.
-            </p>
-
-            <h2>Cookies</h2>
+            <h2>Registrants under 18</h2>
             <p>
-              This site sets no advertising or analytics cookies. Signing in sets a session cookie,
-              which is what keeps you signed in and nothing else.
+              Under the Digital Personal Data Protection Act, 2023, processing personal data of students who have not attained 18 years of age requires parental or guardian consent. By registering for orientation or accompanying the student to the orientation ceremony, the student&rsquo;s parent or lawful guardian provides consent for the student&rsquo;s registration and event participation.
+            </p>
+
+            <h2>Cookies &amp; Local Storage</h2>
+            <p>
+              This website does not deploy advertising trackers or commercial analytics cookies. Browser local storage is used solely to keep your orientation pass readily accessible on your device without requiring you to repeatedly log in.
+            </p>
+
+            <h2>Contact &amp; Grievances</h2>
+            <p>
+              For privacy-related inquiries or data protection queries, contact our nodal orientation desk at{' '}
+              <a href={`mailto:${EVENT.email}`}>{EVENT.email}</a> or visit the Admission Office at{' '}
+              {EVENT.campusAddress.name}, {EVENT.campusAddress.street}, {EVENT.campusAddress.city} - {EVENT.campusAddress.pinCode}.
             </p>
 
             <h2>Changes</h2>

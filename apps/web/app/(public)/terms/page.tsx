@@ -23,13 +23,6 @@ export default function TermsPage() {
       <Section>
         <Container>
           <div className="prose-page">
-            <p className="todo">
-              <strong>Draft pending legal review.</strong> These terms describe how the{' '}
-              {EVENT.programme} {EVENT.year} platform is intended to work. They have not yet been
-              signed off by the university&rsquo;s legal function, and the final published version
-              may differ in wording.
-            </p>
-
             <h2>What this site is</h2>
             <p>
               This site exists to register admitted students for {EVENT.institution}&rsquo;s{' '}
@@ -73,45 +66,35 @@ export default function TermsPage() {
                 the university under its ordinary conduct process.
               </li>
               <li>
-                Lost your phone, no signal, flat battery? Go to the help desk at the entrance foyer with a photo
-                ID. You will be found on the list and let in. See{' '}
+                Lost your phone, no signal, or battery drained? Approach the help desk at the Gyan Bhawan entrance foyer with your registered application form number. Our team will verify your admission record on the guest list and assist entry. See{' '}
                 <Link href="/schedule">orientation details</Link>.
               </li>
             </ul>
 
-            <h2>On campus</h2>
+            <h2>At the venue</h2>
             <ul>
               <li>
-                Follow the instructions of staff and volunteers, and the university&rsquo;s code of
-                conduct, for the whole time you are on site.
+                Follow the instructions of university faculty, staff, and student volunteers while present at Gyan Bhawan.
               </li>
               <li>
-                Your guest is your responsibility. Guests stay in the public sessions and the
-                published spaces.
+                Your guests (up to two parents or guardians) enter and remain with you in the designated auditorium and Hi-Tea areas.
               </li>
               <li>
-                Photography and filming happen at the event for university use. If you would rather
-                not appear, tell a volunteer or write to{' '}
-                <a href={`mailto:${EVENT.email}`}>{EVENT.email}</a> and it will be respected.
+                Official photography and filming take place during the ceremony for university records. If you prefer not to appear, notify a coordinator or write to{' '}
+                <a href={`mailto:${EVENT.email}`}>{EVENT.email}</a>.
               </li>
-              <li>Do not bring anything the university prohibits on campus.</li>
+              <li>Prohibited items or hazardous substances are strictly forbidden at the venue.</li>
             </ul>
 
             <h2>Changes to the programme</h2>
             <p>
-              The schedule published here is the plan, and the university may change a session,
-              a venue or a time — occasionally at short notice. Changes are published on this site
-              first and, where they matter, sent to everyone registered. Attendance is expected but
-              it is not a contract: if you cannot make a session, nothing on this site penalises
-              you for it.
+              The schedule published here is our planned timeline starting at 2:00 PM Sharp. The university may adjust session running order or timings if necessary. Updates will be reflected on this portal and communicated where relevant.
             </p>
 
-            <h2>When the site is not working</h2>
+            <h2>Support and contingencies</h2>
             <p>
-              We aim to keep it up, especially in the week before the event, but this is a website
-              and websites fail. If it is down when you need it, the helpline{' '}
-              <a href={`tel:${EVENT.helpline.replace(/\s/g, '')}`}>{EVENT.helpline}</a> and the desk
-              at Gate 1 can do everything the site can. A site outage never means you cannot attend.
+              If you experience technical issues accessing your pass on orientation day, volunteer scanners and help desks at the Gyan Bhawan entrance foyer operate offline-capable rosters. You can also reach our helpline directly at{' '}
+              <a href={`tel:${EVENT.helpline.replace(/\s/g, '')}`}>{EVENT.helpline}</a>. Technical difficulties will never prevent an admitted student with a valid admission record from participating.
             </p>
 
             <h2>Your data</h2>

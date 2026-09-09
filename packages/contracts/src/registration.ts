@@ -321,6 +321,7 @@ export interface MeResponse {
     revisionCount: number
     hasSelfie: boolean
     faceDetected: boolean | null
+    photoUrl?: string | null
   } | null
   companions: CompanionSummary[]
   pass: PassSummary | null

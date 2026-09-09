@@ -57,6 +57,7 @@ import { getActor } from '@/lib/server/auth'
 import { getConfig } from '@/lib/server/config'
 import { fail, handle } from '@/lib/server/http'
 import { subscribe, totalListeners } from '@/lib/server/redis'
+import { getStudentSessionFromRequest } from '@/lib/server/student-session'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
@@ -77,8 +78,28 @@ export async function GET(request: Request): Promise<Response> {
   // stream's headers are on the wire nothing can become an HTTP status any more, which
   // is why the `start` callback below handles its own failures and closes instead.
   return handle(async () => {
-    const actor = await getActor()
-    if (actor === null) return fail('UNAUTHENTICATED', 'Sign in to continue.')
+    const studentSession = await getStudentSessionFromRequest(request)
+    const actor = studentSession ? null : await getActor()
+
+    let role: 'STUDENT' | 'VOLUNTEER' | 'ADMIN' = 'STUDENT'
+    let registrationId: string | null = null
+
+    if (studentSession) {
+      role = 'STUDENT'
+      registrationId = studentSession.registrationId
+    } else if (actor) {
+      role = actor.role
+      if (actor.role === 'STUDENT') {
+        const registration = await prisma.registration.findUnique({
+          where: { userId: actor.id },
+          select: { id: true },
+        })
+        if (registration !== null) registrationId = registration.id
+      }
+    } else {
+      // Public / guest attendee stream — subscribed to public broadcasts
+      role = 'STUDENT'
+    }
 
     const config = await getConfig()
 
@@ -92,17 +113,13 @@ export async function GET(request: Request): Promise<Response> {
 
     const channels: string[] = [broadcastChannel()]
 
-    if (actor.role === 'STUDENT') {
-      // From the session, not from the request. There is no parameter here to tamper
-      // with, so a student cannot subscribe to another student's channel.
-      const registration = await prisma.registration.findUnique({
-        where: { userId: actor.id },
-        select: { id: true },
-      })
-      if (registration !== null) channels.push(studentChannel(registration.id))
+    if (role === 'STUDENT') {
+      if (registrationId !== null) {
+        channels.push(studentChannel(registrationId))
+      }
     } else {
       channels.push(scannerChannel())
-      if (actor.role === 'ADMIN') channels.push(adminChannel())
+      if (role === 'ADMIN') channels.push(adminChannel())
     }
 
     const encoder = new TextEncoder()
@@ -117,10 +134,10 @@ export async function GET(request: Request): Promise<Response> {
     const visible = (event: RealtimeEvent): boolean => {
       if (event.type !== 'broadcast') return true
       if (event.audience === 'ALL') return true
-      if (event.audience === 'STUDENTS') return actor.role === 'STUDENT'
+      if (event.audience === 'STUDENTS') return role === 'STUDENT'
       // VOLUNTEERS. Admins see it too: the control room is the audience for operational
       // instructions as much as the volunteers carrying them out.
-      return actor.role === 'VOLUNTEER' || actor.role === 'ADMIN'
+      return role === 'VOLUNTEER' || role === 'ADMIN'
     }
 
     const stream = new ReadableStream<Uint8Array>({

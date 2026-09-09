@@ -167,6 +167,34 @@ export function RegisterWizard({
     }
   }, [])
 
+  /* ---- initial scroll & focus on load / resume ---------------------------- */
+
+  useEffect(() => {
+    if (!hydrated || done) return
+
+    // Small delay to ensure DOM and layout settle
+    const timer = window.setTimeout(() => {
+      if (rootRef.current) {
+        const yOffset = -20
+        const y = rootRef.current.getBoundingClientRect().top + window.pageYOffset + yOffset
+        window.scrollTo({ top: Math.max(0, y), behavior: 'smooth' })
+      }
+
+      // Focus the first relevant input box (or the one left off)
+      const input =
+        panelRef.current?.querySelector<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>(
+          'input:not([type="hidden"]):not([disabled]), select:not([disabled]), textarea:not([disabled])',
+        )
+      if (input) {
+        input.focus({ preventScroll: true })
+      } else {
+        headingRef.current?.focus({ preventScroll: true })
+      }
+    }, 150)
+
+    return () => window.clearTimeout(timer)
+  }, [hydrated])
+
   /* ---- save --------------------------------------------------------------- */
 
   useEffect(() => {
