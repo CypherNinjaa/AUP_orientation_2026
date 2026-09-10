@@ -131,7 +131,7 @@ const schema = z.object({
 
   /**
    * Bearer token for the scheduled jobs at `/api/cron/*` — currently the DPDP
-   * selfie retention sweep.
+   * selfie retention sweep and WhatsApp summary bulletin.
    *
    * Optional so a local checkout runs without it, but the route refuses every
    * unauthenticated call when it is unset rather than falling open: an unprotected
@@ -142,6 +142,54 @@ const schema = z.object({
     .string()
     .trim()
     .min(24, { error: 'CRON_SECRET should be long enough not to be guessed.' })
+    .optional()
+    .transform((value) => (value === '' ? undefined : value)),
+
+  /**
+   * Base URL of the self-hosted OpenWA API gateway (e.g. http://openwa.railway.internal:2785
+   * or http://localhost:2785).
+   */
+  OPENWA_BASE_URL: z
+    .string()
+    .trim()
+    .optional()
+    .transform((value) => (value === '' ? undefined : value?.replace(/\/+$/, ''))),
+
+  /**
+   * OpenWA Admin or Operator API Key (passed via `X-API-Key`).
+   */
+  OPENWA_API_KEY: z
+    .string()
+    .trim()
+    .optional()
+    .transform((value) => (value === '' ? undefined : value)),
+
+  /**
+   * Active OpenWA session identifier (UUID) linked to the WhatsApp Business account.
+   */
+  OPENWA_SESSION_ID: z
+    .string()
+    .trim()
+    .optional()
+    .transform((value) => (value === '' ? undefined : value)),
+
+  /**
+   * HMAC secret for verifying incoming OpenWA webhooks (min 16 chars).
+   */
+  OPENWA_WEBHOOK_SECRET: z
+    .string()
+    .trim()
+    .min(16, { error: 'OPENWA_WEBHOOK_SECRET must be at least 16 characters.' })
+    .optional()
+    .transform((value) => (value === '' ? undefined : value)),
+
+  /**
+   * Comma-separated list of authorized administrator WhatsApp numbers in international format
+   * (e.g. '919876543210,919123456789').
+   */
+  WHATSAPP_ADMIN_NUMBERS: z
+    .string()
+    .trim()
     .optional()
     .transform((value) => (value === '' ? undefined : value)),
 })
@@ -184,3 +232,11 @@ export const isDevelopment = env.NODE_ENV === 'development'
  * secret is supposed to mean.
  */
 export const isClerkWebhookConfigured = env.CLERK_WEBHOOK_SECRET !== undefined
+
+/**
+ * Whether OpenWA WhatsApp gateway messaging is fully configured.
+ */
+export const isOpenWAConfigured =
+  env.OPENWA_BASE_URL !== undefined &&
+  env.OPENWA_API_KEY !== undefined &&
+  env.OPENWA_SESSION_ID !== undefined
