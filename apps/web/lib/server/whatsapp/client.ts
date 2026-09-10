@@ -88,6 +88,37 @@ export class OpenWAClient {
   }
 
   /**
+   * Fetches contact profile for a given chatId or LID (e.g. "103655344742468@lid").
+   * Resolves the linked phone number if available.
+   */
+  async getContact(
+    chatIdOrLid: string,
+  ): Promise<{ id: string; number?: string; name?: string; pushName?: string } | null> {
+    if (!this.isConfigured) return null
+
+    const url = `${this.baseUrl}/api/sessions/${this.sessionId}/contacts/${encodeURIComponent(chatIdOrLid)}`
+    try {
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'X-API-Key': this.apiKey!,
+        },
+      })
+
+      if (!response.ok) return null
+      return (await response.json()) as {
+        id: string
+        number?: string
+        name?: string
+        pushName?: string
+      }
+    } catch (error) {
+      console.error(`[whatsapp:client] Error fetching contact info for ${chatIdOrLid}:`, error)
+      return null
+    }
+  }
+
+  /**
    * Fetches the current session status.
    */
   async getSessionStatus(): Promise<OpenWASessionInfo | null> {

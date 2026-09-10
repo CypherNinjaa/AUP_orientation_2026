@@ -64,10 +64,40 @@ export async function POST(request: Request): Promise<Response> {
   }
 
   const rawSender = message.from ?? message.chatId
-  const normalizedSender = normalizePhoneNumber(rawSender)
+  const replyTarget = message.chatId || message.from || rawSender
+  const candidateSenders: string[] = [rawSender, replyTarget]
+
+  const normalizedRaw = normalizePhoneNumber(rawSender)
+  if (normalizedRaw) candidateSenders.push(normalizedRaw)
+
+  // If sender is using WhatsApp privacy LID (e.g. 103655344742468@lid), resolve phone details via OpenWA
+  if (rawSender.includes('@lid')) {
+    try {
+      const contact = await whatsappClient.getContact(rawSender)
+      if (contact) {
+        if (contact.id) {
+          candidateSenders.push(contact.id)
+          const normId = normalizePhoneNumber(contact.id)
+          if (normId) candidateSenders.push(normId)
+        }
+        if (contact.number) {
+          candidateSenders.push(contact.number)
+          const normNum = normalizePhoneNumber(contact.number)
+          if (normNum) candidateSenders.push(normNum)
+        }
+      }
+    } catch (err) {
+      console.warn(`[webhook:whatsapp] Failed to resolve contact for LID ${rawSender}:`, err)
+    }
+  }
 
   // 5. Authorize sender — only registered admins are answered
-  if (!isAuthorizedAdmin(normalizedSender)) {
+  const isAuthorized = isAuthorizedAdmin(...candidateSenders)
+  console.log(
+    `[webhook:whatsapp] Inbound message from "${rawSender}" (candidates: [${candidateSenders.join(', ')}]) - authorized: ${String(isAuthorized)}`,
+  )
+
+  if (!isAuthorized) {
     // Silently ignore messages from non-admin contacts so normal WhatsApp Business chats are never disturbed
     return ok({ received: true, ignored: 'unauthorized_sender' })
   }
@@ -77,17 +107,20 @@ export async function POST(request: Request): Promise<Response> {
     return ok({ received: true, ignored: 'empty_body' })
   }
 
+  console.log(`[webhook:whatsapp] Executing command "${text}" for admin "${replyTarget}"`)
+
   // 6. Execute command and generate reply
   try {
     const replyText = await handleWhatsAppCommand(text)
     if (replyText) {
-      await whatsappClient.sendTextMessage(normalizedSender, replyText)
+      await whatsappClient.sendTextMessage(replyTarget, replyText)
+      console.log(`[webhook:whatsapp] Reply successfully delivered to "${replyTarget}"`)
     }
     return ok({ received: true, handled: true })
   } catch (error) {
     console.error(`[webhook:whatsapp] Error processing command "${text}":`, error)
     await whatsappClient.sendTextMessage(
-      normalizedSender,
+      replyTarget,
       '⚠️ *An error occurred while processing your request.* Please try again in a few moments.',
     )
     return ok({ received: true, error: 'command_failed' })

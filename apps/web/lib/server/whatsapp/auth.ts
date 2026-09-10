@@ -33,33 +33,60 @@ export function normalizePhoneNumber(raw: string): string {
 }
 
 /**
- * Parses and returns the list of normalized phone numbers authorized to run admin commands.
+ * Parses and returns the list of normalized phone numbers and raw identifiers (e.g. LIDs)
+ * authorized to run admin commands.
  */
 export function getAuthorizedAdminNumbers(): string[] {
   const rawList = env.WHATSAPP_ADMIN_NUMBERS
   if (!rawList) return []
 
-  return rawList
-    .split(',')
-    .map((num) => normalizePhoneNumber(num.trim()))
-    .filter((num) => num.length >= 10)
+  const set = new Set<string>()
+  for (const item of rawList.split(',')) {
+    const trimmed = item.trim()
+    if (!trimmed) continue
+
+    // Add raw identifier without @ domain (e.g. LID or raw phone digits)
+    const clean = trimmed.split('@')[0] ?? ''
+    if (clean) set.add(clean)
+
+    // Add normalized digits (e.g. 9199697225 -> 919199697225)
+    const normalized = normalizePhoneNumber(trimmed)
+    if (normalized) set.add(normalized)
+  }
+
+  return Array.from(set)
 }
 
 /**
- * Verifies whether a given phone number belongs to an authorized administrator.
+ * Verifies whether any of the given candidate identifiers belongs to an authorized administrator.
  */
-export function isAuthorizedAdmin(phoneNumberOrChatId: string): boolean {
-  const normalized = normalizePhoneNumber(phoneNumberOrChatId)
-  if (!normalized) return false
-
+export function isAuthorizedAdmin(...candidates: (string | undefined | null)[]): boolean {
   const authorized = getAuthorizedAdminNumbers()
-  return authorized.includes(normalized)
+  if (authorized.length === 0) return false
+
+  for (const candidate of candidates) {
+    if (!candidate) continue
+    const clean = candidate.split('@')[0] ?? ''
+    const normalized = normalizePhoneNumber(candidate)
+
+    if (
+      authorized.includes(candidate) ||
+      authorized.includes(clean) ||
+      (normalized && authorized.includes(normalized))
+    ) {
+      return true
+    }
+  }
+
+  return false
 }
 
 /**
- * Formats a normalized phone number into a WhatsApp chatId (JID).
+ * Formats a normalized phone number into a WhatsApp chatId (JID), or preserves existing JIDs (@lid, @c.us, @g.us).
  */
-export function toChatId(phoneNumber: string): string {
-  const normalized = normalizePhoneNumber(phoneNumber)
+export function toChatId(target: string): string {
+  if (!target) return ''
+  if (target.includes('@')) return target
+  const normalized = normalizePhoneNumber(target)
   return `${normalized}@c.us`
 }

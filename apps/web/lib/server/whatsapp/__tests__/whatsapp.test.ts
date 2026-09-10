@@ -48,3 +48,9 @@ test('Fast typing shortcut keywords match expected intent', () => {
   assert.equal(isDirectIdentifier('!depts'), false)
 })
 
+test('toChatId preserves @lid and standard formats', () => {
+  assert.equal(toChatId('103655344742468@lid'), '103655344742468@lid')
+  assert.equal(toChatId('919199697225@c.us'), '919199697225@c.us')
+  assert.equal(toChatId('9199697225'), '919199697225@c.us')
+})
+
