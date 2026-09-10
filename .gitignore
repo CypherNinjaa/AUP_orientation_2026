@@ -49,3 +49,4 @@ Thumbs.db
 # prisma — the client is generated from schema.prisma on install and on migrate,
 # so it is a build artefact, not source. `packages/db/generated/`.
 packages/*/generated/
+.agents
