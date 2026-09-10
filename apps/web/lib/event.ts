@@ -128,7 +128,7 @@ export const PROMISES = [
     icon: 'sunrise',
     tint: 'violet',
     title: 'A new chapter',
-    body: 'Walk in a stranger. Walk out with your batchmates, mentors, and a clear vision of your university journey.',
+    body: 'Walk in as a stranger. Walk out with your batchmates, mentors, and a clear vision of your university journey.',
   },
   {
     icon: 'people',
@@ -262,7 +262,7 @@ export const HIGHLIGHTS = [
 /* -------------------------------------------------------------------------- */
 
 export const BRING = [
-  { label: 'Your orientation pass', note: 'On your phone or downloaded as PDF. Both scan.' },
+  { label: 'Your orientation pass', note: 'On your phone or downloaded as PDF.' },
   { label: 'Amity T-shirt', note: 'Students have to wear the Amity T-shirt for the induction ceremony and interactions.' },
 ] as const
 

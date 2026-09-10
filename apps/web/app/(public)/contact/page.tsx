@@ -36,7 +36,7 @@ export default function ContactPage() {
         lede="Have questions about orientation or your arrival? Reach out directly to our orientation helpdesk — we're here to assist you."
         aside={
           <QuoteCard
-            quote="No question about your first week is too small to ask. Somebody here has already been asked it."
+            quote="No question about your first week is too small to ask. Somebody here has already asked it."
             note="Just ask us!"
           />
         }
@@ -48,7 +48,7 @@ export default function ContactPage() {
           <Reveal stagger={0.07}>
             <SectionHeading
               eyebrow="Reach out"
-              title="Contact our team"
+              title=""
               align="left"
               className="mb-12 max-w-3xl"
             />

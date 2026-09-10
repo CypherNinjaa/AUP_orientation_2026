@@ -1,6 +1,5 @@
 import { Counter } from '@/components/motion/Counter'
 import { Reveal } from '@/components/motion/Reveal'
-import { HandNote } from '@/components/ui/atoms'
 import { Icon } from '@/components/ui/Icon'
 import { LEGACY_STATS } from '@/lib/event'
 
@@ -43,13 +42,7 @@ export function LegacyBand() {
           ))}
         </div>
 
-        <HandNote
-          data-reveal
-          tilt={-5}
-          className="text-flame-mid relative mt-8 block text-center text-3xl lg:absolute lg:right-12 lg:-bottom-1 lg:mt-0"
-        >
-          The best is yet to come!
-        </HandNote>
+       
       </Reveal>
     </div>
   )
