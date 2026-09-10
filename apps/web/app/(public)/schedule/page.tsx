@@ -1,12 +1,9 @@
 import type { Metadata } from 'next'
-import { CtaBand } from '@/components/sections/CtaBand'
-import { ScheduleBoard } from '@/components/sections/ScheduleBoard'
 import { Reveal } from '@/components/motion/Reveal'
 import { PageHeader } from '@/components/site/PageHeader'
-import { LinkButton } from '@/components/ui/Button'
 import { Icon } from '@/components/ui/Icon'
 import { Container, IconChip, Section } from '@/components/ui/atoms'
-import { DAYS, EVENT, SCHEDULE_NOTES, SESSION_COUNT } from '@/lib/event'
+import { EVENT, SCHEDULE_NOTES } from '@/lib/event'
 
 export const metadata: Metadata = {
   title: 'Orientation Schedule & Reporting Time 2026',
@@ -22,21 +19,27 @@ export const metadata: Metadata = {
 }
 
 export default function SchedulePage() {
+  const gcalUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(
+    'Amity University Patna — Orientation Programme 2026',
+  )}&dates=20260912T083000Z/20260912T120000Z&details=${encodeURIComponent(
+    'Orientation starts at 2:00 PM Sharp (Reporting time: 2:00 PM) at Gyan Bhawan, Gandhi Maidan. Followed by the induction ceremony and Hi-Tea.',
+  )}&location=${encodeURIComponent('Gyan Bhawan, Samrat Ashok Convention Centre, Gandhi Maidan, Patna')}`
+
   return (
     <>
       <PageHeader
         crumb="Schedule"
         eyebrow={`${EVENT.institution} · ${EVENT.year}`}
-        title="Schedule"
+        title="Schedule & Reporting"
         note="12 September · Starts 2:00 PM Sharp"
-        lede={`Orientation begins at 2:00 PM Sharp (Reporting time) at ${EVENT.venue.name}, ${EVENT.venue.street}. Followed by the induction ceremony and Hi-Tea provided.`}
+        lede={`Orientation begins at 2:00 PM Sharp (Reporting time) at ${EVENT.venue.name}, ${EVENT.venue.street}. Followed by the induction ceremony and Hi-Tea.`}
         aside={
           <dl className="bg-card ring-rule/30 shadow-card divide-rule/40 divide-y rounded-3xl px-7 py-2 ring-1">
             {[
               { icon: 'calendar' as const, label: 'Date', value: EVENT.dateRange },
-              { icon: 'clock' as const, label: 'Timings', value: 'Starts 2:00 PM Sharp (Reporting time: 2:00 PM)' },
+              { icon: 'clock' as const, label: 'Timings', value: 'Starts 2:00 PM Sharp (Reporting: 2:00 PM)' },
               { icon: 'pin' as const, label: 'Venue', value: `${EVENT.venue.name}, ${EVENT.venue.street}` },
-              { icon: 'utensils' as const, label: 'Refreshment', value: 'Hi-Tea provided' },
+              { icon: 'utensils' as const, label: 'Refreshment', value: 'Hi-Tea' },
             ].map((r) => (
               <div key={r.label} className="flex items-start gap-4 py-5">
                 <IconChip name={r.icon} tint="violet" size={36} />
@@ -53,13 +56,84 @@ export default function SchedulePage() {
       <Section id="board">
         <Container>
           <div className="grid gap-10 lg:grid-cols-[1.65fr_1fr] lg:gap-14">
-            {/* ---- the board ---------------------------------------------- */}
+            {/* ---- programme flow (no artificial time intervals) ---------- */}
             <Reveal>
               <div
                 data-reveal
                 className="bg-card ring-rule/25 shadow-card rounded-3xl p-6 ring-1 sm:p-9"
               >
-                <ScheduleBoard days={DAYS} />
+                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-rule/50 pb-5">
+                  <div>
+                    <span className="text-flame text-label uppercase font-bold tracking-wider">
+                      Orientation Day
+                    </span>
+                    <h2 className="text-headline text-navy mt-1">Programme Flow</h2>
+                  </div>
+                  <span className="grad-pair shadow-card inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-bold text-white sm:text-sm">
+                    <span>Starts 2:00 PM Sharp</span>
+                    <span className="text-white/75 font-semibold">· Saturday, 12 Sep</span>
+                  </span>
+                </div>
+
+                <p className="text-ink-soft mt-5 text-[0.9375rem] leading-relaxed">
+                  Orientation begins promptly at 2:00 PM Sharp. Please ensure you report by 2:00 PM at Gyan Bhawan with your digital pass for smooth entry.
+                </p>
+
+                <div className="mt-8 space-y-4">
+                  <div className="bg-paper ring-rule/30 flex items-start gap-4 rounded-2xl p-5 ring-1">
+                    <span className="bg-sky text-navy mt-0.5 grid size-10 shrink-0 place-items-center rounded-xl font-bold">
+                      1
+                    </span>
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-baseline gap-2">
+                        <h3 className="text-navy text-[1.0625rem] font-bold">
+                          Reporting &amp; Entry Verification
+                        </h3>
+                        <span className="text-flame text-xs font-bold">2:00 PM Sharp</span>
+                      </div>
+                      <p className="text-ink-faint text-xs font-semibold uppercase mt-0.5">
+                        Gyan Bhawan · Main Entrance Lobby
+                      </p>
+                      <p className="text-ink-soft text-[0.875rem] mt-2 leading-relaxed">
+                        Arrive by 2:00 PM Sharp. Show your digital pass on your phone or downloaded PDF to volunteers for instant check-in.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="bg-paper ring-rule/30 flex items-start gap-4 rounded-2xl p-5 ring-1">
+                    <span className="bg-flame-tint text-flame mt-0.5 grid size-10 shrink-0 place-items-center rounded-xl font-bold">
+                      2
+                    </span>
+                    <div className="min-w-0">
+                      <h3 className="text-navy text-[1.0625rem] font-bold">
+                        Orientation &amp; Induction Ceremony
+                      </h3>
+                      <p className="text-ink-faint text-xs font-semibold uppercase mt-0.5">
+                        Main Auditorium, Gyan Bhawan
+                      </p>
+                      <p className="text-ink-soft text-[0.875rem] mt-2 leading-relaxed">
+                        Inaugural lamp lighting, welcome address by leadership, introduction of department heads and faculty coordinators, and academic overview.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="bg-paper ring-rule/30 flex items-start gap-4 rounded-2xl p-5 ring-1">
+                    <span className="bg-violet-tint text-violet-deep mt-0.5 grid size-10 shrink-0 place-items-center rounded-xl font-bold">
+                      3
+                    </span>
+                    <div className="min-w-0">
+                      <h3 className="text-navy text-[1.0625rem] font-bold">
+                        Department Interactions &amp; Hi-Tea
+                      </h3>
+                      <p className="text-ink-faint text-xs font-semibold uppercase mt-0.5">
+                        Convention Hall, Gyan Bhawan
+                      </p>
+                      <p className="text-ink-soft text-[0.875rem] mt-2 leading-relaxed">
+                        Connect with your department professors, senior student coordinators, and batchmates over Hi-Tea.
+                      </p>
+                    </div>
+                  </div>
+                </div>
               </div>
             </Reveal>
 
@@ -87,49 +161,24 @@ export default function SchedulePage() {
 
               <section
                 data-reveal
-                className="bg-card ring-rule/25 shadow-soft rounded-2xl p-7 ring-1"
-              >
-                <h2 className="text-navy text-[1.0625rem] font-bold">Orientation Day, counted</h2>
-                <dl className="divide-rule/40 mt-4 divide-y">
-                  {DAYS.map((d) => (
-                    <div key={d.id} className="flex items-baseline justify-between gap-4 py-3">
-                      <dt className="min-w-0">
-                        <span className="text-navy font-bold">{d.label}</span>
-                        <span className="text-ink-faint ml-2 text-sm font-semibold">{d.theme}</span>
-                      </dt>
-                      <dd className="tnum text-violet-deep shrink-0 text-lg font-extrabold">
-                        {d.sessions.length}
-                      </dd>
-                    </div>
-                  ))}
-                  <div className="flex items-baseline justify-between gap-4 py-3">
-                    <dt className="text-navy font-bold">Total sessions</dt>
-                    <dd className="tnum grad-text shrink-0 text-2xl font-extrabold">{SESSION_COUNT}</dd>
-                  </div>
-                </dl>
-              </section>
-
-              <section
-                data-reveal
                 className="grad-pair shadow-card relative overflow-hidden rounded-2xl p-7"
               >
-                {/* A scrim so 15px white body copy clears 4.5:1 over the flame
-                    end of the gradient, where white alone is only ~3.7:1. */}
                 <span aria-hidden className="bg-navy/25 absolute inset-0" />
                 <div className="relative">
                   <h2 className="text-[1.0625rem] font-bold text-white">Put it in your calendar</h2>
                   <p className="mt-2 text-[0.9375rem] leading-relaxed text-white/90">
-                    Downloads the full orientation schedule. It opens in Google Calendar, Apple
-                    Calendar and Outlook.
+                    Orientation Programme · Saturday, 12 September 2026 at 2:00 PM Sharp.
                   </p>
-                  <div className="mt-5 flex flex-col gap-2.5 sm:flex-row lg:flex-col">
-                    <LinkButton href="/calendar.ics" variant="onNavy" size="sm">
-                      <Icon name="download" size={16} />
-                      Add to calendar
-                    </LinkButton>
-                    <LinkButton href="/register" variant="quiet" size="sm" className="text-white">
-                      Get your pass
-                    </LinkButton>
+                  <div className="mt-5">
+                    <a
+                      href={gcalUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="bg-white text-navy shadow-button hover:bg-paper focus-visible:outline-white inline-flex w-full items-center justify-center gap-2 rounded-full px-5 py-3 text-[0.9375rem] font-bold transition-all duration-200 sm:w-auto"
+                    >
+                      <Icon name="calendar" size={17} />
+                      Add to Google Calendar
+                    </a>
                   </div>
                 </div>
               </section>
@@ -137,13 +186,6 @@ export default function SchedulePage() {
           </div>
         </Container>
       </Section>
-
-      <CtaBand
-        icon="calendar"
-        tint="flame"
-        title="Your name on the gate list"
-        body="Registration closes a week before the programme starts. It takes a few minutes and you can come back to it."
-      />
     </>
   )
 }

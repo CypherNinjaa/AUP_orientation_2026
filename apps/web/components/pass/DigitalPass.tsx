@@ -337,7 +337,7 @@ function Revoked({ reason }: { reason: string | null }) {
             <a href={`tel:${EVENT.helpline.replace(/\s/g, '')}`} className="text-danger font-bold underline decoration-1 underline-offset-4">
               {EVENT.helpline}
             </a>{' '}
-            or go to the help desk in the Gate 1 foyer — take this page with you, they will need the
+            or go to the help desk at the main entrance — take this page with you, they will need the
             reference.
           </p>
           {reason !== null && reason.trim().length > 0 ? (

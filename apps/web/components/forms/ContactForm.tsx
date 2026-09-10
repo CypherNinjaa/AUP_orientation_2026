@@ -32,7 +32,7 @@ export function ContactForm() {
     '—',
     `Name: ${name.trim()}`,
     `Email: ${email.trim()}`,
-    enrolment.trim() ? `Enrolment / form number: ${enrolment.trim()}` : null,
+    enrolment.trim() ? `Form number: ${enrolment.trim()}` : null,
     phone.trim() ? `Phone: ${phone.trim()}` : null,
     `Sent from the ${EVENT.programme} ${EVENT.year} website`,
   ]
@@ -81,7 +81,7 @@ export function ContactForm() {
         </Field>
 
         <Field
-          label="Enrolment or form number"
+          label="Admission form number"
           htmlFor="c-enrolment"
           optional
           hint="Helps the desk find your record faster."
@@ -89,7 +89,7 @@ export function ContactForm() {
           <TextInput
             id="c-enrolment"
             name="enrolment"
-            placeholder="e.g. A0000000000"
+            placeholder="e.g. 1000001"
             value={enrolment}
             onChange={(e) => setEnrolment(e.target.value)}
           />

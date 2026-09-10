@@ -178,7 +178,7 @@ function Closed({ gate }: { gate: Extract<RegistrationWindow, { open: false }> }
       <p className="text-ink-faint border-rule/50 mx-auto mt-8 max-w-[46ch] border-t pt-6 text-[0.875rem] leading-relaxed">
         {shut ? (
           <>
-            The desk in the Gate 1 foyer opens with the gates and runs the same four steps with you —
+            The help desk at the main entrance opens with the gates and runs the same four steps with you —
             bring your application form number. Ring{' '}
             <a href={`tel:${EVENT.helpline.replace(/\s/g, '')}`} className="text-violet-deep font-semibold">
               {EVENT.helpline}
@@ -237,7 +237,7 @@ function goodToKnow(closesAt: number | null): readonly {
     {
       icon: 'headset',
       title: 'Somebody will do it with you',
-      body: `If a camera or a form gets in the way, ring ${EVENT.helpline} or come to the desk in the Gate 1 foyer. It is the same four steps, with a volunteer alongside.`,
+      body: `If a camera or a form gets in the way, ring ${EVENT.helpline} or come to the help desk at the main entrance. It is the same four steps, with a volunteer alongside.`,
     },
   ]
 }

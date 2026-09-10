@@ -281,7 +281,7 @@ function Help() {
         <h2 className="text-[1.125rem] font-bold text-white">Something wrong?</h2>
         <p className="text-sky/85 mt-2 text-[0.9375rem] leading-relaxed">
           A name spelled wrong, a guest to change, a pass that will not load. Any of it can be fixed
-          — before the day, or at the desk in the Gyan Bhawan entrance foyer on orientation day.
+          — before the day, or at the desk in the Gyan Bhawan main entrance lobby on orientation day.
         </p>
         <div className="mt-5 flex flex-col gap-2.5">
           <a
@@ -293,7 +293,7 @@ function Help() {
           </a>
           <div className="text-sky/85 flex items-center gap-2.5 text-xs">
             <Icon name="pin" size={15} className="text-flame-mid shrink-0" />
-            <span>Help Desk, Gyan Bhawan Entrance Foyer (2:00 PM Sharp)</span>
+            <span>Help Desk, Gyan Bhawan Main Entrance (2:00 PM Sharp)</span>
           </div>
         </div>
       </div>
@@ -332,7 +332,7 @@ function Broken({ message, onRetry }: { message: string; onRetry: () => void }) 
         <a href={`mailto:${EVENT.email}`} className="text-violet-deep font-bold underline decoration-1 underline-offset-4">
           {EVENT.email}
         </a>{' '}
-        or visit the help desk at the Gyan Bhawan entrance foyer on orientation day.
+        or visit the help desk at the Gyan Bhawan main entrance lobby on orientation day.
       </p>
     </div>
   )

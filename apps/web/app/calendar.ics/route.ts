@@ -1,4 +1,4 @@
-import { DAYS, EVENT } from '@/lib/event'
+import { EVENT } from '@/lib/event'
 
 /**
  * The whole programme as one .ics file.
@@ -79,21 +79,17 @@ export function GET() {
     'X-WR-TIMEZONE:Asia/Kolkata',
   ]
 
-  for (const day of DAYS) {
-    day.sessions.forEach((s, i) => {
-      lines.push(
-        'BEGIN:VEVENT',
-        `UID:${day.id}-${i + 1}@orientation.ptn.amity.edu`,
-        `DTSTAMP:${now}Z`,
-        `DTSTART:${stamp(day.iso, s.from)}`,
-        `DTEND:${stamp(day.iso, s.to)}`,
-        `SUMMARY:${esc(s.title)}`,
-        `DESCRIPTION:${esc(`${day.label} — ${day.theme}. ${s.detail}`)}`,
-        `LOCATION:${esc(`${s.venue}, ${EVENT.venue.name}, ${EVENT.venue.street}`)}`,
-        'END:VEVENT',
-      )
-    })
-  }
+  lines.push(
+    'BEGIN:VEVENT',
+    `UID:orientation-2026@orientation.ptn.amity.edu`,
+    `DTSTAMP:${now}Z`,
+    `DTSTART:${stamp('2026-09-12', '14:00')}`,
+    `DTEND:${stamp('2026-09-12', '17:30')}`,
+    `SUMMARY:${esc(`${EVENT.institution} — ${EVENT.programme} ${EVENT.year}`)}`,
+    `DESCRIPTION:${esc('Reporting starts at 2:00 PM Sharp at Gyan Bhawan, Gandhi Maidan. Induction ceremony followed by department interactions and Hi-Tea.')}`,
+    `LOCATION:${esc(`${EVENT.venue.name}, Samrat Ashok Convention Centre, ${EVENT.venue.street}`)}`,
+    'END:VEVENT',
+  )
 
   lines.push('END:VCALENDAR')
 

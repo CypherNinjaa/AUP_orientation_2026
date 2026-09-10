@@ -75,7 +75,7 @@ export default function TermsPage() {
                 the university under its ordinary conduct process.
               </li>
               <li>
-                Lost your phone, no signal, or battery drained? Approach the help desk at the Gyan Bhawan entrance foyer with your registered application form number. Our team will verify your admission record on the guest list and assist entry. See{' '}
+                Lost your phone, no signal, or battery drained? Approach the help desk at the Gyan Bhawan main entrance lobby with your registered application form number. Our team will verify your admission record on the guest list and assist entry. See{' '}
                 <Link href="/schedule">orientation details</Link>.
               </li>
             </ul>
@@ -86,7 +86,7 @@ export default function TermsPage() {
                 Follow the instructions of university faculty, staff, and student volunteers while present at Gyan Bhawan.
               </li>
               <li>
-                Your guests (up to two parents or guardians) enter and remain with you in the designated auditorium and Hi-Tea provided areas.
+                Your guests (up to two parents or guardians) enter and remain with you in the designated auditorium and Hi-Tea areas.
               </li>
               <li>
                 Official photography and filming take place during the ceremony for university records. If you prefer not to appear, notify a coordinator or write to{' '}
@@ -102,7 +102,7 @@ export default function TermsPage() {
 
             <h2>Support and contingencies</h2>
             <p>
-              If you experience technical issues accessing your pass on orientation day, volunteer scanners and help desks at the Gyan Bhawan entrance foyer operate offline-capable rosters. You can also reach our helpline directly at{' '}
+              If you experience technical issues accessing your pass on orientation day, volunteer scanners and help desks at the Gyan Bhawan main entrance lobby operate offline-capable rosters. You can also reach our helpline directly at{' '}
               <a href={`tel:${EVENT.helpline.replace(/\s/g, '')}`}>{EVENT.helpline}</a>. Technical difficulties will never prevent an admitted student with a valid admission record from participating.
             </p>
 

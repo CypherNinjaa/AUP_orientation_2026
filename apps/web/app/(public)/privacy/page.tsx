@@ -46,7 +46,7 @@ export default function PrivacyPage() {
             </p>
             <ul>
               <li>
-                <strong>Your name, and your enrolment or application form number.</strong> To match you
+                <strong>Your name, and your Admission Form Number.</strong> To match you
                 with your admission record and academic programme.
               </li>
               <li>
@@ -97,7 +97,7 @@ export default function PrivacyPage() {
 
             <h2>Who sees your data</h2>
             <p>
-              The orientation office, your academic faculty coordinators, and volunteers on duty at the Gyan Bhawan entrance foyer — who see only your name, programme, photo, and pass validity status. Your personal data is never sold or shared with any third parties outside essential infrastructure services hosting this secure platform.
+              The orientation office, your academic faculty coordinators, and volunteers on duty at the Gyan Bhawan main entrance lobby — who see only your name, programme, photo, and pass validity status. Your personal data is never sold or shared with any third parties outside essential infrastructure services hosting this secure platform.
             </p>
 
             <h2>How long data is retained</h2>

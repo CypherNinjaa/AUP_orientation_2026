@@ -718,7 +718,7 @@ function AboutPanel({
             <a href={`tel:${EVENT.helpline.replace(/\s/g, '')}`} className="font-semibold text-violet-deep hover:underline">
               {EVENT.helpline}
             </a>
-            . The help desk in the Gate 1 foyer can also assist on orientation morning.
+            . The help desk at the main entrance can also assist on orientation day.
           </p>
         </Note>
       ) : null}

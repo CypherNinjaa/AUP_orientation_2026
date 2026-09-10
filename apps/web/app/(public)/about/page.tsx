@@ -11,7 +11,7 @@ import {
   Section,
   SectionHeading,
 } from '@/components/ui/atoms'
-import { ABOUT_EXPECT, EVENT, SESSION_COUNT, WHO_RUNS_IT, WHY_THREE_DAYS } from '@/lib/event'
+import { ABOUT_EXPECT, EVENT, WHO_RUNS_IT, WHY_THREE_DAYS } from '@/lib/event'
 
 export const metadata: Metadata = {
   title: 'About the Orientation Programme 2026',
@@ -42,7 +42,7 @@ export default function AboutPage() {
             The start of something <span className="grad-text">bigger</span> than a timetable
           </>
         }
-        lede={`${EVENT.programme} ${EVENT.year} is ${SESSION_COUNT} structured sessions on 12 September, built around one idea: nobody should have to work out how university functions while it is already counting.`}
+        lede={`${EVENT.programme} ${EVENT.year} welcomes the entire incoming batch on 12 September at Gyan Bhawan for an inspiring and memorable start to university life.`}
         aside={
           <QuoteCard
             quote="Orientation is not just an event you attend. It is day one of your four years."
@@ -51,7 +51,7 @@ export default function AboutPage() {
         }
       >
         <LinkButton href="/schedule" variant="secondary" arrow>
-          See the full schedule
+          See event schedule &amp; venue
         </LinkButton>
       </PageHeader>
 

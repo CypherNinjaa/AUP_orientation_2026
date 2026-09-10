@@ -456,7 +456,7 @@ function NoCamera({ phase, onRetry }: { phase: 'denied' | 'unsupported' | 'faile
 
       {/* Nobody gets stuck here. Decision D8 — the help desk runs the same form. */}
       <p className="text-ink-faint border-rule/50 mt-6 border-t pt-5 text-[0.875rem] leading-relaxed">
-        Still nothing? The help desk in the Gate 1 foyer will do this bit with you on the morning —
+        Still nothing? The help desk at the main entrance will assist you on orientation day —
         bring your form number. Or ask us first on{' '}
         <a href={`tel:${EVENT.helpline.replace(/\s/g, '')}`} className="text-violet-deep font-semibold">
           {EVENT.helpline}

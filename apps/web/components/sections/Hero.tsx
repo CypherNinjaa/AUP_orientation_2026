@@ -153,8 +153,7 @@ export function Hero() {
           </p>
 
           <p data-hero data-hero-lede className="text-lede text-ink-soft max-w-lg">
-            When you arrive you will not know where the library is, or anyone&rsquo;s name.
-            By the end of the day you will know both. That is what orientation is for.
+            Welcome to Amity University Patna! Connect with faculty mentors, meet your classmates, and begin your university journey with confidence.
           </p>
 
           {/* Flat, not boxed: these are three facts, not three products. */}
@@ -195,7 +194,7 @@ export function Hero() {
               variant="secondary"
               className="w-full sm:w-auto"
             >
-              See the schedule
+              See schedule &amp; venue
             </LinkButton>
           </div>
         </div>

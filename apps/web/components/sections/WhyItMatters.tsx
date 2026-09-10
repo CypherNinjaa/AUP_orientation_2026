@@ -18,13 +18,11 @@ export function WhyItMatters() {
               Nobody arrives knowing how this works
             </h2>
             <p data-reveal className="text-lede text-ink-soft mb-4">
-              School told you where to sit. University asks you to choose — electives, clubs,
-              mentors, and how you spend your time. Orientation is the day we spend
-              making those choices legible before they start counting.
+              University is where you shape your future — choosing your electives, clubs,
+              mentors, and passions. Orientation is designed to introduce you to all your academic opportunities from day one.
             </p>
             <p data-reveal className="text-lede text-ink-soft mb-8">
-              You will also meet the people you are about to spend years with, which turns out to
-              matter more than the timetable.
+              Connect with professors, get to know your seniors, and make lifelong friends before regular classes begin.
             </p>
 
             <p data-reveal className="mb-5">
@@ -51,7 +49,7 @@ export function WhyItMatters() {
             </ul>
 
             <LinkButton data-reveal href="/schedule" variant="secondary" arrow>
-              See full schedule
+              View event details &amp; reporting
             </LinkButton>
           </div>
 

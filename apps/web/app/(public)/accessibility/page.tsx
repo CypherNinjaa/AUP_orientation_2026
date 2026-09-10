@@ -68,8 +68,8 @@ export default function AccessibilityPage() {
             <ul>
               <li>Step-free ground-level entrance access and passenger elevators to all floors.</li>
               <li>Wide corridors and wheelchair-accessible auditorium seating arrangements.</li>
-              <li>Accessible washrooms located near convention foyers and auditorium halls.</li>
-              <li>Designated drop-off points close to the main entrance foyer for visitors with reduced mobility.</li>
+              <li>Accessible washrooms located near convention halls and auditoriums.</li>
+              <li>Designated drop-off points close to the main entrance for visitors with reduced mobility.</li>
               <li>
                 Accompaniment by carers or personal attendants in addition to your registered guest seats is accommodated — please inform our help desk upon arrival.
               </li>
@@ -77,9 +77,9 @@ export default function AccessibilityPage() {
 
             <h2>Requesting special assistance</h2>
             <p>
-              If you or an accompanying family member require specific assistance (such as reserved front-row seating, dietary advice for Hi-Tea provided, or wheelchair guidance from the drop-off zone), please contact our team in advance at{' '}
+              If you or an accompanying family member require specific assistance (such as reserved front-row seating, elevator guidance, or wheelchair assistance from the drop-off zone), please contact our team in advance at{' '}
               <a href={`mailto:${EVENT.email}`}>{EVENT.email}</a> or call our Admission Helpline at{' '}
-              <a href={`tel:${EVENT.helpline.replace(/\s/g, '')}`}>{EVENT.helpline}</a>. You can also approach the Help Desk stationed at the Gyan Bhawan entrance foyer on arrival.
+              <a href={`tel:${EVENT.helpline.replace(/\s/g, '')}`}>{EVENT.helpline}</a>. You can also approach the Help Desk stationed at the Gyan Bhawan main entrance lobby on arrival.
             </p>
 
             <h2>Feedback &amp; Assistance</h2>

@@ -83,7 +83,7 @@ export const EVENT = {
   gatesOpenAt: new Date('2026-09-12T13:30:00+05:30'),
   /** First session begins sharp. */
   startsAt: new Date('2026-09-12T14:00:00+05:30'),
-  /** Event concludes with Hi-Tea provided. */
+  /** Event concludes with Hi-Tea. */
   endsAt: new Date('2026-09-12T17:30:00+05:30'),
 
   dateRange: '12 September 2026',
@@ -180,7 +180,7 @@ export const DAYS: readonly EventDay[] = [
     iso: '2026-09-12',
     weekday: 'Saturday',
     theme: 'Induction & Welcome',
-    blurb: 'Induction ceremony, faculty introduction, academic orientation, and batch interactions over Hi-Tea provided.',
+    blurb: 'Induction ceremony, faculty introduction, academic orientation, and batch interactions over Hi-Tea.',
     sessions: [
       {
         from: '14:00',
@@ -188,7 +188,7 @@ export const DAYS: readonly EventDay[] = [
         kind: 'checkin',
         title: 'Reporting & entry verification',
         detail: 'Show your digital pass at the entrance desk to verify entry and proceed inside.',
-        venue: 'Gyan Bhawan, Entrance Foyer',
+        venue: 'Gyan Bhawan, Main Entrance Lobby',
       },
       {
         from: '14:30',
@@ -202,9 +202,9 @@ export const DAYS: readonly EventDay[] = [
         from: '16:30',
         to: '17:30',
         kind: 'social',
-        title: 'Department interactions & Hi-Tea provided',
-        detail: 'Connect with faculty mentors, senior student coordinators, and batchmates over Hi-Tea provided.',
-        venue: 'Convention Hall & Foyer, Gyan Bhawan',
+        title: 'Department interactions & Hi-Tea',
+        detail: 'Connect with faculty mentors, senior student coordinators, and batchmates over Hi-Tea.',
+        venue: 'Convention Hall, Gyan Bhawan',
       },
     ],
   },
@@ -227,8 +227,8 @@ export const HIGHLIGHTS = [
     tint: 'flame',
     icon: 'spark',
     kicker: '12 Sep, 16:30',
-    title: 'Department interactions & Hi-Tea provided',
-    body: 'Meet your faculty mentors and seniors over delicious Hi-Tea provided.',
+    title: 'Department interactions & Hi-Tea',
+    body: 'Meet your faculty mentors and seniors over Hi-Tea.',
     more: 'An informal welcome gathering where you can ask questions and meet your future peers.',
   },
   {
@@ -263,7 +263,7 @@ export const HIGHLIGHTS = [
 
 export const BRING = [
   { label: 'Your orientation pass', note: 'On your phone or downloaded as PDF. Both scan.' },
-  { label: 'Amity T-shirt', note: 'Students have to wear the Amity T-shirt for the orientation ceremony and interactions.' },
+  { label: 'Amity T-shirt', note: 'Students have to wear the Amity T-shirt for the induction ceremony and interactions.' },
 ] as const
 
 /* -------------------------------------------------------------------------- */
@@ -281,35 +281,35 @@ export const FAQS = [
   },
   {
     q: 'Is attending orientation compulsory?',
-    a: 'Yes. Orientation is an integral part of your programme induction and attendance is recorded on 12 September. If you cannot attend for a medical or travel reason, email the orientation desk beforehand.',
+    a: 'Yes, all incoming students are strongly encouraged to attend! It is your official welcome to Amity University Patna, where you will meet your faculty mentors, connect with batchmates, and begin your university journey with confidence.',
   },
   {
     q: 'Can a parent or guardian come with me?',
-    a: `You may bring ${GUEST_ALLOWANCE}. Add them while registering and they will appear on your pass — there is no separate guest pass to collect. Accompanying guardians can attend the induction ceremony and Hi-Tea provided alongside you.`,
+    a: `Yes! You may bring ${GUEST_ALLOWANCE}. Simply add their names while registering, and they can attend the induction ceremony and Hi-Tea alongside you.`,
   },
   {
-    q: 'What if I have not received my enrolment number yet?',
-    a: 'Register with your application or form number instead. The desk can match you on either, and your enrolment number will be linked to your record once Admissions issues it.',
+    q: 'Which number do I use to register?',
+    a: 'Use your Admission Form Number. Enter your form number on the registration page to verify your details and generate your orientation pass.',
   },
   {
     q: 'Why do you ask for a selfie during registration?',
-    a: 'It lets the volunteer at the entrance confirm that the person holding a pass is the person it was issued to, without stopping to inspect manual paperwork. It is stored securely, never shown publicly, and deleted 30 days after the event.',
+    a: 'It allows volunteers to quickly verify your pass at the entrance for smooth, paperless entry. Your photo is securely stored and used only for entrance verification.',
   },
   {
     q: 'My phone battery is dead / there is no network at the gate.',
-    a: 'Your pass works offline. Volunteer devices carry the full guest list on-device and can verify you by scanning a downloaded pass or by typing the 10-digit code on it. Help desks are available at the entrance.',
+    a: 'Your pass works offline. Volunteers can scan your downloaded pass or enter your 10-digit pass code. Help desks at the main entrance lobby are also available to assist you.',
   },
   {
     q: 'What should I wear?',
-    a: 'Students have to wear the Amity T-shirt for the induction ceremony and interactions. Choose comfortable footwear for the day.',
+    a: 'Students have to wear the Amity T-shirt for the induction ceremony and interactions. Wear comfortable footwear for the day.',
   },
   {
     q: 'Are refreshments provided?',
-    a: 'Yes! Hi-Tea provided for all students and registered accompanying guests following the induction ceremony — you do not need to pay or carry a coupon.',
+    a: 'Yes! Hi-Tea will be provided for all students and registered accompanying guests following the induction ceremony — no food coupons or payment needed.',
   },
   {
     q: 'I lost my pass. What now?',
-    a: 'Open your pass page again using your registered mobile or form number — it is regenerated instantly. If you need assistance, the help desk at the entrance foyer can find your registration and assist you.',
+    a: 'Open your pass page again using your registered mobile or form number to regenerate it instantly. You can also visit the help desk at the main entrance lobby for assistance.',
   },
 ] as const
 
@@ -337,7 +337,7 @@ export const WHY_THREE_DAYS = [
     theme: 'Arrive',
     label: '2:00 PM Sharp',
     title: 'Reporting & entrance verification at Gyan Bhawan.',
-    body: 'Doors open at 1:30 PM. Complete digital pass check-in at the entrance foyer and take your seat in the main auditorium.',
+    body: 'Doors open at 1:30 PM. Complete digital pass check-in at the main entrance lobby and take your seat in the main auditorium.',
   },
   {
     theme: 'Induction',
@@ -347,9 +347,9 @@ export const WHY_THREE_DAYS = [
   },
   {
     theme: 'Connect',
-    label: 'Hi-Tea provided',
-    title: 'Interactions with mentors, seniors, and batchmates over Hi-Tea provided.',
-    body: 'Enjoy Hi-Tea provided with your family, talk to faculty coordinators, and meet your future classmates before classes commence.',
+    label: 'Hi-Tea',
+    title: 'Interactions with mentors, seniors, and batchmates over Hi-Tea.',
+    body: 'Enjoy Hi-Tea with your family, talk to faculty coordinators, and meet your future classmates before classes commence.',
   },
 ] as const
 
@@ -382,7 +382,7 @@ export const ABOUT_EXPECT = [
   },
   {
     icon: 'utensils',
-    title: 'Hi-Tea provided for everyone',
+    title: 'Hi-Tea for everyone',
     detail: 'Refreshments provided for all students and registered guests.',
   },
   {
@@ -423,7 +423,7 @@ export const SCHEDULE_NOTES = [
   'Orientation starts at 2:00 PM Sharp. Please ensure you report by 2:00 PM at Gyan Bhawan, Gandhi Maidan.',
   'Carry your digital pass on your phone or as a downloaded PDF — scanned at the entrance.',
   'Accompanying parents/guardians added to your pass are welcome inside the auditorium.',
-  'Hi-Tea provided for all students and accompanying registered guests.',
+  'Hi-Tea will be provided for all students and accompanying registered guests.',
 ] as const
 
 export const HIGHLIGHT_STATS = [
@@ -436,7 +436,7 @@ export const HIGHLIGHT_STATS = [
 
 export const BEYOND = [
   {
-    title: 'Interactions over Hi-Tea provided',
+    title: 'Interactions over Hi-Tea',
     body: 'Connect with faculty and senior mentors right after the ceremony.',
   },
   {
@@ -511,7 +511,7 @@ export const PRACTICALS = [
   {
     icon: 'utensils',
     title: 'Refreshments',
-    body: 'Hi-Tea provided for all students and registered guests — no coupons required.',
+    body: 'Hi-Tea will be provided for all students and registered guests — no coupons required.',
   },
   {
     icon: 'accessibility',

@@ -33,7 +33,7 @@ export default function ContactPage() {
             Ask a <span className="grad-text">person</span>
           </>
         }
-        lede="Nothing on this site is more useful than the answer to your actual question. Four ways to get one, and none of them is a chatbot."
+        lede="Have questions about orientation or your arrival? Reach out directly to our orientation helpdesk — we're here to assist you."
         aside={
           <QuoteCard
             quote="No question about your first week is too small to ask. Somebody here has already been asked it."
@@ -48,7 +48,7 @@ export default function ContactPage() {
           <Reveal stagger={0.07}>
             <SectionHeading
               eyebrow="Reach out"
-              title="Four ways through"
+              title="Contact our team"
               align="left"
               className="mb-12 max-w-3xl"
             />
@@ -108,8 +108,8 @@ export default function ContactPage() {
                 {[
                   'Registration and pass problems',
                   'Documents, fees and hostel queries',
-                  'Accessibility and dietary requirements',
-                  'Anything a guest needs to know',
+                  'Accessibility and campus assistance',
+                  'Anything a student or parent needs to know',
                 ].map((t) => (
                   <li data-reveal key={t} className="flex items-start gap-3">
                     <span className="bg-leaf-tint text-leaf mt-0.5 grid size-6 shrink-0 place-items-center rounded-full">
@@ -162,7 +162,7 @@ export default function ContactPage() {
               <h2 className="text-headline mt-6">Looking for timings & venue?</h2>
               <p className="text-ink-soft mt-2 flex-1 leading-relaxed">
                 Reporting starts at 2:00 PM Sharp on 12 September at Gyan Bhawan, Gandhi Maidan.
-                Followed by induction ceremony and Hi-Tea provided.
+                Followed by induction ceremony and Hi-Tea.
               </p>
               <span className="text-violet-deep mt-6 flex items-center gap-2 font-bold">
                 View schedule & venue
