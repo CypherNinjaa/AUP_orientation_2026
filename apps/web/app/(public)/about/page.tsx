@@ -150,7 +150,7 @@ export default function AboutPage() {
 
             <p data-reveal className="mt-10">
               <HandNote tilt={-3} className="text-violet-deep text-[1.75rem]">
-                Everyone here was new once.
+                Everyone here was once new.
               </HandNote>
             </p>
           </Reveal>
@@ -160,7 +160,7 @@ export default function AboutPage() {
       <CtaBand
         icon="cap"
         title="One day to prepare, four years to thrive"
-        body={`${EVENT.dateRange}. Registering takes a few minutes and puts your name on the gate list.`}
+        body={`${EVENT.dateRange}. Registering takes a few minutes and you officially become a part of Amity University Patna.`}
       />
     </>
   )

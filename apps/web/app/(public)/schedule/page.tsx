@@ -76,7 +76,7 @@ export default function SchedulePage() {
                 </div>
 
                 <p className="text-ink-soft mt-5 text-[0.9375rem] leading-relaxed">
-                  Orientation begins promptly at 2:00 PM Sharp. Please ensure you report by 2:00 PM at Gyan Bhawan with your digital pass for smooth entry.
+                  Orientation begins at 2:00 PM Sharp. Please ensure you report by 2:00 PM at Gyan Bhawan with your digital pass for smooth entry.
                 </p>
 
                 <div className="mt-8 space-y-4">

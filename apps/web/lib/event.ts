@@ -337,7 +337,7 @@ export const WHY_THREE_DAYS = [
     theme: 'Arrive',
     label: '2:00 PM Sharp',
     title: 'Reporting & entrance verification at Gyan Bhawan.',
-    body: 'Doors open at 1:30 PM. Complete digital pass check-in at the main entrance lobby and take your seat in the main auditorium.',
+    body: 'Report at 2:00 PM sharp. Complete digital pass check-in at the main entrance lobby and take your seat in the main auditorium.',
   },
   {
     theme: 'Induction',
@@ -349,7 +349,7 @@ export const WHY_THREE_DAYS = [
     theme: 'Connect',
     label: 'Hi-Tea',
     title: 'Interactions with mentors, seniors, and batchmates over Hi-Tea.',
-    body: 'Enjoy Hi-Tea with your family, talk to faculty coordinators, and meet your future classmates before classes commence.',
+    body: 'Enjoy Hi-Tea with your family, talk to faculty, coordinators, and meet your future classmates before classes commence.',
   },
 ] as const
 
@@ -363,7 +363,7 @@ export const ABOUT_EXPECT = [
   {
     icon: 'cap',
     title: 'Your faculty, in person',
-    detail: 'Introduction of heads of department and faculty coordinators you will work under.',
+    detail: 'Introduction of heads of department and faculty coordinators who will guide you throughout your university life.',
   },
   {
     icon: 'pin',
