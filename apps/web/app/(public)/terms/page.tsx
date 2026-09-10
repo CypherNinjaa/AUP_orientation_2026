@@ -86,7 +86,7 @@ export default function TermsPage() {
                 Follow the instructions of university faculty, staff, and student volunteers while present at Gyan Bhawan.
               </li>
               <li>
-                Your guests (up to two parents or guardians) enter and remain with you in the designated auditorium and Hi-Tea areas.
+                Your guests (up to two parents or guardians) enter and remain with you in the designated auditorium and Hi-Tea provided areas.
               </li>
               <li>
                 Official photography and filming take place during the ceremony for university records. If you prefer not to appear, notify a coordinator or write to{' '}

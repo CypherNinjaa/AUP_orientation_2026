@@ -16,7 +16,7 @@ import { Icon } from '@/components/ui/Icon'
 import { EVENT } from '@/lib/event'
 
 /**
- * "14 September", derived rather than written out, so the note in the margin
+ * "12 September", derived rather than written out, so the note in the margin
  * cannot end up contradicting the date the countdown is running against. The
  * timezone is explicit because the server renders this and the server is not in
  * Patna — without it, a host on UTC turns an 08:30 IST gate into the day before.

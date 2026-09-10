@@ -57,7 +57,7 @@ function fold(line: string) {
   return parts.join('\r\n')
 }
 
-/** `2026-09-14` + `08:30` (IST) → `20260914T030000Z`. */
+/** `2026-09-12` + `08:30` (IST) → `20260912T030000Z`. */
 function stamp(iso: string, hhmm: string) {
   const at = new Date(`${iso}T${hhmm}:00+05:30`)
   return `${at.toISOString().slice(0, 19).replace(/[-:]/g, '')}Z`

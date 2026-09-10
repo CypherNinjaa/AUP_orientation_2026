@@ -42,7 +42,7 @@ export default function AboutPage() {
             The start of something <span className="grad-text">bigger</span> than a timetable
           </>
         }
-        lede={`${EVENT.programme} ${EVENT.year} is ${SESSION_COUNT} structured sessions on 14 September, built around one idea: nobody should have to work out how university functions while it is already counting.`}
+        lede={`${EVENT.programme} ${EVENT.year} is ${SESSION_COUNT} structured sessions on 12 September, built around one idea: nobody should have to work out how university functions while it is already counting.`}
         aside={
           <QuoteCard
             quote="Orientation is not just an event you attend. It is day one of your four years."

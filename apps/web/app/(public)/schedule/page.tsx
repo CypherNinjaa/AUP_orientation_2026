@@ -28,8 +28,8 @@ export default function SchedulePage() {
         crumb="Schedule"
         eyebrow={`${EVENT.institution} · ${EVENT.year}`}
         title="Schedule"
-        note="14 September · Starts 2:00 PM Sharp"
-        lede={`Orientation begins at 2:00 PM Sharp (Reporting time) at ${EVENT.venue.name}, ${EVENT.venue.street}. Followed by the induction ceremony and Hi-Tea.`}
+        note="12 September · Starts 2:00 PM Sharp"
+        lede={`Orientation begins at 2:00 PM Sharp (Reporting time) at ${EVENT.venue.name}, ${EVENT.venue.street}. Followed by the induction ceremony and Hi-Tea provided.`}
         aside={
           <dl className="bg-card ring-rule/30 shadow-card divide-rule/40 divide-y rounded-3xl px-7 py-2 ring-1">
             {[

@@ -161,8 +161,8 @@ export default function ContactPage() {
               <IconChip name="calendar" tint="flame" size={52} />
               <h2 className="text-headline mt-6">Looking for timings & venue?</h2>
               <p className="text-ink-soft mt-2 flex-1 leading-relaxed">
-                Reporting starts at 2:00 PM Sharp on 14 September at Gyan Bhawan, Gandhi Maidan.
-                Followed by induction ceremony and Hi-Tea.
+                Reporting starts at 2:00 PM Sharp on 12 September at Gyan Bhawan, Gandhi Maidan.
+                Followed by induction ceremony and Hi-Tea provided.
               </p>
               <span className="text-violet-deep mt-6 flex items-center gap-2 font-bold">
                 View schedule & venue

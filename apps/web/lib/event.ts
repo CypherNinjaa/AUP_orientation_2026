@@ -60,7 +60,7 @@ export interface Session {
 export interface EventDay {
   readonly id: string
   readonly label: string
-  /** Display date, e.g. "14 Sep". */
+  /** Display date, e.g. "12 Sep". */
   readonly date: string
   /** Calendar date as `YYYY-MM-DD`. Feeds the .ics file — keep it in step with `date`. */
   readonly iso: string
@@ -80,13 +80,13 @@ export const EVENT = {
   year: '2026',
 
   /** Doors open on orientation day. Drives the countdown. */
-  gatesOpenAt: new Date('2026-09-14T13:30:00+05:30'),
+  gatesOpenAt: new Date('2026-09-12T13:30:00+05:30'),
   /** First session begins sharp. */
-  startsAt: new Date('2026-09-14T14:00:00+05:30'),
-  /** Event concludes with Hi-Tea. */
-  endsAt: new Date('2026-09-14T17:30:00+05:30'),
+  startsAt: new Date('2026-09-12T14:00:00+05:30'),
+  /** Event concludes with Hi-Tea provided. */
+  endsAt: new Date('2026-09-12T17:30:00+05:30'),
 
-  dateRange: '14 September 2026',
+  dateRange: '12 September 2026',
   /**
    * The reporting and starting time.
    */
@@ -176,11 +176,11 @@ export const DAYS: readonly EventDay[] = [
   {
     id: 'day-1',
     label: 'Orientation Day',
-    date: '14 Sep',
-    iso: '2026-09-14',
-    weekday: 'Monday',
+    date: '12 Sep',
+    iso: '2026-09-12',
+    weekday: 'Saturday',
     theme: 'Induction & Welcome',
-    blurb: 'Induction ceremony, faculty introduction, academic orientation, and batch interactions over Hi-Tea.',
+    blurb: 'Induction ceremony, faculty introduction, academic orientation, and batch interactions over Hi-Tea provided.',
     sessions: [
       {
         from: '14:00',
@@ -202,8 +202,8 @@ export const DAYS: readonly EventDay[] = [
         from: '16:30',
         to: '17:30',
         kind: 'social',
-        title: 'Department interactions & Hi-Tea',
-        detail: 'Connect with faculty mentors, senior student coordinators, and batchmates over Hi-Tea.',
+        title: 'Department interactions & Hi-Tea provided',
+        detail: 'Connect with faculty mentors, senior student coordinators, and batchmates over Hi-Tea provided.',
         venue: 'Convention Hall & Foyer, Gyan Bhawan',
       },
     ],
@@ -218,7 +218,7 @@ export const HIGHLIGHTS = [
   {
     tint: 'violet',
     icon: 'sunrise',
-    kicker: '14 Sep, 14:00 Sharp',
+    kicker: '12 Sep, 14:00 Sharp',
     title: 'The induction ceremony',
     body: 'The whole batch gathered together in Gyan Bhawan for the grand start of university life.',
     more: 'The lamp is lit, the university song is sung, and leadership welcomes the intake by programme.',
@@ -226,15 +226,15 @@ export const HIGHLIGHTS = [
   {
     tint: 'flame',
     icon: 'spark',
-    kicker: '14 Sep, 16:30',
-    title: 'Department interactions & Hi-Tea',
-    body: 'Meet your faculty mentors and seniors over delicious Hi-Tea.',
+    kicker: '12 Sep, 16:30',
+    title: 'Department interactions & Hi-Tea provided',
+    body: 'Meet your faculty mentors and seniors over delicious Hi-Tea provided.',
     more: 'An informal welcome gathering where you can ask questions and meet your future peers.',
   },
   {
     tint: 'sky',
     icon: 'compass',
-    kicker: '14 Sep, 14:00',
+    kicker: '12 Sep, 14:00',
     title: 'Gyan Bhawan, Gandhi Maidan',
     body: 'A world-class convention venue hosting the entire Amity 2026 intake.',
     more: 'Centrally located at Gandhi Maidan with state-of-the-art auditorium and convention facilities.',
@@ -263,7 +263,7 @@ export const HIGHLIGHTS = [
 
 export const BRING = [
   { label: 'Your orientation pass', note: 'On your phone or downloaded as PDF. Both scan.' },
-  { label: 'Comfortable clothing', note: 'Smart casual for the induction ceremony and interactions.' },
+  { label: 'Amity T-shirt', note: 'Students have to wear the Amity T-shirt for the orientation ceremony and interactions.' },
 ] as const
 
 /* -------------------------------------------------------------------------- */
@@ -273,7 +273,7 @@ export const BRING = [
 export const FAQS = [
   {
     q: 'What time does the orientation start?',
-    a: 'Orientation starts at 2:00 PM Sharp (Reporting time: 2:00 PM) on 14 September 2026 at Gyan Bhawan, Gandhi Maidan. Please arrive on time.',
+    a: 'Orientation starts at 2:00 PM Sharp (Reporting time: 2:00 PM) on 12 September 2026 at Gyan Bhawan, Gandhi Maidan. Please arrive on time.',
   },
   {
     q: 'Where is the venue?',
@@ -281,11 +281,11 @@ export const FAQS = [
   },
   {
     q: 'Is attending orientation compulsory?',
-    a: 'Yes. Orientation is an integral part of your programme induction and attendance is recorded on 14 September. If you cannot attend for a medical or travel reason, email the orientation desk beforehand.',
+    a: 'Yes. Orientation is an integral part of your programme induction and attendance is recorded on 12 September. If you cannot attend for a medical or travel reason, email the orientation desk beforehand.',
   },
   {
     q: 'Can a parent or guardian come with me?',
-    a: `You may bring ${GUEST_ALLOWANCE}. Add them while registering and they will appear on your pass — there is no separate guest pass to collect. Accompanying guardians can attend the induction ceremony and Hi-Tea alongside you.`,
+    a: `You may bring ${GUEST_ALLOWANCE}. Add them while registering and they will appear on your pass — there is no separate guest pass to collect. Accompanying guardians can attend the induction ceremony and Hi-Tea provided alongside you.`,
   },
   {
     q: 'What if I have not received my enrolment number yet?',
@@ -301,11 +301,11 @@ export const FAQS = [
   },
   {
     q: 'What should I wear?',
-    a: 'Smart casual is right for the day. Choose comfortable footwear for the ceremony.',
+    a: 'Students have to wear the Amity T-shirt for the induction ceremony and interactions. Choose comfortable footwear for the day.',
   },
   {
     q: 'Are refreshments provided?',
-    a: 'Yes! Hi-Tea is provided for all students and registered accompanying guests following the induction ceremony — you do not need to pay or carry a coupon.',
+    a: 'Yes! Hi-Tea provided for all students and registered accompanying guests following the induction ceremony — you do not need to pay or carry a coupon.',
   },
   {
     q: 'I lost my pass. What now?',
@@ -347,9 +347,9 @@ export const WHY_THREE_DAYS = [
   },
   {
     theme: 'Connect',
-    label: 'Hi-Tea',
-    title: 'Interactions with mentors, seniors, and batchmates over Hi-Tea.',
-    body: 'Enjoy high tea with your family, talk to faculty coordinators, and meet your future classmates before classes commence.',
+    label: 'Hi-Tea provided',
+    title: 'Interactions with mentors, seniors, and batchmates over Hi-Tea provided.',
+    body: 'Enjoy Hi-Tea provided with your family, talk to faculty coordinators, and meet your future classmates before classes commence.',
   },
 ] as const
 
@@ -382,7 +382,7 @@ export const ABOUT_EXPECT = [
   },
   {
     icon: 'utensils',
-    title: 'Hi-Tea for everyone',
+    title: 'Hi-Tea provided for everyone',
     detail: 'Refreshments provided for all students and registered guests.',
   },
   {
@@ -423,7 +423,7 @@ export const SCHEDULE_NOTES = [
   'Orientation starts at 2:00 PM Sharp. Please ensure you report by 2:00 PM at Gyan Bhawan, Gandhi Maidan.',
   'Carry your digital pass on your phone or as a downloaded PDF — scanned at the entrance.',
   'Accompanying parents/guardians added to your pass are welcome inside the auditorium.',
-  'Hi-Tea is provided for all students and accompanying registered guests.',
+  'Hi-Tea provided for all students and accompanying registered guests.',
 ] as const
 
 export const HIGHLIGHT_STATS = [
@@ -436,7 +436,7 @@ export const HIGHLIGHT_STATS = [
 
 export const BEYOND = [
   {
-    title: 'Interactions over Hi-Tea',
+    title: 'Interactions over Hi-Tea provided',
     body: 'Connect with faculty and senior mentors right after the ceremony.',
   },
   {
@@ -506,12 +506,12 @@ export const PRACTICALS = [
   {
     icon: 'shirt',
     title: 'What to wear',
-    body: 'Smart casual for the induction ceremony.',
+    body: 'Students have to wear the Amity T-shirt for the induction ceremony.',
   },
   {
     icon: 'utensils',
     title: 'Refreshments',
-    body: 'Hi-Tea is provided for all students and registered guests — no coupons required.',
+    body: 'Hi-Tea provided for all students and registered guests — no coupons required.',
   },
   {
     icon: 'accessibility',

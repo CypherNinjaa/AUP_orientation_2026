@@ -34,7 +34,7 @@ export function WhyItMatters() {
             </p>
 
             <h3 data-reveal className="text-label text-ink-faint mb-4 uppercase">
-              Bring these on 14 September
+              Bring these on 12 September
             </h3>
             <ul className="mb-9 grid gap-x-8 gap-y-3 sm:grid-cols-2">
               {BRING.map((b) => (

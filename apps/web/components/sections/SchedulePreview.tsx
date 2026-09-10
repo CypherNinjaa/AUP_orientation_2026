@@ -12,7 +12,7 @@ export function SchedulePreview() {
           <SectionHeading
             eyebrow="Orientation Schedule"
             title="Your day at Gyan Bhawan"
-            lede="Orientation on 14 September starts at 2:00 PM Sharp (Reporting time) at Gyan Bhawan, Gandhi Maidan. Clear sessions, faculty interactions, and Hi-Tea provided."
+            lede="Orientation on 12 September starts at 2:00 PM Sharp (Reporting time) at Gyan Bhawan, Gandhi Maidan. Clear sessions, faculty interactions, and Hi-Tea provided."
             className="mb-12"
           />
           <div data-reveal>

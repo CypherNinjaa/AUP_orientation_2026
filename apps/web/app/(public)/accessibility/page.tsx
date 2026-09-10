@@ -77,7 +77,7 @@ export default function AccessibilityPage() {
 
             <h2>Requesting special assistance</h2>
             <p>
-              If you or an accompanying family member require specific assistance (such as reserved front-row seating, dietary advice for Hi-Tea, or wheelchair guidance from the drop-off zone), please contact our team in advance at{' '}
+              If you or an accompanying family member require specific assistance (such as reserved front-row seating, dietary advice for Hi-Tea provided, or wheelchair guidance from the drop-off zone), please contact our team in advance at{' '}
               <a href={`mailto:${EVENT.email}`}>{EVENT.email}</a> or call our Admission Helpline at{' '}
               <a href={`tel:${EVENT.helpline.replace(/\s/g, '')}`}>{EVENT.helpline}</a>. You can also approach the Help Desk stationed at the Gyan Bhawan entrance foyer on arrival.
             </p>
