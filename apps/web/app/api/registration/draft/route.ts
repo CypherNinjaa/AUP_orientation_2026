@@ -27,7 +27,7 @@ import { discardDraft, readDraft, saveDraft } from '@/lib/server/registration'
 
 export const dynamic = 'force-dynamic'
 
-export async function GET(_request: Request): Promise<Response> {
+export async function GET(): Promise<Response> {
   return handle(async () => {
     const actor = await getActor()
     if (!actor) return fail('NOT_FOUND', 'No saved draft.')
@@ -77,7 +77,7 @@ export async function PUT(request: Request): Promise<Response> {
   })
 }
 
-export async function DELETE(_request: Request): Promise<Response> {
+export async function DELETE(): Promise<Response> {
   return handle(async () => {
     const actor = await getActor()
     if (actor) {

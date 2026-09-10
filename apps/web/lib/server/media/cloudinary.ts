@@ -428,6 +428,7 @@ export async function downloadUrl(
   cloudName: string,
   _ttlSeconds = 120,
 ): Promise<string | null> {
+  void _ttlSeconds
   const account = await accountFor(cloudName)
   if (!account) {
     console.error(`[cloudinary] no credentials for cloud "${cloudName}"`)

@@ -29,6 +29,19 @@ interface DecodedResult {
   getBarcodeFormat: () => BarcodeFormat
 }
 
+interface DetectedBarcode {
+  rawValue?: string
+  format?: string
+}
+
+interface NativeBarcodeDetectorInstance {
+  detect: (source: ImageBitmapSource) => Promise<DetectedBarcode[]>
+}
+
+interface NativeBarcodeDetectorConstructor {
+  new (options?: { formats: string[] }): NativeBarcodeDetectorInstance
+}
+
 export type ScanMode = 'auto' | 'qr' | 'barcode'
 
 export interface CameraScannerProps {
@@ -94,6 +107,8 @@ export function CameraScanner({
 
   const [mode, setMode] = useState<ScanMode>(scanMode)
   const currentMode = scanMode ?? mode
+  const currentModeRef = useRef<ScanMode>(currentMode)
+  currentModeRef.current = currentMode
 
   const handleModeChange = (next: ScanMode) => {
     setMode(next)
@@ -111,7 +126,7 @@ export function CameraScanner({
         readerRef.current.setHints(buildZxingHints(scanMode))
       }
     }
-  }, [scanMode])
+  }, [scanMode, mode])
 
   const [fault, setFault] = useState<string | null>(null)
   const [starting, setStarting] = useState(true)
@@ -138,7 +153,7 @@ export function CameraScanner({
       return
     }
 
-    const reader = new BrowserMultiFormatReader(buildZxingHints(currentMode), {
+    const reader = new BrowserMultiFormatReader(buildZxingHints(currentModeRef.current), {
       delayBetweenScanSuccess: 300,
       delayBetweenScanAttempts: 100,
     })
@@ -153,9 +168,13 @@ export function CameraScanner({
 
       const now = Date.now()
       if (lastRef.current.raw === raw && now - lastRef.current.at < SAME_CODE_LOCKOUT_MS) return
-      lastRef.current = { raw, at: now }
 
+      const activeMode = currentModeRef.current
       const isQr = result.getBarcodeFormat() === BarcodeFormat.QR_CODE
+      if (activeMode === 'qr' && !isQr) return
+      if (activeMode === 'barcode' && isQr) return
+
+      lastRef.current = { raw, at: now }
       const method: ScanMethod = isQr ? 'QR' : 'BARCODE'
 
       if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') {
@@ -173,52 +192,71 @@ export function CameraScanner({
     let nativeDetectorActive = true
     if (typeof window !== 'undefined' && 'BarcodeDetector' in window) {
       try {
-        const BarcodeDetectorClass = (window as unknown as { BarcodeDetector: any }).BarcodeDetector
-        const nativeFormats =
-          currentMode === 'barcode'
-            ? ['code_128', 'code_39', 'ean_13']
-            : currentMode === 'qr'
-              ? ['qr_code']
-              : ['qr_code', 'code_128', 'code_39', 'ean_13']
+        const detectorWindow = window as unknown as {
+          BarcodeDetector?: NativeBarcodeDetectorConstructor
+        }
+        const BarcodeDetectorClass = detectorWindow.BarcodeDetector
+        if (BarcodeDetectorClass) {
+          const nativeDetector = new BarcodeDetectorClass({
+            formats: ['qr_code', 'code_128', 'code_39', 'ean_13'],
+          })
 
-        const nativeDetector = new BarcodeDetectorClass({ formats: nativeFormats })
-
-        const runNativeDetect = async () => {
-          if (!nativeDetectorActive || cancelled) return
-          if (videoRef.current && activeRef.current && videoRef.current.readyState >= 2 && !videoRef.current.paused) {
-            try {
-              const detected = await nativeDetector.detect(videoRef.current)
-              if (detected.length > 0 && activeRef.current) {
-                const item = detected[0]
-                const raw = item.rawValue
-                if (raw && raw !== '') {
-                  const now = Date.now()
-                  if (lastRef.current.raw !== raw || now - lastRef.current.at >= SAME_CODE_LOCKOUT_MS) {
-                    lastRef.current = { raw, at: now }
+          const runNativeDetect = async () => {
+            if (!nativeDetectorActive || cancelled) return
+            if (
+              videoRef.current &&
+              activeRef.current &&
+              videoRef.current.readyState >= 2 &&
+              !videoRef.current.paused
+            ) {
+              try {
+                const detected = await nativeDetector.detect(videoRef.current)
+                if (detected.length > 0 && activeRef.current) {
+                  const item = detected[0]
+                  const raw = item?.rawValue
+                  if (raw && raw !== '') {
+                    const activeMode = currentModeRef.current
                     const isQr = item.format === 'qr_code'
-                    const method: ScanMethod = isQr ? 'QR' : 'BARCODE'
+                    const allowScan =
+                      activeMode === 'auto' ||
+                      (activeMode === 'qr' && isQr) ||
+                      (activeMode === 'barcode' && !isQr)
 
-                    if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') {
-                      try {
-                        navigator.vibrate(50)
-                      } catch {
-                        // ignore vibration issues
+                    if (allowScan) {
+                      const now = Date.now()
+                      if (
+                        lastRef.current.raw !== raw ||
+                        now - lastRef.current.at >= SAME_CODE_LOCKOUT_MS
+                      ) {
+                        lastRef.current = { raw, at: now }
+                        const method: ScanMethod = isQr ? 'QR' : 'BARCODE'
+
+                        if (
+                          typeof navigator !== 'undefined' &&
+                          typeof navigator.vibrate === 'function'
+                        ) {
+                          try {
+                            navigator.vibrate(50)
+                          } catch {
+                            // ignore vibration issues
+                          }
+                        }
+
+                        onDecodeRef.current(raw, method)
                       }
                     }
-
-                    onDecodeRef.current(raw, method)
                   }
                 }
+              } catch {
+                // Frame dropped or detection glitch, continue next frame
               }
-            } catch {
-              // Frame dropped or detection glitch, continue next frame
+            }
+            if (nativeDetectorActive && !cancelled) {
+              setTimeout(runNativeDetect, 120)
             }
           }
-          if (nativeDetectorActive && !cancelled) {
-            setTimeout(runNativeDetect, 120)
-          }
+          setTimeout(runNativeDetect, 400)
         }
-        setTimeout(runNativeDetect, 400)
       } catch {
         // Fallback silently to ZXing
       }

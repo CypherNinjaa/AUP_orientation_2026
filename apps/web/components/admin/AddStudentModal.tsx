@@ -67,6 +67,7 @@ export function AddStudentModal({ open, onClose, onCreated }: AddStudentModalPro
       setPaymentStatus('Success')
       createMutation.reset()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open])
 
   // Auto-detect program level based on entered program name
