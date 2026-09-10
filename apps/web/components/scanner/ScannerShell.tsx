@@ -5,7 +5,7 @@ import { useClerk } from '@clerk/nextjs'
 
 import type { ScanMethod } from '@orientation/contracts'
 
-import { CameraScanner } from '@/components/scanner/CameraScanner'
+import { CameraScanner, type ScanMode } from '@/components/scanner/CameraScanner'
 import { Keypad } from '@/components/scanner/Keypad'
 import { SyncBar } from '@/components/scanner/SyncBar'
 import { VerdictCard } from '@/components/scanner/VerdictCard'
@@ -92,6 +92,7 @@ function Scanner({ gateCode, volunteerName }: ScannerShellProps) {
   const [resyncing, setResyncing] = useState(false)
 
   const [tab, setTab] = useState<VolunteerTab>('camera')
+  const [scanMode, setScanMode] = useState<ScanMode>('auto')
   const [cameraFault, setCameraFault] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [verdict, setVerdict] = useState<Verdict | null>(null)
@@ -372,7 +373,7 @@ function Scanner({ gateCode, volunteerName }: ScannerShellProps) {
 
   // Simulator test scans
   const runSimulatorTest = useCallback(
-    async (type: 'valid' | 'duplicate' | 'unregistered') => {
+    async (type: 'valid' | 'duplicate' | 'unregistered' | 'barcode') => {
       if (type === 'unregistered') {
         void scan('9999999999', 'MANUAL_CODE', false)
         return
@@ -382,7 +383,11 @@ function Scanner({ gateCode, volunteerName }: ScannerShellProps) {
         const db = await scannerDb()
         const sample = await db.getAll('passes', undefined, 1)
         if (sample.length > 0 && sample[0]) {
-          void scan(sample[0].code10, 'QR', false)
+          if (type === 'barcode') {
+            void scan(sample[0].code10, 'BARCODE', false)
+          } else {
+            void scan(sample[0].code10, 'QR', false)
+          }
         } else {
           void scan('AUP26TEST01', 'MANUAL_CODE', false)
         }
@@ -450,7 +455,7 @@ function Scanner({ gateCode, volunteerName }: ScannerShellProps) {
 
         {/* Workspace Area */}
         <div className="relative flex flex-1 flex-col">
-          {/* TAB 1: SCAN QR (Camera) — PURE, IMMERSIVE, UNCLUTTERED */}
+          {/* TAB 1: SCAN PASS (Camera - QR & Barcode) — PURE, IMMERSIVE, UNCLUTTERED */}
           {tab === 'camera' && (
             <div className="flex flex-1 flex-col gap-2">
               <div className="flex-1 flex flex-col min-h-[22rem] sm:min-h-[28rem]">
@@ -458,10 +463,16 @@ function Scanner({ gateCode, volunteerName }: ScannerShellProps) {
                   active={scanning}
                   onDecode={onDecode}
                   onUnavailable={onCameraUnavailable}
+                  scanMode={scanMode}
+                  onScanModeChange={setScanMode}
                 />
               </div>
               <p className="text-center text-xs text-slate-500 font-medium py-1">
-                Align student pass QR code or barcode within frame
+                {scanMode === 'barcode'
+                  ? 'Align student pass barcode horizontally inside the red laser slot'
+                  : scanMode === 'qr'
+                    ? 'Align student pass QR code inside the square frame'
+                    : 'Align student pass QR code or barcode within frame'}
               </p>
             </div>
           )}
@@ -548,13 +559,20 @@ function Scanner({ gateCode, volunteerName }: ScannerShellProps) {
                     </span>
                     <span className="text-[0.625rem] font-mono text-slate-400">Dev Only</span>
                   </div>
-                  <div className="grid grid-cols-3 gap-2">
+                  <div className="grid grid-cols-4 gap-2">
                     <button
                       type="button"
                       onClick={() => runSimulatorTest('valid')}
                       className="py-1.5 px-2 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold text-xs border border-emerald-200 transition-colors"
                     >
-                      Test Valid
+                      Test QR
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => runSimulatorTest('barcode')}
+                      className="py-1.5 px-2 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs border border-rose-200 transition-colors"
+                    >
+                      Test Barcode
                     </button>
                     <button
                       type="button"
@@ -566,7 +584,7 @@ function Scanner({ gateCode, volunteerName }: ScannerShellProps) {
                     <button
                       type="button"
                       onClick={() => runSimulatorTest('unregistered')}
-                      className="py-1.5 px-2 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs border border-rose-200 transition-colors"
+                      className="py-1.5 px-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs border border-slate-300 transition-colors"
                     >
                       Test Invalid
                     </button>
@@ -611,7 +629,7 @@ function Scanner({ gateCode, volunteerName }: ScannerShellProps) {
             )}
           >
             <Icon name="camera" size={16} />
-            <span className="truncate">Scan QR</span>
+            <span className="truncate">Scan Pass</span>
           </button>
           <button
             type="button"

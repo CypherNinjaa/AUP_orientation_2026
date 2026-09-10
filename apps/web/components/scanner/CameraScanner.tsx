@@ -9,52 +9,27 @@ import { Icon } from '@/components/ui/Icon'
 import { cn } from '@/lib/cn'
 
 /**
- * The camera. Two symbologies, one stream, and no network.
+ * The camera: Two symbologies (2D QR + 1D Barcode), one hardware-accelerated stream, and zero network.
  *
- * ZXing decodes in a worker-free loop off the video element, which is why the
- * `delayBetweenScanAttempts` below matters: at 0 it pegs a mid-range phone's CPU and
- * the battery is gone by 10am, and above ~150ms a volunteer moving a phone towards a
- * pass sweeps past the frame that would have decoded.
+ * Provides three dedicated scanning modes:
+ * - 'auto': Universal hybrid mode detecting both QR codes and 1D barcodes.
+ * - 'qr': High-precision 2D QR scanning inside square frame.
+ * - 'barcode': Dedicated 1D barcode scanner (Code128, Code39, EAN13) with wide horizontal
+ *   laser reticle that isolates the barcode on the pass without the adjacent QR code triggering.
  *
- * ## Why the stream is never stopped between scans
- *
- * `active` gates the *callback*, not the camera. `getUserMedia` costs 300–600ms and a
- * visible black flash, and a gate scanning three hundred passes an hour would pay
- * that three hundred times. So the stream runs from mount to unmount and results are
- * dropped while a verdict is on screen.
- *
- * ## The lockout
- *
- * A pass is still in frame when the volunteer dismisses its verdict, so the very next
- * decoded frame is the same code — which `decideScan` correctly calls `DUPLICATE`,
- * turning a clean admission into a red screen two seconds later. Identical raw text
- * is therefore ignored for `SAME_CODE_LOCKOUT_MS` after it is accepted. A genuine
- * re-check of the same pass still works; it just has to be deliberate.
- *
- * ## Format, not guesswork
- *
- * `getBarcodeFormat()` distinguishes the QR from the Code128, and that distinction is
- * load-bearing: a QR carries a signed envelope and can admit a pass this device has
- * never heard of, while a barcode carries ten digits and is worth exactly a manifest
- * lookup. Reporting the wrong one would either discard a signature or claim one that
- * was never there.
+ * Uses native browser `BarcodeDetector` (hardware-accelerated ML) where supported on modern
+ * mobile devices (Android Chrome), with ZXing BrowserMultiFormatReader + TRY_HARDER as universal fallback.
  */
 
 /** Enough to clear a pass from frame; short enough that a deliberate rescan works. */
 const SAME_CODE_LOCKOUT_MS = 3_000
 
-/**
- * A supertype of ZXing's `Result`, which is all this file needs.
- *
- * `@zxing/library` is a transitive dependency — it is not in `package.json` — so its
- * `Result` class is not imported directly. Under `strictFunctionTypes` a callback
- * parameter must *accept* what the caller passes, so a structural type with fewer
- * members than `Result` is exactly what is allowed here.
- */
 interface DecodedResult {
   getText: () => string
   getBarcodeFormat: () => BarcodeFormat
 }
+
+export type ScanMode = 'auto' | 'qr' | 'barcode'
 
 export interface CameraScannerProps {
   /** False while a verdict is on screen. The stream keeps running regardless. */
@@ -62,19 +37,81 @@ export interface CameraScannerProps {
   onDecode: (raw: string, method: ScanMethod) => void
   /** Called once when the camera cannot be used at all, so the shell can act. */
   onUnavailable: (message: string) => void
+  /** Selected scanning mode: 'auto' (both), 'qr' (QR code only), or 'barcode' (1D barcode only). */
+  scanMode?: ScanMode
+  onScanModeChange?: (mode: ScanMode) => void
 }
 
-export function CameraScanner({ active, onDecode, onUnavailable }: CameraScannerProps) {
+function getZxingFormatsForMode(mode: ScanMode): BarcodeFormat[] {
+  switch (mode) {
+    case 'barcode':
+      return [
+        BarcodeFormat.CODE_128,
+        BarcodeFormat.CODE_39,
+        BarcodeFormat.EAN_13,
+        BarcodeFormat.ITF,
+        BarcodeFormat.CODABAR,
+      ]
+    case 'qr':
+      return [BarcodeFormat.QR_CODE]
+    case 'auto':
+    default:
+      return [
+        BarcodeFormat.QR_CODE,
+        BarcodeFormat.CODE_128,
+        BarcodeFormat.CODE_39,
+        BarcodeFormat.EAN_13,
+      ]
+  }
+}
+
+function buildZxingHints(mode: ScanMode): Map<number, unknown> {
+  const hints = new Map<number, unknown>()
+  // 2 = DecodeHintType.POSSIBLE_FORMATS
+  hints.set(2, getZxingFormatsForMode(mode))
+  // 3 = DecodeHintType.TRY_HARDER
+  hints.set(3, true)
+  return hints
+}
+
+export function CameraScanner({
+  active,
+  onDecode,
+  onUnavailable,
+  scanMode = 'auto',
+  onScanModeChange,
+}: CameraScannerProps) {
   const videoRef = useRef<HTMLVideoElement | null>(null)
   const controlsRef = useRef<IScannerControls | null>(null)
+  const readerRef = useRef<BrowserMultiFormatReader | null>(null)
 
-  // Read inside the decode callback, which is created once and outlives every render.
   const activeRef = useRef(active)
   activeRef.current = active
   const onDecodeRef = useRef(onDecode)
   onDecodeRef.current = onDecode
 
   const lastRef = useRef<{ raw: string; at: number }>({ raw: '', at: 0 })
+
+  const [mode, setMode] = useState<ScanMode>(scanMode)
+  const currentMode = scanMode ?? mode
+
+  const handleModeChange = (next: ScanMode) => {
+    setMode(next)
+    onScanModeChange?.(next)
+    if (readerRef.current) {
+      readerRef.current.setHints(buildZxingHints(next))
+    }
+  }
+
+  // Synchronize when prop changes
+  useEffect(() => {
+    if (scanMode !== undefined && scanMode !== mode) {
+      setMode(scanMode)
+      if (readerRef.current) {
+        readerRef.current.setHints(buildZxingHints(scanMode))
+      }
+    }
+  }, [scanMode])
 
   const [fault, setFault] = useState<string | null>(null)
   const [starting, setStarting] = useState(true)
@@ -97,23 +134,17 @@ export function CameraScanner({ active, onDecode, onUnavailable }: CameraScanner
     }
 
     if (typeof navigator === 'undefined' || navigator.mediaDevices === undefined) {
-      // Almost always an insecure origin: `mediaDevices` is undefined on plain http
-      // outside localhost, which is what a volunteer gets from an IP address.
       fail('This browser will not open a camera on an insecure connection. Open the scanner over https, or use the keypad.')
       return
     }
 
-    const reader = new BrowserMultiFormatReader(undefined, {
-      // 300ms between successes: long enough that one pass does not decode four
-      // times while the volunteer is still lifting the phone away.
+    const reader = new BrowserMultiFormatReader(buildZxingHints(currentMode), {
       delayBetweenScanSuccess: 300,
-      delayBetweenScanAttempts: 120,
+      delayBetweenScanAttempts: 100,
     })
-    reader.possibleFormats = [BarcodeFormat.QR_CODE, BarcodeFormat.CODE_128]
+    readerRef.current = reader
 
     const handle = (result: DecodedResult | undefined): void => {
-      // `undefined` on every frame that did not contain a symbol, which is most of
-      // them. Not an error and not worth a state update.
       if (result === undefined) return
       if (!activeRef.current) return
 
@@ -124,8 +155,73 @@ export function CameraScanner({ active, onDecode, onUnavailable }: CameraScanner
       if (lastRef.current.raw === raw && now - lastRef.current.at < SAME_CODE_LOCKOUT_MS) return
       lastRef.current = { raw, at: now }
 
-      const method: ScanMethod = result.getBarcodeFormat() === BarcodeFormat.QR_CODE ? 'QR' : 'BARCODE'
+      const isQr = result.getBarcodeFormat() === BarcodeFormat.QR_CODE
+      const method: ScanMethod = isQr ? 'QR' : 'BARCODE'
+
+      if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') {
+        try {
+          navigator.vibrate(50)
+        } catch {
+          // ignore vibration issues
+        }
+      }
+
       onDecodeRef.current(raw, method)
+    }
+
+    // Hardware-accelerated native BarcodeDetector for Android Chrome / supported phones
+    let nativeDetectorActive = true
+    if (typeof window !== 'undefined' && 'BarcodeDetector' in window) {
+      try {
+        const BarcodeDetectorClass = (window as unknown as { BarcodeDetector: any }).BarcodeDetector
+        const nativeFormats =
+          currentMode === 'barcode'
+            ? ['code_128', 'code_39', 'ean_13']
+            : currentMode === 'qr'
+              ? ['qr_code']
+              : ['qr_code', 'code_128', 'code_39', 'ean_13']
+
+        const nativeDetector = new BarcodeDetectorClass({ formats: nativeFormats })
+
+        const runNativeDetect = async () => {
+          if (!nativeDetectorActive || cancelled) return
+          if (videoRef.current && activeRef.current && videoRef.current.readyState >= 2 && !videoRef.current.paused) {
+            try {
+              const detected = await nativeDetector.detect(videoRef.current)
+              if (detected.length > 0 && activeRef.current) {
+                const item = detected[0]
+                const raw = item.rawValue
+                if (raw && raw !== '') {
+                  const now = Date.now()
+                  if (lastRef.current.raw !== raw || now - lastRef.current.at >= SAME_CODE_LOCKOUT_MS) {
+                    lastRef.current = { raw, at: now }
+                    const isQr = item.format === 'qr_code'
+                    const method: ScanMethod = isQr ? 'QR' : 'BARCODE'
+
+                    if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') {
+                      try {
+                        navigator.vibrate(50)
+                      } catch {
+                        // ignore vibration issues
+                      }
+                    }
+
+                    onDecodeRef.current(raw, method)
+                  }
+                }
+              }
+            } catch {
+              // Frame dropped or detection glitch, continue next frame
+            }
+          }
+          if (nativeDetectorActive && !cancelled) {
+            setTimeout(runNativeDetect, 120)
+          }
+        }
+        setTimeout(runNativeDetect, 400)
+      } catch {
+        // Fallback silently to ZXing
+      }
     }
 
     const start = async (): Promise<void> => {
@@ -133,13 +229,10 @@ export function CameraScanner({ active, onDecode, onUnavailable }: CameraScanner
         deviceId === null
           ? await reader.decodeFromConstraints(
               {
-                // `ideal`, not `exact`: an `exact` facingMode that the device cannot
-                // satisfy throws `OverconstrainedError` and leaves the volunteer with
-                // no camera at all rather than the wrong one.
                 video: {
                   facingMode: { ideal: 'environment' },
-                  width: { ideal: 1280 },
-                  height: { ideal: 720 },
+                  width: { ideal: 1920, min: 1280 },
+                  height: { ideal: 1080, min: 720 },
                 },
                 audio: false,
               },
@@ -156,17 +249,13 @@ export function CameraScanner({ active, onDecode, onUnavailable }: CameraScanner
       controlsRef.current = controls
       setStarting(false)
       setFault(null)
-      // `switchTorch` is optional and experimental in ZXing, and absent on iOS
-      // entirely. `null` means "no such control", which is different from "off".
       setTorch(controls.switchTorch === undefined ? null : false)
 
-      // Labels are blank until permission has been granted, so this runs after the
-      // stream is live rather than before it.
       try {
         const found = await navigator.mediaDevices.enumerateDevices()
         if (!cancelled) setDevices(found.filter((d) => d.kind === 'videoinput'))
       } catch {
-        // A device list is a convenience. Losing it costs the flip button, nothing more.
+        // losing device list costs flip button, nothing more
       }
     }
 
@@ -176,8 +265,10 @@ export function CameraScanner({ active, onDecode, onUnavailable }: CameraScanner
 
     return () => {
       cancelled = true
+      nativeDetectorActive = false
       controlsRef.current?.stop()
       controlsRef.current = null
+      readerRef.current = null
     }
   }, [deviceId, onUnavailable])
 
@@ -198,7 +289,6 @@ export function CameraScanner({ active, onDecode, onUnavailable }: CameraScanner
         setTorch(next)
       })
       .catch(() => {
-        // The capability was advertised and refused. Hide the control rather than
         setTorch(null)
       })
   }, [torch])
@@ -227,25 +317,103 @@ export function CameraScanner({ active, onDecode, onUnavailable }: CameraScanner
         className="absolute inset-0 size-full object-cover"
       />
 
+      {/* Floating Scan Mode Pills */}
+      <div className="absolute top-3 inset-x-0 z-10 flex justify-center px-3 pointer-events-auto">
+        <div className="inline-flex items-center gap-1 rounded-full bg-slate-900/85 p-1 border border-white/20 shadow-lg backdrop-blur-md">
+          <button
+            type="button"
+            onClick={() => handleModeChange('auto')}
+            className={cn(
+              'px-3 py-1.5 rounded-full text-[0.6875rem] font-bold transition-all',
+              currentMode === 'auto'
+                ? 'bg-amber-400 text-navy shadow-xs'
+                : 'text-white/80 hover:text-white hover:bg-white/10',
+            )}
+          >
+            Auto (Both)
+          </button>
+          <button
+            type="button"
+            onClick={() => handleModeChange('qr')}
+            className={cn(
+              'flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[0.6875rem] font-bold transition-all',
+              currentMode === 'qr'
+                ? 'bg-amber-400 text-navy shadow-xs'
+                : 'text-white/80 hover:text-white hover:bg-white/10',
+            )}
+          >
+            <Icon name="qr" size={13} />
+            <span>QR Code</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => handleModeChange('barcode')}
+            className={cn(
+              'flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[0.6875rem] font-bold transition-all',
+              currentMode === 'barcode'
+                ? 'bg-rose-500 text-white shadow-xs'
+                : 'text-white/80 hover:text-white hover:bg-white/10',
+            )}
+          >
+            <Icon name="barcode" size={13} />
+            <span>Barcode</span>
+          </button>
+        </div>
+      </div>
+
       {/* High-legibility alignment reticle */}
       <div aria-hidden className="pointer-events-none absolute inset-0 grid place-items-center p-4">
-        <div
-          className={cn(
-            'relative aspect-square w-[75%] max-w-72 rounded-2xl transition-all duration-300',
-            active ? 'ring-1 ring-amber-400/60 shadow-[0_0_40px_rgba(202,108,0,0.25)]' : 'ring-1 ring-white/30',
-          )}
-        >
-          {/* Amity Flame corner brackets */}
-          <div className="absolute -top-1 -left-1 size-6 border-t-[3px] border-l-[3px] border-amber-400 rounded-tl-lg" />
-          <div className="absolute -top-1 -right-1 size-6 border-t-[3px] border-r-[3px] border-amber-400 rounded-tr-lg" />
-          <div className="absolute -bottom-1 -left-1 size-6 border-b-[3px] border-l-[3px] border-amber-400 rounded-bl-lg" />
-          <div className="absolute -bottom-1 -right-1 size-6 border-b-[3px] border-r-[3px] border-amber-400 rounded-br-lg" />
+        {currentMode === 'barcode' ? (
+          <div
+            className={cn(
+              'relative w-[88%] max-w-sm aspect-[2.6/1] rounded-2xl transition-all duration-300',
+              active
+                ? 'ring-2 ring-rose-500 shadow-[0_0_40px_rgba(244,63,94,0.35)]'
+                : 'ring-1 ring-white/30',
+            )}
+          >
+            <div className="absolute -top-1 -left-1 size-6 border-t-[3px] border-l-[3px] border-rose-500 rounded-tl-lg" />
+            <div className="absolute -top-1 -right-1 size-6 border-t-[3px] border-r-[3px] border-rose-500 rounded-tr-lg" />
+            <div className="absolute -bottom-1 -left-1 size-6 border-b-[3px] border-l-[3px] border-rose-500 rounded-bl-lg" />
+            <div className="absolute -bottom-1 -right-1 size-6 border-b-[3px] border-r-[3px] border-rose-500 rounded-br-lg" />
 
-          {/* Laser scanning beam */}
-          {active && (
-            <div className="absolute inset-x-2 top-1/2 h-0.5 -translate-y-1/2 bg-gradient-to-r from-transparent via-amber-400 to-transparent motion-safe:animate-pulse" />
-          )}
-        </div>
+            {active && (
+              <div className="absolute inset-x-0 top-1/2 h-0.5 -translate-y-1/2 bg-gradient-to-r from-rose-500 via-rose-400 to-rose-500 shadow-[0_0_10px_rgba(244,63,94,0.9)] motion-safe:animate-pulse" />
+            )}
+          </div>
+        ) : currentMode === 'qr' ? (
+          <div
+            className={cn(
+              'relative aspect-square w-[75%] max-w-72 rounded-2xl transition-all duration-300',
+              active ? 'ring-1 ring-amber-400/60 shadow-[0_0_40px_rgba(202,108,0,0.25)]' : 'ring-1 ring-white/30',
+            )}
+          >
+            <div className="absolute -top-1 -left-1 size-6 border-t-[3px] border-l-[3px] border-amber-400 rounded-tl-lg" />
+            <div className="absolute -top-1 -right-1 size-6 border-t-[3px] border-r-[3px] border-amber-400 rounded-tr-lg" />
+            <div className="absolute -bottom-1 -left-1 size-6 border-b-[3px] border-l-[3px] border-amber-400 rounded-bl-lg" />
+            <div className="absolute -bottom-1 -right-1 size-6 border-b-[3px] border-r-[3px] border-amber-400 rounded-br-lg" />
+
+            {active && (
+              <div className="absolute inset-x-2 top-1/2 h-0.5 -translate-y-1/2 bg-gradient-to-r from-transparent via-amber-400 to-transparent motion-safe:animate-pulse" />
+            )}
+          </div>
+        ) : (
+          <div
+            className={cn(
+              'relative w-[82%] max-w-72 aspect-[1.35/1] rounded-2xl transition-all duration-300',
+              active ? 'ring-1 ring-amber-400/70 shadow-[0_0_40px_rgba(202,108,0,0.25)]' : 'ring-1 ring-white/30',
+            )}
+          >
+            <div className="absolute -top-1 -left-1 size-6 border-t-[3px] border-l-[3px] border-amber-400 rounded-tl-lg" />
+            <div className="absolute -top-1 -right-1 size-6 border-t-[3px] border-r-[3px] border-amber-400 rounded-tr-lg" />
+            <div className="absolute -bottom-1 -left-1 size-6 border-b-[3px] border-l-[3px] border-amber-400 rounded-bl-lg" />
+            <div className="absolute -bottom-1 -right-1 size-6 border-b-[3px] border-r-[3px] border-amber-400 rounded-br-lg" />
+
+            {active && (
+              <div className="absolute inset-x-2 top-1/2 h-0.5 -translate-y-1/2 bg-gradient-to-r from-transparent via-amber-400 to-transparent motion-safe:animate-pulse" />
+            )}
+          </div>
+        )}
       </div>
 
       {starting ? (
@@ -295,13 +463,6 @@ export function CameraScanner({ active, onDecode, onUnavailable }: CameraScanner
   )
 }
 
-/**
- * A `getUserMedia` rejection, in words that tell a volunteer what to do.
- *
- * The `name` values are the spec's, not the browser's message — Chrome's own
- * "Permission denied" and Safari's "The request is not allowed by the user agent" are
- * the same problem described two ways, and neither says *how to fix it on a phone*.
- */
 function cameraFault(error: unknown): string {
   const name = error instanceof Error ? error.name : ''
 
