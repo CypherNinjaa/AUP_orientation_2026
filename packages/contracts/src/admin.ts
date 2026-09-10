@@ -157,6 +157,72 @@ export interface RosterImportView {
   canRollback: boolean
 }
 
+export const createStudentRequest = z.strictObject({
+  formNumber: z
+    .string()
+    .trim()
+    .min(4, { error: 'Form number must be at least 4 characters.' })
+    .max(20, { error: 'Form number cannot exceed 20 characters.' })
+    .regex(/^[A-Za-z0-9_-]+$/, { error: 'Form number can only contain letters, digits, underscores, and hyphens.' }),
+  name: z
+    .string()
+    .trim()
+    .min(2, { error: 'Full name must be at least 2 characters.' })
+    .max(100, { error: 'Full name cannot exceed 100 characters.' }),
+  program: z
+    .string()
+    .trim()
+    .min(2, { error: 'Programme must be at least 2 characters.' })
+    .max(100, { error: 'Programme cannot exceed 100 characters.' }),
+  programLevel: z.enum(['UG', 'PG', 'PHD', 'UNKNOWN']).optional(),
+  contactNo: z
+    .string()
+    .trim()
+    .min(10, { error: 'Contact number must be at least 10 digits.' })
+    .max(15, { error: 'Contact number cannot exceed 15 digits.' }),
+  altContactNo: z
+    .string()
+    .trim()
+    .max(15, { error: 'Alternate contact number cannot exceed 15 digits.' })
+    .optional()
+    .nullable(),
+  paymentStatus: z
+    .string()
+    .trim()
+    .max(50)
+    .optional()
+    .nullable(),
+  serialNo: z.number().int().positive().optional().nullable(),
+})
+export type CreateStudentRequest = z.infer<typeof createStudentRequest>
+
+export interface AdmittedStudentItem {
+  id: string
+  serialNo: number | null
+  formNumber: string
+  name: string
+  program: string
+  programLevel: string
+  contactNo: string | null
+  altContactNo: string | null
+  paymentStatus: string | null
+  isClaimed: boolean
+  claimedAt: string | null
+  hasRegistration: boolean
+  registrationStatus: string | null
+  createdAt: string
+  updatedAt: string
+}
+
+export const rosterStudentsQuery = z.object({
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(100).default(20),
+  q: z.string().trim().max(80).optional(),
+  program: z.string().trim().max(100).optional(),
+  claimed: z.coerce.boolean().optional(),
+})
+export type RosterStudentsQuery = z.infer<typeof rosterStudentsQuery>
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Mission control
 // ─────────────────────────────────────────────────────────────────────────────

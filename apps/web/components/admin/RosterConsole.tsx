@@ -27,11 +27,12 @@
  * easy way to double the admitted total.
  */
 
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useDeferredValue, useRef, useState } from 'react'
 
 import {
   ROSTER_EXTENSIONS,
   ROSTER_MAX_BYTES,
+  type AdmittedStudentItem,
   type RosterCommitRequest,
   type RosterCommitResponse,
   type RosterImportView,
@@ -40,6 +41,7 @@ import {
   type RosterRollbackResponse,
 } from '@orientation/contracts'
 
+import { AddStudentModal } from '@/components/admin/AddStudentModal'
 import { OpsModal, OpsToggle } from '@/components/admin/controls'
 import { Icon } from '@/components/ui/Icon'
 import {
@@ -60,7 +62,16 @@ import {
   Th,
   opsControl,
 } from '@/components/ui/ops'
-import { ago, commitRoster, count, fetchRosterImports, previewRoster, rollbackRoster, stamp } from '@/lib/admin'
+import {
+  ago,
+  commitRoster,
+  count,
+  fetchRosterImports,
+  fetchRosterStudents,
+  previewRoster,
+  rollbackRoster,
+  stamp,
+} from '@/lib/admin'
 import { useRealtime } from '@/lib/client/RealtimeProvider'
 import { useMutation, useResource } from '@/lib/client/useResource'
 
@@ -103,6 +114,12 @@ export function RosterConsole() {
   const [rollbackTarget, setRollbackTarget] = useState<RosterImportView | null>(null)
   const [confirmFilename, setConfirmFilename] = useState('')
 
+  // Add student modal state & student list search/pagination state
+  const [addModalOpen, setAddModalOpen] = useState(false)
+  const [studentSearch, setStudentSearch] = useState('')
+  const deferredSearch = useDeferredValue(studentSearch)
+  const [studentPage, setStudentPage] = useState(1)
+
   const previewM = useMutation<File, RosterPreviewResponse>(previewRoster)
   const commitM = useMutation<RosterCommitRequest, RosterCommitResponse>(commitRoster)
   const rollbackM = useMutation<RosterRollbackRequest, RosterRollbackResponse>(rollbackRoster)
@@ -112,7 +129,36 @@ export function RosterConsole() {
     [],
   )
   const refreshImports = imports.refresh
-  useRealtime({ 'roster.imported': () => refreshImports() })
+
+  const students = useResource(
+    useCallback(
+      (signal: AbortSignal) =>
+        fetchRosterStudents(
+          {
+            q: deferredSearch.trim() || undefined,
+            page: studentPage,
+            limit: 20,
+          },
+          signal,
+        ),
+      [deferredSearch, studentPage],
+    ),
+    [deferredSearch, studentPage],
+  )
+  const refreshStudents = students.refresh
+
+  useRealtime({
+    'roster.imported': () => {
+      refreshImports()
+      refreshStudents()
+    },
+  })
+
+  function handleStudentCreated(student: AdmittedStudentItem) {
+    setNotice(`Student ${student.name} (${student.formNumber}) added to roster successfully.`)
+    refreshStudents()
+    refreshImports()
+  }
 
   function reset() {
     setPreview(null)
@@ -206,7 +252,18 @@ export function RosterConsole() {
       <OpsHeading
         eyebrow="Admissions roster · the source of truth"
         title="Roster"
-        lede="Upload the admissions workbook, read what every column resolved to, then commit. A commit can rename thousands of records, so nothing lands until you have seen the preview."
+        lede="Upload the admissions workbook, read what every column resolved to, then commit. You can also manually admit individual students into the roster."
+        action={
+          <OpsButton
+            variant="primary"
+            icon="plus"
+            onClick={() => {
+              setAddModalOpen(true)
+            }}
+          >
+            Add student
+          </OpsButton>
+        }
       />
 
       <div className="bg-warn/8 ring-warn/25 flex items-start gap-3 rounded-lg px-4 py-3 ring-1">
@@ -435,6 +492,207 @@ export function RosterConsole() {
         </Panel>
       ) : null}
 
+      <Panel
+        title="Admitted students roster"
+        icon="user"
+        hint={
+          students.data
+            ? `${count(students.data.total)} enrolled students · Live directory`
+            : 'Enrolled students'
+        }
+        flush
+        action={
+          <div className="flex items-center gap-2">
+            <OpsButton
+              size="sm"
+              variant="outline"
+              icon="loader"
+              onClick={refreshStudents}
+              disabled={students.loading}
+            >
+              Refresh
+            </OpsButton>
+            <OpsButton
+              size="sm"
+              variant="primary"
+              icon="plus"
+              onClick={() => {
+                setAddModalOpen(true)
+              }}
+            >
+              Add student
+            </OpsButton>
+          </div>
+        }
+      >
+        <div className="border-ops-line/70 border-b p-4">
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="relative min-w-[240px] flex-1">
+              <Icon
+                name="search"
+                size={14}
+                className="text-ops-faint pointer-events-none absolute left-3 top-1/2 -translate-y-1/2"
+              />
+              <input
+                className={`${opsControl} pl-9`}
+                placeholder="Search by Form No, Student Name, Phone, or Program…"
+                value={studentSearch}
+                onChange={(e) => {
+                  setStudentSearch(e.target.value)
+                  setStudentPage(1)
+                }}
+              />
+            </div>
+            {studentSearch !== '' && (
+              <OpsButton
+                size="sm"
+                variant="ghost"
+                onClick={() => {
+                  setStudentSearch('')
+                  setStudentPage(1)
+                }}
+              >
+                Clear search
+              </OpsButton>
+            )}
+          </div>
+        </div>
+
+        {students.loading ? (
+          <div className="p-5">
+            <Skeleton rows={5} />
+          </div>
+        ) : students.data === null || students.data.items.length === 0 ? (
+          students.error !== null ? (
+            <div className="p-5">
+              <ErrorNote error={students.error} onRetry={refreshStudents} />
+            </div>
+          ) : (
+            <EmptyState
+              icon="user"
+              title={studentSearch ? 'No matching students' : 'No students in roster'}
+            >
+              {studentSearch
+                ? `No student found matching "${studentSearch}". Check spelling or search by 10-digit mobile number.`
+                : 'Click "Add student" above or upload a workbook to populate the roster.'}
+            </EmptyState>
+          )
+        ) : (
+          <>
+            <DataTable
+              head={
+                <>
+                  <Th>Form No</Th>
+                  <Th>Student</Th>
+                  <Th>Program</Th>
+                  <Th>Contact</Th>
+                  <Th>Status</Th>
+                  <Th>Added</Th>
+                </>
+              }
+            >
+              {students.data.items.map((student) => {
+                const isClaimed = student.isClaimed
+                const hasPass = student.hasRegistration
+
+                return (
+                  <tr key={student.id} className="hover:bg-ops-raise/40">
+                    <Td>
+                      <div className="flex items-center gap-2">
+                        <span className="text-ops-ink font-mono font-bold">{student.formNumber}</span>
+                        {student.serialNo !== null ? (
+                          <span className="text-ops-faint text-[0.6875rem] font-mono">
+                            #{student.serialNo}
+                          </span>
+                        ) : null}
+                      </div>
+                    </Td>
+                    <Td>
+                      <span className="text-ops-ink block font-semibold">{student.name}</span>
+                      {student.paymentStatus !== null && student.paymentStatus !== '' ? (
+                        <span className="text-ops-faint text-xs">Fee: {student.paymentStatus}</span>
+                      ) : null}
+                    </Td>
+                    <Td>
+                      <div className="flex flex-col gap-0.5">
+                        <span className="text-ops-soft max-w-xs truncate text-xs" title={student.program}>
+                          {student.program}
+                        </span>
+                        {student.programLevel !== null ? (
+                          <span className="text-ops-faint text-[0.625rem] font-bold uppercase tracking-wider">
+                            {student.programLevel}
+                          </span>
+                        ) : null}
+                      </div>
+                    </Td>
+                    <Td>
+                      <span className="text-ops-ink font-mono block text-xs">+91 {student.contactNo}</span>
+                      {student.altContactNo !== null && student.altContactNo !== '' ? (
+                        <span className="text-ops-faint font-mono block text-[0.6875rem]">
+                          Alt: {student.altContactNo}
+                        </span>
+                      ) : null}
+                    </Td>
+                    <Td>
+                      {hasPass ? (
+                        <SignalBadge signal="go">Pass Issued</SignalBadge>
+                      ) : isClaimed ? (
+                        <SignalBadge signal="info">Claimed</SignalBadge>
+                      ) : (
+                        <SignalBadge signal="idle">Not Claimed</SignalBadge>
+                      )}
+                    </Td>
+                    <Td>
+                      <span className="text-ops-soft text-xs" title={stamp(student.createdAt)}>
+                        {ago(student.createdAt)}
+                      </span>
+                    </Td>
+                  </tr>
+                )
+              })}
+            </DataTable>
+
+            <div className="border-ops-line/70 flex flex-wrap items-center justify-between gap-3 border-t p-4">
+              <span className="text-ops-faint text-xs">
+                Showing {Math.min((students.data.page - 1) * students.data.limit + 1, students.data.total)} to{' '}
+                {Math.min(students.data.page * students.data.limit, students.data.total)} of{' '}
+                {count(students.data.total)} students
+              </span>
+              <div className="flex items-center gap-2">
+                <OpsButton
+                  size="sm"
+                  variant="outline"
+                  icon="chevronLeft"
+                  onClick={() => {
+                    setStudentPage((p) => Math.max(p - 1, 1))
+                  }}
+                  disabled={studentPage <= 1 || students.loading}
+                >
+                  Previous
+                </OpsButton>
+                <span className="text-ops-soft px-2 text-xs">
+                  Page {students.data.page} of{' '}
+                  {Math.max(Math.ceil(students.data.total / students.data.limit), 1)}
+                </span>
+                <OpsButton
+                  size="sm"
+                  variant="outline"
+                  icon="chevronRight"
+                  onClick={() => {
+                    setStudentPage((p) => p + 1)
+                  }}
+                  disabled={
+                    studentPage * students.data.limit >= students.data.total || students.loading
+                  }
+                >
+                  Next
+                </OpsButton>
+              </div>
+            </div>
+          </>
+        )}
+      </Panel>
+
       <Panel title="Import history" icon="clock" hint="Most recent first · only the latest committed import can be rolled back" flush>
         {imports.loading ? (
           <div className="p-5">
@@ -558,6 +816,14 @@ export function RosterConsole() {
           {rollbackM.error !== null ? <ErrorNote error={rollbackM.error} /> : null}
         </div>
       </OpsModal>
+
+      <AddStudentModal
+        open={addModalOpen}
+        onClose={() => {
+          setAddModalOpen(false)
+        }}
+        onCreated={handleStudentCreated}
+      />
 
       <LiveRegion>{notice}</LiveRegion>
     </div>

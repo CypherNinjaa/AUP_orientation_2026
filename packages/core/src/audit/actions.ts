@@ -38,6 +38,7 @@ export const AUDIT_ACTIONS = {
   ROSTER_IMPORTED: 'roster.imported',
   ROSTER_IMPORT_REJECTED: 'roster.import_rejected',
   ROSTER_ROLLED_BACK: 'roster.rolled_back',
+  ROSTER_STUDENT_ADDED: 'roster.student_added',
 
   // ── registration ──────────────────────────────────────────────────────────
   REGISTRATION_SUBMITTED: 'registration.submitted',

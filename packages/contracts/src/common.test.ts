@@ -20,7 +20,13 @@ import {
   API_ERROR_CODES,
 } from './common'
 import { companionsInput, selfieDataUrl, submitRequest } from './registration'
-import { reviewRequest, rosterCommitRequest, settingsUpdateRequest } from './admin'
+import {
+  createStudentRequest,
+  reviewRequest,
+  rosterCommitRequest,
+  rosterStudentsQuery,
+  settingsUpdateRequest,
+} from './admin'
 import { scanEventInput, syncRequest } from './scanner'
 
 // ─── form number ─────────────────────────────────────────────────────────────
@@ -396,3 +402,40 @@ test('parseInput returns the transformed value, not the raw one', () => {
   if (!result.ok) return
   assert.equal(result.data.contactNo, '9876543210')
 })
+
+// ─── manual student addition ────────────────────────────────────────────────
+
+test('createStudentRequest accepts valid manual student details', () => {
+  const parsed = createStudentRequest.safeParse({
+    formNumber: ' 8024222 ',
+    name: ' Aarav Sharma ',
+    program: ' B.Tech (Computer Science & Engineering) ',
+    programLevel: 'UG',
+    contactNo: ' 9876543210 ',
+    altContactNo: ' 9876543211 ',
+    paymentStatus: 'Success',
+  })
+  assert.equal(parsed.success, true)
+  if (!parsed.success) return
+  assert.equal(parsed.data.formNumber, '8024222')
+  assert.equal(parsed.data.name, 'Aarav Sharma')
+  assert.equal(parsed.data.contactNo, '9876543210')
+  assert.equal(parsed.data.altContactNo, '9876543211')
+})
+
+test('createStudentRequest rejects invalid contact numbers', () => {
+  const parsed = createStudentRequest.safeParse({
+    formNumber: '8024222',
+    name: 'Aarav Sharma',
+    program: 'B.Tech',
+    contactNo: '12345',
+  })
+  assert.equal(parsed.success, false)
+})
+
+test('rosterStudentsQuery sets default page and limit', () => {
+  const parsed = rosterStudentsQuery.parse({})
+  assert.equal(parsed.page, 1)
+  assert.equal(parsed.limit, 20)
+})
+

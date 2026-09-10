@@ -36,6 +36,7 @@
 import type {
   AdjustQrLifeRequest,
   AdjustQrLifeResponse,
+  AdmittedStudentItem,
   AuditEntryView,
   AuditQuery,
   BroadcastRequest,
@@ -44,6 +45,7 @@ import type {
   CloudinaryConfigView,
   CloudinaryPrimaryView,
   CloudinaryUpdateRequest,
+  CreateStudentRequest,
   ExportQuery,
   GateUpdateRequest,
   GateView,
@@ -66,6 +68,7 @@ import type {
   RosterPreviewResponse,
   RosterRollbackRequest,
   RosterRollbackResponse,
+  RosterStudentsQuery,
   SettingsResponse,
   SettingsUpdateRequest,
   StaffView,
@@ -131,6 +134,17 @@ export function fetchRosterImports(
   signal?: AbortSignal,
 ): Promise<ApiResult<{ items: RosterImportView[] }>> {
   return apiGet<{ items: RosterImportView[] }>('/api/admin/roster/imports', { limit: 30 }, { signal })
+}
+
+export function fetchRosterStudents(
+  query?: RosterStudentsQuery,
+  signal?: AbortSignal,
+): Promise<ApiResult<{ items: AdmittedStudentItem[]; total: number; page: number; limit: number }>> {
+  return apiGet<{ items: AdmittedStudentItem[]; total: number; page: number; limit: number }>(
+    '/api/admin/roster/students',
+    query as Record<string, string | number | boolean | undefined>,
+    { signal },
+  )
 }
 
 export function fetchGates(signal?: AbortSignal): Promise<ApiResult<{ items: GateView[] }>> {
@@ -205,6 +219,12 @@ export function rollbackRoster(
   body: RosterRollbackRequest,
 ): Promise<ApiResult<RosterRollbackResponse>> {
   return apiPost<RosterRollbackResponse>('/api/admin/roster/rollback', body)
+}
+
+export function createRosterStudent(
+  body: CreateStudentRequest,
+): Promise<ApiResult<{ student: AdmittedStudentItem; message: string }>> {
+  return apiPost<{ student: AdmittedStudentItem; message: string }>('/api/admin/roster/students', body)
 }
 
 /* -------------------------------------------------------------------------- */

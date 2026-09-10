@@ -35,9 +35,9 @@ import 'server-only'
 
 import { createHash } from 'node:crypto'
 
-import { RosterImportStatus, prisma } from '@orientation/db'
+import { Prisma, RosterImportStatus, prisma } from '@orientation/db'
 import { ingestRoster } from '@orientation/db/roster'
-import { parseRoster } from '@orientation/core/roster'
+import { normalisePhone, parseRoster, programLevel } from '@orientation/core/roster'
 import { readRosterCsv, readRosterWorkbook } from '@orientation/core/roster/workbook'
 import type { RosterField, RosterParseResult } from '@orientation/core/roster'
 import { AUDIT_ACTIONS } from '@orientation/core/audit'
@@ -45,12 +45,15 @@ import { adminChannel } from '@orientation/core/realtime'
 import {
   ROSTER_EXTENSIONS,
   ROSTER_MAX_BYTES,
+  type AdmittedStudentItem,
+  type CreateStudentRequest,
   type RosterCommitRequest,
   type RosterCommitResponse,
   type RosterImportView,
   type RosterIssueView,
   type RosterPreviewResponse,
   type RosterSampleRow,
+  type RosterStudentsQuery,
 } from '@orientation/contracts'
 
 import type { Actor } from '../auth'
@@ -486,3 +489,196 @@ export async function listImports(limit = 30): Promise<RosterImportView[]> {
     canRollback: row.id === rollbackable?.id,
   }))
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Single Student Manual Management
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Add an individual admitted student directly to the roster.
+ *
+ * Checks formNumber uniqueness, normalises contacts, derives program level,
+ * auto-assigns next serial number if omitted, and records append-only audit entry.
+ */
+export async function addSingleStudent(
+  body: CreateStudentRequest,
+  actor: Actor,
+  meta: RequestMeta,
+): Promise<{ student: AdmittedStudentItem; message: string }> {
+  const formNumber = body.formNumber.trim().toUpperCase()
+  const name = body.name.trim()
+  const program = body.program.trim()
+  const programLevelVal = body.programLevel ?? programLevel(program)
+
+  // Normalise primary contact
+  const contactNo = normalisePhone(body.contactNo)
+  if (!contactNo) {
+    abort('VALIDATION_FAILED', 'Primary contact number must be a valid 10-digit Indian mobile number.')
+  }
+
+  // Normalise alternate contact if provided
+  let altContactNo: string | null = null
+  if (body.altContactNo) {
+    altContactNo = normalisePhone(body.altContactNo)
+    if (!altContactNo) {
+      abort('VALIDATION_FAILED', 'Alternate contact number must be a valid 10-digit Indian mobile number.')
+    }
+  }
+
+  // Check unique formNumber
+  const existing = await prisma.admittedStudent.findUnique({
+    where: { formNumber },
+    select: { id: true, name: true, program: true },
+  })
+  if (existing) {
+    abort(
+      'CONFLICT',
+      `Form number "${formNumber}" is already in the roster for student "${existing.name}" (${existing.program}).`,
+    )
+  }
+
+  // Determine serialNo if not provided
+  let serialNo = body.serialNo ?? null
+  if (serialNo === null) {
+    const maxSerial = await prisma.admittedStudent.aggregate({
+      _max: { serialNo: true },
+    })
+    serialNo = (maxSerial._max.serialNo ?? 0) + 1
+  }
+
+  const created = await prisma.admittedStudent.create({
+    data: {
+      serialNo,
+      formNumber,
+      name,
+      program,
+      programLevel: programLevelVal,
+      contactNo,
+      altContactNo,
+      extraContacts: [],
+      paymentStatus: body.paymentStatus?.trim() || null,
+      isClaimed: false,
+    },
+    include: {
+      registration: {
+        select: { id: true, status: true },
+      },
+    },
+  })
+
+  // Write audit trail (append-only)
+  await writeAudit({
+    action: AUDIT_ACTIONS.ROSTER_STUDENT_ADDED,
+    entityType: 'AdmittedStudent',
+    entityId: created.id,
+    actor: { id: actor.id, role: actor.role, email: actor.email, name: actor.name },
+    before: null,
+    after: {
+      formNumber: created.formNumber,
+      name: created.name,
+      program: created.program,
+      programLevel: created.programLevel,
+      contactNo: created.contactNo,
+      paymentStatus: created.paymentStatus,
+    },
+    ip: meta.ip,
+    userAgent: meta.userAgent,
+  })
+
+  // Notify realtime admin channel that roster changed
+  publish(adminChannel(), {
+    type: 'roster.imported',
+    importId: created.id,
+    inserted: 1,
+    updated: 0,
+    at: Date.now(),
+  })
+
+  return {
+    student: {
+      id: created.id,
+      serialNo: created.serialNo,
+      formNumber: created.formNumber,
+      name: created.name,
+      program: created.program,
+      programLevel: created.programLevel,
+      contactNo: created.contactNo,
+      altContactNo: created.altContactNo,
+      paymentStatus: created.paymentStatus,
+      isClaimed: created.isClaimed,
+      claimedAt: created.claimedAt ? created.claimedAt.toISOString() : null,
+      hasRegistration: Boolean(created.registration),
+      registrationStatus: created.registration?.status ?? null,
+      createdAt: created.createdAt.toISOString(),
+      updatedAt: created.updatedAt.toISOString(),
+    },
+    message: `Student ${created.name} (${created.formNumber}) added to roster successfully.`,
+  }
+}
+
+/**
+ * List / search admitted students with pagination.
+ */
+export async function listRosterStudents(
+  query: RosterStudentsQuery,
+): Promise<{ items: AdmittedStudentItem[]; total: number; page: number; limit: number }> {
+  const page = Math.max(query.page ?? 1, 1)
+  const limit = Math.min(Math.max(query.limit ?? 20, 1), 100)
+  const skip = (page - 1) * limit
+
+  const where: Prisma.AdmittedStudentWhereInput = {}
+
+  if (query.q) {
+    const term = query.q.trim()
+    where.OR = [
+      { formNumber: { contains: term, mode: 'insensitive' } },
+      { name: { contains: term, mode: 'insensitive' } },
+      { contactNo: { contains: term } },
+      { program: { contains: term, mode: 'insensitive' } },
+    ]
+  }
+
+  if (query.program) {
+    where.program = { contains: query.program.trim(), mode: 'insensitive' }
+  }
+
+  if (query.claimed !== undefined) {
+    where.isClaimed = query.claimed
+  }
+
+  const [total, rows] = await prisma.$transaction([
+    prisma.admittedStudent.count({ where }),
+    prisma.admittedStudent.findMany({
+      where,
+      orderBy: [{ createdAt: 'desc' }, { formNumber: 'asc' }],
+      skip,
+      take: limit,
+      include: {
+        registration: {
+          select: { id: true, status: true },
+        },
+      },
+    }),
+  ])
+
+  const items: AdmittedStudentItem[] = rows.map((s) => ({
+    id: s.id,
+    serialNo: s.serialNo,
+    formNumber: s.formNumber,
+    name: s.name,
+    program: s.program,
+    programLevel: s.programLevel,
+    contactNo: s.contactNo,
+    altContactNo: s.altContactNo,
+    paymentStatus: s.paymentStatus,
+    isClaimed: s.isClaimed,
+    claimedAt: s.claimedAt ? s.claimedAt.toISOString() : null,
+    hasRegistration: Boolean(s.registration),
+    registrationStatus: s.registration?.status ?? null,
+    createdAt: s.createdAt.toISOString(),
+    updatedAt: s.updatedAt.toISOString(),
+  }))
+
+  return { items, total, page, limit }
+}
+
