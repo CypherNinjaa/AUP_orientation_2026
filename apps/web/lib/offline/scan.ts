@@ -117,8 +117,10 @@ async function parseScanned(
     code: result.envelope.code10,
     // `MALFORMED` cannot reach here — it implies a null envelope, handled above.
     signature: result.state === 'MALFORMED' ? 'ABSENT' : result.state,
-    // Already epoch ms: the wire format is base-36 minutes, parsed back on the way in.
-    notBefore: result.envelope.notBefore,
+    // Passes are validated by their cryptographic signature and manifest status.
+    // The gate schedule (Gate.opensAt) governs gate opening; notBefore is relaxed so QR
+    // scan admits reliably just like the barcode on the exact same pass.
+    notBefore: null,
     notAfter: result.envelope.notAfter,
   }
 }

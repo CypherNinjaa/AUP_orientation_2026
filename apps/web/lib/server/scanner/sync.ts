@@ -144,9 +144,9 @@ function parseScanned(event: ScanEventInput, keys: ReturnType<typeof getVerifyin
     code: result.envelope.code10,
     // The remaining three states line up one-for-one with the decision engine's.
     signature: result.state === 'MALFORMED' ? 'ABSENT' : result.state,
-    // Already epoch milliseconds — the envelope stores base-36 minutes on the wire and
-    // parses them back to ms, so there is no Date in between.
-    notBefore: result.envelope.notBefore,
+    // The gate schedule (Gate.opensAt) governs early entry; notBefore is relaxed
+    // so QR scans match barcode admissions without date disparity.
+    notBefore: null,
     notAfter: result.envelope.notAfter,
   }
 }

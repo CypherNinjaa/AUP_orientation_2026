@@ -23,11 +23,11 @@ export interface ScanHistoryItem {
 
 interface ScanHistoryFeedProps {
   items: ScanHistoryItem[]
-  onAdjustGuests: (clientEventId: string, nextGuests: number) => void
+  onAdjustGuests?: (clientEventId: string, nextGuests: number) => void
   onClear?: () => void
 }
 
-export function ScanHistoryFeed({ items, onAdjustGuests, onClear }: ScanHistoryFeedProps) {
+export function ScanHistoryFeed({ items, onClear }: ScanHistoryFeedProps) {
   const [filter, setFilter] = useState<'all' | 'admitted' | 'refused'>('all')
 
   const filtered = items.filter((item) => {
@@ -157,37 +157,6 @@ export function ScanHistoryFeed({ items, onAdjustGuests, onClear }: ScanHistoryF
                     </span>
                   </div>
                 </div>
-
-                {/* Right: Guest Stepper if admitted */}
-                {item.admitted && (
-                  <div className="flex flex-col items-end gap-1 shrink-0">
-                    <span className="text-[0.6875rem] font-bold text-slate-400 uppercase">
-                      Companions
-                    </span>
-                    <div className="flex items-center gap-1.5 bg-paper-tint rounded-lg border border-slate-200 p-0.5 shadow-2xs">
-                      <button
-                        type="button"
-                        onClick={() => onAdjustGuests(item.clientEventId, Math.max(0, item.guests - 1))}
-                        disabled={item.guests <= 0}
-                        className="size-6 grid place-items-center rounded text-slate-600 hover:text-navy hover:bg-white font-bold disabled:opacity-30 disabled:pointer-events-none transition-colors"
-                        aria-label="Decrease companion count"
-                      >
-                        -
-                      </button>
-                      <span className="w-5 text-center font-mono text-xs font-extrabold text-navy">
-                        {item.guests}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => onAdjustGuests(item.clientEventId, item.guests + 1)}
-                        className="size-6 grid place-items-center rounded text-slate-600 hover:text-navy hover:bg-white font-bold transition-colors"
-                        aria-label="Increase companion count"
-                      >
-                        +
-                      </button>
-                    </div>
-                  </div>
-                )}
               </div>
             )
           })}

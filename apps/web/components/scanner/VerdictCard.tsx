@@ -112,19 +112,6 @@ export function VerdictCard(props: VerdictCardProps) {
           </div>
         )}
 
-        {/* QR Life Multi-scan indicator */}
-        {((decision.scanLimit !== undefined && decision.scanLimit > 1) || (pass?.scanLimit !== undefined && pass.scanLimit > 1)) && (
-          <div className="flex items-center justify-between bg-violet/10 border border-violet/25 rounded-xl px-4 py-2.5 text-xs font-bold text-violet">
-            <span className="flex items-center gap-1.5">
-              <Icon name="spark" size={15} />
-              <span>QR Scan Life</span>
-            </span>
-            <span className="font-mono text-xs">
-              {decision.scansUsed ?? 1} of {decision.scanLimit ?? pass?.scanLimit} scans used ({decision.remainingScans ?? 0} remaining)
-            </span>
-          </div>
-        )}
-
         {decision.clockSuspect ? (
           <p className="bg-amber-50 border border-amber-200 text-amber-800 flex items-start gap-2 rounded-xl px-3.5 py-2.5 text-xs font-semibold shadow-xs">
             <Icon name="clock" size={15} className="mt-0.5 shrink-0 text-amber-600" />
@@ -182,15 +169,6 @@ export function VerdictCard(props: VerdictCardProps) {
                 </ul>
               </div>
             ) : null}
-
-            {props.result.admitted && allowance > 0 ? (
-              <GuestCount
-                guests={props.guests}
-                allowance={allowance}
-                state={props.guestState}
-                onChange={props.onGuests}
-              />
-            ) : null}
           </>
         ) : null}
 
@@ -215,84 +193,7 @@ export function VerdictCard(props: VerdictCardProps) {
   )
 }
 
-/* -------------------------------------------------------------------------- */
 
-function GuestCount({
-  guests,
-  allowance,
-  state,
-  onChange,
-}: {
-  guests: number
-  allowance: number
-  state: 'clean' | 'saved' | 'sent'
-  onChange: (next: number) => void
-}) {
-  return (
-    <div className="bg-white border border-slate-200/90 shadow-xs rounded-2xl p-4">
-      <div className="flex items-center justify-between gap-3">
-        <div className="min-w-0">
-          <p className="text-slate-500 text-xs font-bold tracking-wider uppercase">
-            Accompanying Guests
-          </p>
-          <p className="text-slate-500 mt-0.5 text-xs">Adjust if fewer family members arrived.</p>
-        </div>
-        <div className="flex shrink-0 items-center gap-2">
-          <Step
-            label="One fewer guest"
-            glyph="−"
-            disabled={guests <= 0 || state === 'sent'}
-            onPress={() => onChange(guests - 1)}
-          />
-          <span className="text-navy tnum w-10 text-center font-mono text-2xl font-black">
-            {guests}
-          </span>
-          <Step
-            label="One more guest"
-            glyph="+"
-            disabled={guests >= allowance || state === 'sent'}
-            onPress={() => onChange(guests + 1)}
-          />
-        </div>
-      </div>
-      {state === 'saved' ? (
-        <p className="text-emerald-700 mt-2 text-xs font-bold">Saved. Syncing with control room.</p>
-      ) : state === 'sent' ? (
-        <p className="text-amber-800 mt-2 text-xs font-bold">
-          Already synced with control room. Contact supervisor to amend.
-        </p>
-      ) : null}
-    </div>
-  )
-}
-
-function Step({
-  label,
-  glyph,
-  disabled,
-  onPress,
-}: {
-  label: string
-  glyph: string
-  disabled: boolean
-  onPress: () => void
-}) {
-  return (
-    <button
-      type="button"
-      aria-label={label}
-      disabled={disabled}
-      onClick={onPress}
-      className={cn(
-        'bg-paper-tint border border-slate-200 text-navy grid size-12 place-items-center rounded-xl text-xl font-bold shadow-xs transition-all',
-        'hover:bg-white hover:border-slate-300 focus-visible:outline-violet focus-visible:outline-2 focus-visible:outline-offset-2',
-        'disabled:pointer-events-none disabled:opacity-30',
-      )}
-    >
-      {glyph}
-    </button>
-  )
-}
 
 function Override({ onConfirm, busy }: { onConfirm: () => void; busy: boolean }) {
   const [armed, setArmed] = useState(false)

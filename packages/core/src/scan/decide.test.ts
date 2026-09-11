@@ -254,35 +254,35 @@ test('a pass with scanLimit: 4 allows 4 scans and refuses the 5th scan', () => {
   assert.equal(d1.outcome, 'ADMITTED')
   assert.equal(d1.scansUsed, 1)
   assert.equal(d1.remainingScans, 3)
-  assert.ok(d1.message.includes('Scan 1 of 4 · 3 remaining'))
+  assert.ok(d1.message.includes('Admitted — ANJALI KUMARI'))
 
   // Scan 2
   const d2 = decide(keypad(), { ...multiPass, scansCount: 1, checkedInAt: NOW - 10 * MINUTE })
   assert.equal(d2.outcome, 'ADMITTED')
   assert.equal(d2.scansUsed, 2)
   assert.equal(d2.remainingScans, 2)
-  assert.ok(d2.message.includes('Scan 2 of 4 · 2 remaining'))
+  assert.ok(d2.message.includes('Admitted — ANJALI KUMARI'))
 
   // Scan 3
   const d3 = decide(keypad(), { ...multiPass, scansCount: 2, checkedInAt: NOW - 5 * MINUTE })
   assert.equal(d3.outcome, 'ADMITTED')
   assert.equal(d3.scansUsed, 3)
   assert.equal(d3.remainingScans, 1)
-  assert.ok(d3.message.includes('Scan 3 of 4 · 1 remaining'))
+  assert.ok(d3.message.includes('Admitted — ANJALI KUMARI'))
 
   // Scan 4 (final scan)
   const d4 = decide(keypad(), { ...multiPass, scansCount: 3, checkedInAt: NOW - 2 * MINUTE })
   assert.equal(d4.outcome, 'ADMITTED')
   assert.equal(d4.scansUsed, 4)
   assert.equal(d4.remainingScans, 0)
-  assert.ok(d4.message.includes('Scan 4 of 4 · 0 remaining'))
+  assert.ok(d4.message.includes('Admitted — ANJALI KUMARI'))
 
   // Scan 5 (exceeded QR life)
   const d5 = decide(keypad(), { ...multiPass, scansCount: 4, checkedInAt: NOW - MINUTE })
   assert.equal(d5.outcome, 'DUPLICATE')
   assert.equal(d5.reason, 'ALREADY_CHECKED_IN')
   assert.equal(d5.remainingScans, 0)
-  assert.ok(d5.message.includes('Already scanned 4 of 4 times. QR life is 0. Do not give entry.'))
+  assert.ok(d5.message.includes('Already used. This pass was scanned in earlier. Do not give entry.'))
 })
 
 test('a duplicate outranks the gate window but not revocation or approval', () => {

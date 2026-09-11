@@ -130,9 +130,20 @@ export function CameraScanner({
 
   const [fault, setFault] = useState<string | null>(null)
   const [starting, setStarting] = useState(true)
-  const [torch, setTorch] = useState<boolean | null>(null)
+  const [cameraStopped, setCameraStopped] = useState(false)
   const [devices, setDevices] = useState<readonly MediaDeviceInfo[]>([])
   const [deviceId, setDeviceId] = useState<string | null>(null)
+
+  useEffect(() => {
+    activeRef.current = active && !cameraStopped
+    if (videoRef.current) {
+      if (cameraStopped) {
+        videoRef.current.pause()
+      } else if (active) {
+        void videoRef.current.play().catch(() => {})
+      }
+    }
+  }, [active, cameraStopped])
 
   useEffect(() => {
     const video = videoRef.current
@@ -287,7 +298,6 @@ export function CameraScanner({
       controlsRef.current = controls
       setStarting(false)
       setFault(null)
-      setTorch(controls.switchTorch === undefined ? null : false)
 
       try {
         const found = await navigator.mediaDevices.enumerateDevices()
@@ -317,19 +327,6 @@ export function CameraScanner({
     if (next !== undefined) setDeviceId(next.deviceId)
   }, [devices, deviceId])
 
-  const toggleTorch = useCallback(() => {
-    const controls = controlsRef.current
-    if (controls?.switchTorch === undefined) return
-    const next = torch !== true
-    void controls
-      .switchTorch(next)
-      .then(() => {
-        setTorch(next)
-      })
-      .catch(() => {
-        setTorch(null)
-      })
-  }, [torch])
 
   if (fault !== null) {
     return (
@@ -469,7 +466,27 @@ export function CameraScanner({
         </div>
       ) : null}
 
-      <div className="absolute right-3 bottom-3 flex gap-2">
+      {cameraStopped && (
+        <div className="bg-navy/90 text-white absolute inset-0 z-15 flex flex-col items-center justify-center p-6 text-center backdrop-blur-xs">
+          <div className="size-14 rounded-2xl bg-white/10 flex items-center justify-center mb-3">
+            <Icon name="camera" size={28} className="text-white/60" />
+          </div>
+          <p className="text-base font-extrabold">Camera Stopped</p>
+          <p className="text-xs text-white/70 mt-1 max-w-xs">
+            Camera is paused to conserve device battery.
+          </p>
+          <button
+            type="button"
+            onClick={() => setCameraStopped(false)}
+            className="mt-4 px-4 py-2 rounded-xl bg-white text-navy font-extrabold text-xs shadow-md hover:bg-white/90 transition-all flex items-center gap-2"
+          >
+            <Icon name="camera" size={14} />
+            <span>Resume Camera</span>
+          </button>
+        </div>
+      )}
+
+      <div className="absolute right-3 bottom-3 flex gap-2 z-20">
         {devices.length > 1 ? (
           <button
             type="button"
@@ -480,22 +497,19 @@ export function CameraScanner({
             <span>Flip</span>
           </button>
         ) : null}
-        {torch !== null ? (
-          <button
-            type="button"
-            onClick={toggleTorch}
-            aria-pressed={torch}
-            className={cn(
-              'inline-flex items-center gap-1.5 rounded-lg font-bold text-xs px-3 py-1.5 border shadow-sm backdrop-blur transition-all',
-              torch
-                ? 'bg-amber-400 text-navy border-amber-500'
-                : 'bg-white/90 hover:bg-white text-navy border-slate-200/80',
-            )}
-          >
-            <Icon name="bolt" size={14} />
-            <span>{torch ? 'Torch ON' : 'Torch'}</span>
-          </button>
-        ) : null}
+        <button
+          type="button"
+          onClick={() => setCameraStopped((prev) => !prev)}
+          className={cn(
+            'inline-flex items-center gap-1.5 rounded-lg font-bold text-xs px-3 py-1.5 border shadow-sm backdrop-blur transition-all',
+            cameraStopped
+              ? 'bg-emerald-500 hover:bg-emerald-600 text-white border-emerald-600'
+              : 'bg-white/90 hover:bg-white text-navy border-slate-200/80',
+          )}
+        >
+          <Icon name={cameraStopped ? 'camera' : 'close'} size={14} />
+          <span>{cameraStopped ? 'Resume Camera' : 'Stop Camera'}</span>
+        </button>
       </div>
     </div>
   )

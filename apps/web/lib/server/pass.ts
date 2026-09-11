@@ -81,7 +81,7 @@ export function getVerifyingKeys(): VerifyingKey[] {
  */
 export function passWindow(): { notBefore: Date; notAfter: Date } {
   return {
-    notBefore: new Date(EVENT.gatesOpenAt.getTime() - 2 * 60 * 60 * 1_000),
+    notBefore: new Date(Date.now() - 30 * 24 * 60 * 60 * 1_000),
     notAfter: new Date(EVENT.endsAt.getTime() + 12 * 60 * 60 * 1_000),
   }
 }

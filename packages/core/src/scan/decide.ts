@@ -331,10 +331,7 @@ export function decideScan(
       scanLimit,
       scansUsed,
       remainingScans: 0,
-      message:
-        scanLimit > 1
-          ? `Already scanned ${String(scansUsed)} of ${String(scanLimit)} times. QR life is 0. Do not give entry.`
-          : 'Already used. This pass was scanned in earlier. Do not give entry.',
+      message: 'Already used. This pass was scanned in earlier. Do not give entry.',
     }
   }
 
@@ -381,17 +378,12 @@ export function decideScan(
     }
   }
 
-  // 8 ─ admitted.
   const currentScans = scansUsed + 1
   const remainingScans = Math.max(0, scanLimit - currentScans)
-  let admitMessage =
+  const admitMessage =
     known.guestCount > 0
       ? `Admitted — ${known.name}, +${String(known.guestCount)} guest${known.guestCount > 1 ? 's' : ''}.`
       : `Admitted — ${known.name}.`
-
-  if (scanLimit > 1) {
-    admitMessage = `${admitMessage} (Scan ${String(currentScans)} of ${String(scanLimit)} · ${String(remainingScans)} remaining)`
-  }
 
   return {
     ...base,
