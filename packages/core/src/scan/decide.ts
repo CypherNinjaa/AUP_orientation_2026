@@ -143,6 +143,10 @@ export interface KnownPass {
   program: string
   guestCount: number
   guestNames: readonly string[]
+  /** QR life: total scans allowed for this pass (default 1). */
+  scanLimit?: number
+  /** Number of times this pass has already been admitted (default 0 or 1 if checkedInAt). */
+  scansCount?: number
 }
 
 export interface ScanContext {
@@ -171,6 +175,12 @@ export interface ScanDecision {
   clockSuspect: boolean
   /** The pass this decision is about, when one was identified. */
   pass: KnownPass | null
+  /** QR life capacity for this pass. */
+  scanLimit?: number
+  /** Total scans consumed including this scan if admitted. */
+  scansUsed?: number
+  /** Scans remaining after this scan. */
+  remainingScans?: number
 }
 
 /**
@@ -309,13 +319,22 @@ export function decideScan(
     }
   }
 
-  // 6 ─ one check-in per pass, ever.
-  if (known.checkedInAt !== null) {
+  // 6 ─ QR life / scan capacity check.
+  const scanLimit = known.scanLimit ?? 1
+  const scansUsed = known.scansCount ?? (known.checkedInAt !== null ? 1 : 0)
+
+  if (scansUsed >= scanLimit) {
     return {
       ...base,
       outcome: 'DUPLICATE',
       reason: 'ALREADY_CHECKED_IN',
-      message: 'Already used. This pass was scanned in earlier.',
+      scanLimit,
+      scansUsed,
+      remainingScans: 0,
+      message:
+        scanLimit > 1
+          ? `Already scanned ${String(scansUsed)} of ${String(scanLimit)} times. QR life is 0. Do not give entry.`
+          : 'Already used. This pass was scanned in earlier. Do not give entry.',
     }
   }
 
@@ -363,15 +382,26 @@ export function decideScan(
   }
 
   // 8 ─ admitted.
+  const currentScans = scansUsed + 1
+  const remainingScans = Math.max(0, scanLimit - currentScans)
+  let admitMessage =
+    known.guestCount > 0
+      ? `Admitted — ${known.name}, +${String(known.guestCount)} guest${known.guestCount > 1 ? 's' : ''}.`
+      : `Admitted — ${known.name}.`
+
+  if (scanLimit > 1) {
+    admitMessage = `${admitMessage} (Scan ${String(currentScans)} of ${String(scanLimit)} · ${String(remainingScans)} remaining)`
+  }
+
   return {
     ...base,
     outcome: 'ADMITTED',
     reason: 'OK',
     admits: true,
-    message:
-      known.guestCount > 0
-        ? `Admitted — ${known.name}, +${String(known.guestCount)} guest${known.guestCount > 1 ? 's' : ''}.`
-        : `Admitted — ${known.name}.`,
+    scanLimit,
+    scansUsed: currentScans,
+    remainingScans,
+    message: admitMessage,
   }
 }
 

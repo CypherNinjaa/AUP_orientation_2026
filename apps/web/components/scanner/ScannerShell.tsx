@@ -35,8 +35,6 @@ import { cue, unlock } from '@/lib/scanner/feedback'
  * local scan history feed, and gate emergency contacts.
  */
 
-/** How long an admission stays on screen before the queue moves. */
-const ADMIT_DWELL_MS = 2_400
 
 const EMPTY_OUTBOX: OutboxStatus = {
   total: 0,
@@ -360,16 +358,6 @@ function Scanner({ gateCode, volunteerName }: ScannerShellProps) {
     })
   }, [])
 
-  // Auto clear admitted verdict after dwell time
-  useEffect(() => {
-    if (verdict === null || verdict.result.tone !== 'ok') return
-    const timer = setTimeout(() => {
-      setVerdict(null)
-    }, ADMIT_DWELL_MS)
-    return () => {
-      clearTimeout(timer)
-    }
-  }, [verdict])
 
   // Simulator test scans
   const runSimulatorTest = useCallback(

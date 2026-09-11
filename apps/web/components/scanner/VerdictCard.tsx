@@ -95,6 +95,36 @@ export function VerdictCard(props: VerdictCardProps) {
         {/* Verbatim, from `decideScan`. */}
         <p className="text-navy text-base leading-relaxed font-bold">{decision.message}</p>
 
+        {/* Explicit Duplicate refusal alert: volunteer must not give entry at the gate */}
+        {decision.outcome === 'DUPLICATE' && (
+          <div className="bg-rose-50 border-2 border-rose-500 rounded-2xl p-4 flex items-start gap-3.5 text-rose-900 shadow-sm">
+            <div className="bg-rose-600 text-white p-2 rounded-xl shrink-0 mt-0.5">
+              <Icon name="close" size={22} strokeWidth={2.8} />
+            </div>
+            <div>
+              <p className="text-sm font-black uppercase tracking-wider text-rose-700">
+                Already Scanned — Do Not Give Entry
+              </p>
+              <p className="text-xs font-semibold text-rose-900 mt-1 leading-normal">
+                This pass QR life is 0. Prior admission was already granted. Do not admit this person at the gate. If they have questions, direct them to the Help Desk.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* QR Life Multi-scan indicator */}
+        {((decision.scanLimit !== undefined && decision.scanLimit > 1) || (pass?.scanLimit !== undefined && pass.scanLimit > 1)) && (
+          <div className="flex items-center justify-between bg-violet/10 border border-violet/25 rounded-xl px-4 py-2.5 text-xs font-bold text-violet">
+            <span className="flex items-center gap-1.5">
+              <Icon name="spark" size={15} />
+              <span>QR Scan Life</span>
+            </span>
+            <span className="font-mono text-xs">
+              {decision.scansUsed ?? 1} of {decision.scanLimit ?? pass?.scanLimit} scans used ({decision.remainingScans ?? 0} remaining)
+            </span>
+          </div>
+        )}
+
         {decision.clockSuspect ? (
           <p className="bg-amber-50 border border-amber-200 text-amber-800 flex items-start gap-2 rounded-xl px-3.5 py-2.5 text-xs font-semibold shadow-xs">
             <Icon name="clock" size={15} className="mt-0.5 shrink-0 text-amber-600" />
@@ -169,9 +199,14 @@ export function VerdictCard(props: VerdictCardProps) {
           <button
             type="button"
             onClick={props.onDismiss}
-            className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-navy hover:bg-navy-soft text-white font-extrabold text-base py-3.5 shadow-sm transition-all focus-visible:outline-2 focus-visible:outline-violet"
+            className={cn(
+              'w-full inline-flex items-center justify-center gap-2 rounded-xl font-extrabold text-base py-3.5 shadow-sm transition-all focus-visible:outline-2 focus-visible:outline-violet',
+              props.result.admitted
+                ? 'bg-navy hover:bg-navy-soft text-white'
+                : 'bg-slate-800 hover:bg-slate-900 text-white',
+            )}
           >
-            <span>Admit Next Student</span>
+            <span>{props.result.admitted ? 'Admit Next Student' : 'Scan Next Pass'}</span>
             <Icon name="chevronRight" size={18} />
           </button>
         </div>

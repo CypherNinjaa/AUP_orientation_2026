@@ -161,8 +161,16 @@ const LIVE_PASS_SELECT = {
   code10: true,
   status: true,
   guestCount: true,
+  scanLimit: true,
   checkIn: {
     select: { id: true, recordedAt: true, deviceId: true },
+  },
+  _count: {
+    select: {
+      scanEvents: {
+        where: { outcome: 'ADMITTED' as const },
+      },
+    },
   },
   registration: {
     select: {
@@ -187,6 +195,8 @@ type LivePass = Prisma.PassGetPayload<{ select: typeof LIVE_PASS_SELECT }>
  * admitting somebody.
  */
 function toKnownPass(pass: LivePass): KnownPass {
+  const scanLimit = pass.scanLimit ?? 1
+  const scansCount = pass._count?.scanEvents ?? (pass.checkIn !== null ? 1 : 0)
   return {
     passId: pass.id,
     registrationId: pass.registrationId,
@@ -199,6 +209,8 @@ function toKnownPass(pass: LivePass): KnownPass {
     program: pass.registration.program,
     guestCount: pass.guestCount,
     guestNames: pass.registration.companions.map((companion) => companion.name),
+    scanLimit,
+    scansCount,
   }
 }
 
@@ -442,23 +454,31 @@ async function processEvent(
         select: { id: true },
       })
 
-      const checkIn = await tx.checkIn.create({
-        data: {
-          passId: live.id,
-          gateId: ctx.gate.id,
-          scannedById: ctx.actor.id,
-          method: event.method,
-          guestsAdmitted,
-          scannedAt,
-          recordedAt,
-          deviceId: ctx.deviceId,
-          wasOffline: event.wasOffline,
-          scanEventId: written.id,
-        },
-        select: { id: true },
-      })
+      let checkInId = live.checkIn?.id ?? null
 
-      return { scanEventId: written.id, checkInId: checkIn.id }
+      // CheckIn.passId is UNIQUE. On the first admission, create the CheckIn row.
+      // For multi-scan passes (scanLimit > 1), subsequent admissions write ScanEvent
+      // and reuse the existing CheckIn record.
+      if (checkInId === null) {
+        const checkIn = await tx.checkIn.create({
+          data: {
+            passId: live.id,
+            gateId: ctx.gate.id,
+            scannedById: ctx.actor.id,
+            method: event.method,
+            guestsAdmitted,
+            scannedAt,
+            recordedAt,
+            deviceId: ctx.deviceId,
+            wasOffline: event.wasOffline,
+            scanEventId: written.id,
+          },
+          select: { id: true },
+        })
+        checkInId = checkIn.id
+      }
+
+      return { scanEventId: written.id, checkInId }
     })
 
     return {

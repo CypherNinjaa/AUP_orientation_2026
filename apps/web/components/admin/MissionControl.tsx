@@ -9,10 +9,12 @@ import {
   EmptyState,
   ErrorNote,
   FactList,
+  Icon,
   OpsButton,
   OpsHeading,
   Panel,
   type Signal,
+  SignalBadge,
   StatTile,
 } from '@/components/ui/ops'
 import { ago, count, fetchStats, stamp } from '@/lib/admin'
@@ -113,6 +115,50 @@ export function MissionControl() {
   return (
     <div className="flex flex-col gap-6">
       {heading}
+
+      {/* Total Attendees Overview: Students + Accompanying Companions */}
+      <div className="bg-ops-panel ring-ops-line/70 relative overflow-hidden rounded-2xl p-5 ring-1">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex items-start gap-3.5">
+            <div className="bg-go/10 text-go ring-go/30 flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ring-1">
+              <Icon name="people" size={22} />
+            </div>
+            <div>
+              <div className="flex flex-wrap items-center gap-2">
+                <h3 className="text-ops-ink text-base font-bold tracking-tight">Total Attendees Headcount</h3>
+                <SignalBadge signal="go">Students + Companions</SignalBadge>
+              </div>
+              <p className="text-ops-soft mt-0.5 text-xs">
+                Combined crowd metrics: registered students plus accompanying family and guardians.
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:flex lg:items-center">
+            <div className="bg-ops-raise/60 ring-ops-line/50 rounded-xl px-4 py-3 ring-1 min-w-[170px]">
+              <p className="text-ops-faint text-[0.6875rem] font-bold tracking-[0.11em] uppercase">Expected Total</p>
+              <p className="mt-1 flex items-baseline gap-1.5">
+                <span className="tnum text-2xl font-black text-ops-ink">{count(s.totalExpectedAttendees ?? (s.registered + (s.totalCompanions ?? 0)))}</span>
+                <span className="text-ops-faint text-xs">attendees</span>
+              </p>
+              <p className="text-ops-faint mt-0.5 text-[0.6875rem]">
+                {count(s.registered)} students + {count(s.totalCompanions ?? 0)} companions
+              </p>
+            </div>
+
+            <div className="bg-go/10 ring-go/30 rounded-xl px-4 py-3 ring-1 min-w-[170px]">
+              <p className="text-go text-[0.6875rem] font-bold tracking-[0.11em] uppercase">Admitted at Gate</p>
+              <p className="mt-1 flex items-baseline gap-1.5">
+                <span className="tnum text-2xl font-black text-go">{count(s.totalAdmittedAttendees ?? (s.checkedIn + s.guestsAdmitted))}</span>
+                <span className="tnum text-go/70 text-xs font-semibold">/ {count(s.totalExpectedAttendees ?? (s.registered + (s.totalCompanions ?? 0)))}</span>
+              </p>
+              <p className="text-ops-soft mt-0.5 text-[0.6875rem]">
+                {count(s.checkedIn)} students + {count(s.guestsAdmitted)} companions
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* The funnel, left to right: on the roster → submitted → approved → arrived. */}
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">

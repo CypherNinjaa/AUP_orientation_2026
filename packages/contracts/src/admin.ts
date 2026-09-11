@@ -246,6 +246,12 @@ export interface StatsResponse {
   checkedIn: number
   /** Companions actually admitted, summed. Not the same as passes. */
   guestsAdmitted: number
+  /** Total companions registered by students. */
+  totalCompanions: number
+  /** Total expected headcount (registered students + accompanying companions). */
+  totalExpectedAttendees: number
+  /** Total actual headcount through the gates (students checked in + accompanying companions admitted). */
+  totalAdmittedAttendees: number
   /** Check-ins in the last 60 seconds, for the arrivals gauge. */
   arrivalsPerMinute: number
   /** Check-ins bucketed by minute for the last two hours. */

@@ -124,7 +124,15 @@ const MANIFEST_SELECT = {
   code10: true,
   status: true,
   guestCount: true,
+  scanLimit: true,
   checkIn: { select: { recordedAt: true } },
+  _count: {
+    select: {
+      scanEvents: {
+        where: { outcome: 'ADMITTED' as const },
+      },
+    },
+  },
   registration: {
     select: {
       status: true,
@@ -141,7 +149,9 @@ type PassRow = {
   code10: string
   status: 'ACTIVE' | 'REVOKED'
   guestCount: number
+  scanLimit?: number
   checkIn: { recordedAt: Date } | null
+  _count?: { scanEvents: number }
   registration: {
     status: 'DRAFT' | 'PENDING_REVIEW' | 'APPROVED' | 'REVISION_REQUESTED' | 'REJECTED'
     name: string
@@ -151,6 +161,8 @@ type PassRow = {
 }
 
 function toManifestPass(row: PassRow): ManifestPass {
+  const scanLimit = row.scanLimit ?? 1
+  const scansCount = row._count?.scanEvents ?? (row.checkIn !== null ? 1 : 0)
   return {
     passId: row.id,
     registrationId: row.registrationId,
@@ -165,6 +177,8 @@ function toManifestPass(row: PassRow): ManifestPass {
     program: row.registration.program,
     guestCount: row.guestCount,
     guestNames: row.registration.companions.map((companion) => companion.name),
+    scanLimit,
+    scansCount,
   }
 }
 

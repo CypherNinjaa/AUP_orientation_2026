@@ -4,6 +4,7 @@ import type { ApiError } from '@orientation/contracts'
 
 import { cn } from '@/lib/cn'
 import { Icon, type IconName } from './Icon'
+export { Icon, type IconName } from './Icon'
 
 /**
  * The gate-ops primitive set.

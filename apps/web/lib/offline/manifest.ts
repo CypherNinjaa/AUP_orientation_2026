@@ -82,12 +82,18 @@ export async function applyManifest(response: ManifestResponse): Promise<Manifes
   }
 
   for (const pass of response.passes) {
-    if (pass.checkedInAt === null && protectedCodes.has(pass.code10)) {
+    if (protectedCodes.has(pass.code10)) {
       const local = await passes.get(pass.code10)
-      if (local?.checkedInAt != null) {
-        // See the module comment: our own unsynced admit outranks the server's
-        // not-yet-informed null.
-        await passes.put({ ...pass, checkedInAt: local.checkedInAt })
+      if (local !== undefined) {
+        const localScans = local.scansCount ?? (local.checkedInAt != null ? 1 : 0)
+        const serverScans = pass.scansCount ?? (pass.checkedInAt != null ? 1 : 0)
+        const mergedScans = Math.max(localScans, serverScans)
+        // Local unsynced admit/scans outrank the server's not-yet-informed state.
+        await passes.put({
+          ...pass,
+          checkedInAt: local.checkedInAt ?? pass.checkedInAt,
+          scansCount: mergedScans,
+        })
         continue
       }
     }
@@ -142,8 +148,13 @@ export async function markCheckedInLocally(code10: string, at: number): Promise<
   const db = await scannerDb()
   const tx = db.transaction('passes', 'readwrite')
   const existing = await tx.store.get(code10)
-  if (existing !== undefined && existing.checkedInAt === null) {
-    await tx.store.put({ ...existing, checkedInAt: at })
+  if (existing !== undefined) {
+    const currentScans = (existing.scansCount ?? (existing.checkedInAt !== null ? 1 : 0)) + 1
+    await tx.store.put({
+      ...existing,
+      checkedInAt: existing.checkedInAt ?? at,
+      scansCount: currentScans,
+    })
   }
   await tx.done
 }

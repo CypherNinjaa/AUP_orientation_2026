@@ -96,6 +96,7 @@ export async function readStats(options: { fresh?: boolean } = {}): Promise<Stat
     passesRevoked,
     checkedIn,
     guestSum,
+    totalCompanions,
     arrivalsPerMinute,
     outcomeGroups,
     byProgram,
@@ -112,6 +113,7 @@ export async function readStats(options: { fresh?: boolean } = {}): Promise<Stat
     prisma.pass.count({ where: { status: 'REVOKED' } }),
     prisma.checkIn.count(),
     prisma.checkIn.aggregate({ _sum: { guestsAdmitted: true } }),
+    prisma.companion.count(),
     prisma.checkIn.count({ where: { recordedAt: { gte: lastMinute } } }),
     prisma.scanEvent.groupBy({ by: ['outcome'], _count: { _all: true } }),
 
@@ -168,6 +170,7 @@ export async function readStats(options: { fresh?: boolean } = {}): Promise<Stat
     `),
   ])
 
+  const guestsAdmitted = guestSum._sum.guestsAdmitted ?? 0
   const stats: StatsResponse = {
     admitted,
     registered,
@@ -177,7 +180,10 @@ export async function readStats(options: { fresh?: boolean } = {}): Promise<Stat
     passesIssued,
     passesRevoked,
     checkedIn,
-    guestsAdmitted: guestSum._sum.guestsAdmitted ?? 0,
+    guestsAdmitted,
+    totalCompanions,
+    totalExpectedAttendees: registered + totalCompanions,
+    totalAdmittedAttendees: checkedIn + guestsAdmitted,
     arrivalsPerMinute,
     arrivals: arrivals.map((row) => ({ at: row.at.toISOString(), count: row.count })),
     byProgram,

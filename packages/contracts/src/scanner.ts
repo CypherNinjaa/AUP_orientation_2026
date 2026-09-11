@@ -75,6 +75,10 @@ export interface ManifestPass {
   program: string
   guestCount: number
   guestNames: string[]
+  /** QR life: total scans allowed for this pass (default 1). */
+  scanLimit?: number
+  /** How many times this pass has already been admitted (default 0 or 1 if checkedInAt). */
+  scansCount?: number
 }
 
 /** A public verifying key. Only ever the public half (D5). */
