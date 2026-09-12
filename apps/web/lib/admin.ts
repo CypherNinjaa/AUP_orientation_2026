@@ -69,12 +69,16 @@ import type {
   RosterRollbackRequest,
   RosterRollbackResponse,
   RosterStudentsQuery,
+  ScanHistoryEntryView,
+  ScanHistoryQuery,
+  ScanHistoryStatsView,
   SettingsResponse,
   SettingsUpdateRequest,
   StaffView,
   StatsResponse,
   UserStatusRequest,
   UserStatusResponse,
+  VolunteerActivityView,
 } from '@orientation/contracts'
 
 import { type ApiResult, apiDelete, apiGet, apiPatch, apiPost, apiPut, queryString } from '@/lib/api'
@@ -193,6 +197,48 @@ export function fetchAuditActions(
 
 export function fetchStaff(signal?: AbortSignal): Promise<ApiResult<StaffView[]>> {
   return apiGet<StaffView[]>('/api/admin/staff', undefined, { signal })
+}
+
+export function fetchScanHistory(
+  query: ScanHistoryQuery,
+  signal?: AbortSignal,
+): Promise<ApiResult<Page<ScanHistoryEntryView> & { stats: ScanHistoryStatsView }>> {
+  const p: Record<string, string | number | boolean | undefined> = {
+    limit: query.limit,
+    cursor: query.cursor,
+    q: query.q,
+    outcome: query.outcome,
+    method: query.method,
+    gateId: query.gateId,
+    volunteerId: query.volunteerId,
+    passId: query.passId,
+    code10: query.code10,
+    from: query.from,
+    to: query.to,
+  }
+  return apiGet<Page<ScanHistoryEntryView> & { stats: ScanHistoryStatsView }>(
+    '/api/admin/scans',
+    p,
+    { signal },
+  )
+}
+
+export function fetchVolunteerActivity(
+  volunteerId: string,
+  signal?: AbortSignal,
+): Promise<ApiResult<VolunteerActivityView>> {
+  return apiGet<VolunteerActivityView>(`/api/admin/scans/volunteer/${volunteerId}`, undefined, {
+    signal,
+  })
+}
+
+export function fetchStudentScanHistory(
+  studentOrPassId: string,
+  signal?: AbortSignal,
+): Promise<ApiResult<ScanHistoryEntryView[]>> {
+  return apiGet<ScanHistoryEntryView[]>(`/api/admin/scans/student/${studentOrPassId}`, undefined, {
+    signal,
+  })
 }
 
 /* -------------------------------------------------------------------------- */

@@ -14,7 +14,7 @@ const LEGAL = [
   { label: 'Privacy policy', href: '/privacy' },
   { label: 'Terms of use', href: '/terms' },
   { label: 'Accessibility', href: '/accessibility' },
-  { label: 'Staff portal', href: '/staff/sign-in' },
+  { label: 'Team portal', href: '/staff/sign-in' },
 ]
 
 export function SiteFooter() {

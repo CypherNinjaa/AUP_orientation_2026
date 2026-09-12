@@ -41,12 +41,13 @@ const ITEMS: readonly NavItem[] = [
   { href: '/admin', label: 'Mission control', icon: 'compass' },
   { href: '/admin/roster', label: 'Roster', icon: 'database' },
   { href: '/admin/registrations', label: 'Registrations', icon: 'people' },
+  { href: '/admin/scan-history', label: 'Scan History', icon: 'qr' },
   { href: '/admin/moderation', label: 'Moderation', icon: 'camera' },
   { href: '/admin/broadcast', label: 'Broadcast', icon: 'bolt' },
   { href: '/admin/settings', label: 'Settings', icon: 'server' },
   { href: '/admin/exports', label: 'Exports', icon: 'download' },
   { href: '/admin/audit', label: 'Audit', icon: 'shield' },
-  { href: '/admin/staff', label: 'Staff', icon: 'id' },
+  { href: '/admin/team', label: 'Team', icon: 'headset' },
 ]
 
 export function AdminNav({ operator }: { operator: string }) {
@@ -84,7 +85,12 @@ export function AdminNav({ operator }: { operator: string }) {
             const active =
               item.href === '/admin'
                 ? pathname === '/admin'
-                : pathname === item.href || pathname.startsWith(`${item.href}/`)
+                : item.href === '/admin/team'
+                  ? pathname === '/admin/team' ||
+                    pathname === '/admin/staff' ||
+                    pathname.startsWith('/admin/team/') ||
+                    pathname.startsWith('/admin/staff/')
+                  : pathname === item.href || pathname.startsWith(`${item.href}/`)
 
             return (
               <li key={item.href} className="shrink-0">

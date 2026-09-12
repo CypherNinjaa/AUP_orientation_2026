@@ -5,8 +5,8 @@ import type { Metadata } from 'next'
 import { Eyebrow } from '@/components/ui/atoms'
 
 export const metadata: Metadata = {
-  title: 'Staff & Volunteer Sign In',
-  description: 'Authorised portal access for Orientation 2026 staff and volunteers.',
+  title: 'Team & Volunteer Sign In',
+  description: 'Authorised portal access for Orientation 2026 faculty, team members, and volunteers.',
   robots: { index: false, follow: false },
 }
 
@@ -35,10 +35,10 @@ export default function StaffSignInPage() {
   return (
     <div className="flex flex-col gap-7">
       <div>
-        <Eyebrow>Staff & Volunteer Portal</Eyebrow>
-        <h2 className="text-navy mt-3 text-3xl font-extrabold tracking-[-0.03em]">Staff Sign In</h2>
+        <Eyebrow>Team & Volunteer Portal</Eyebrow>
+        <h2 className="text-navy mt-3 text-3xl font-extrabold tracking-[-0.03em]">Team Sign In</h2>
         <p className="text-ink-soft mt-2 text-sm leading-relaxed">
-          Authorised access for gate volunteers, photo reviewers, and event administrators.
+          Authorised access for gate volunteers, faculty members, and event administrators.
         </p>
       </div>
 

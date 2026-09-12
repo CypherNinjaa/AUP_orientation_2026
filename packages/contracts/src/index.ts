@@ -137,16 +137,21 @@ export {
   type RosterImportView,
   type RosterIssueView,
   type RosterPreviewResponse,
+  scanHistoryQuery,
   type RosterRollbackRequest,
   type RosterRollbackResponse,
   type RosterSampleRow,
   type RosterStudentsQuery,
+  type ScanHistoryEntryView,
+  type ScanHistoryQuery,
+  type ScanHistoryStatsView,
   type SettingsResponse,
   type SettingsUpdateRequest,
   type StaffView,
   type StatsResponse,
   type UserStatusRequest,
   type UserStatusResponse,
+  type VolunteerActivityView,
 } from './admin'
 
 export {

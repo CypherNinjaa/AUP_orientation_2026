@@ -19,9 +19,10 @@ import {
   pageQuery,
   registrationStatus,
   role,
+  scanMethod,
   scanOutcome,
 } from './common'
-import type { RegistrationStatus, Role, ScanOutcome } from './common'
+import type { RegistrationStatus, Role, ScanMethod, ScanOutcome } from './common'
 import { MAX_COMPANIONS } from './registration'
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -770,4 +771,99 @@ export interface StaffView {
   checkInsScanned: number
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Scan History
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const scanHistoryQuery = pageQuery.extend({
+  q: z.string().trim().max(100).optional(),
+  outcome: scanOutcome.optional(),
+  method: scanMethod.optional(),
+  gateId: z.string().optional(),
+  volunteerId: z.string().optional(),
+  passId: z.string().optional(),
+  code10: z.string().optional(),
+  from: z.string().datetime({ offset: true }).optional(),
+  to: z.string().datetime({ offset: true }).optional(),
+})
+export type ScanHistoryQuery = z.infer<typeof scanHistoryQuery>
+
+export interface ScanHistoryEntryView {
+  id: string
+  clientEventId: string | null
+  rawCode: string
+  method: ScanMethod
+  outcome: ScanOutcome
+  reason: string | null
+  scannedAt: string
+  recordedAt: string
+  wasOffline: boolean
+  overridden: boolean
+  clockSuspect: boolean
+  deviceId: string | null
+  syncBatchId: string | null
+  duplicateOfCheckInId: string | null
+  gate: {
+    id: string
+    code: string
+    name: string
+  } | null
+  volunteer: {
+    id: string
+    name: string | null
+    email: string | null
+    role: Role
+    lastSeenAt: string | null
+    totalScans: number
+  } | null
+  student: {
+    passId: string
+    code10: string
+    guestCount: number
+    scanLimit: number
+    registrationId: string
+    reference: string
+    name: string
+    program: string
+    contactNo: string
+    email: string | null
+    formNumber: string | null
+    companions: string[]
+  } | null
+}
+
+export interface VolunteerActivityView {
+  id: string
+  name: string | null
+  email: string | null
+  role: Role
+  isActive: boolean
+  lastSeenAt: string | null
+  createdAt: string
+  stats: {
+    totalScans: number
+    admittedCount: number
+    duplicateCount: number
+    refusedCount: number
+    gatesOperated: { code: string; name: string; count: number }[]
+  }
+  recentScans: ScanHistoryEntryView[]
+  recentAuditLogs: {
+    id: string
+    action: string
+    entityType: string
+    createdAt: string
+    details: unknown
+  }[]
+}
+
+export interface ScanHistoryStatsView {
+  totalScans: number
+  admittedCount: number
+  duplicateCount: number
+  refusedCount: number
+  activeVolunteersCount: number
+}
+
 export { scanOutcome }
+

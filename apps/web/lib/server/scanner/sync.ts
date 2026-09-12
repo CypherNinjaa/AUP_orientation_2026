@@ -658,6 +658,15 @@ export async function syncScans(
     at: serverTime,
   })
 
+  if (accepted > 0) {
+    publish(adminChannel(), {
+      type: 'checkin.recorded',
+      passId: results.find((r) => r.checkInId !== null)?.checkInId ?? '',
+      gate: gate.code,
+      at: serverTime,
+    })
+  }
+
   return {
     batchId,
     accepted,

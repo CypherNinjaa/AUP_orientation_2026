@@ -5,10 +5,8 @@ import { StaffConsole } from '@/components/admin/StaffConsole'
 export const metadata: Metadata = { title: 'Team & Volunteers' }
 
 /**
- * `/admin/staff` — who can scan a gate and who can open this console.
- *
- * A shell: the ADMIN gate and the single `RealtimeProvider` live in the layout.
+ * `/admin/team` — who can scan a gate and who can open this console.
  */
-export default function AdminStaffPage() {
+export default function AdminTeamPage() {
   return <StaffConsole />
 }

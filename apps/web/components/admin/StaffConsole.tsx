@@ -116,9 +116,9 @@ export function StaffConsole() {
   return (
     <div className="flex flex-col gap-6">
       <OpsHeading
-        eyebrow="Access · every grant is audited"
-        title="Staff"
-        lede="Who can scan a gate and who can open this console. Access is granted and withdrawn — never deleted."
+        eyebrow="Access & Permissions · every grant is audited"
+        title="Team & Volunteers"
+        lede="Teachers, faculty members, and student volunteers with console or scanning access. Access is granted and withdrawn — never deleted."
         action={
           <OpsButton size="sm" variant="outline" onClick={refresh} disabled={staff.refreshing}>
             {staff.refreshing ? 'Syncing…' : 'Refresh'}
@@ -151,7 +151,6 @@ export function StaffConsole() {
             >
               <option value="VOLUNTEER">Volunteer</option>
               <option value="ADMIN">Admin</option>
-              <option value="STUDENT">Student</option>
             </OpsSelect>
           </OpsField>
           <OpsField label="Reason" htmlFor="st-reason" error={fieldError(grant.error, 'reason')}>
@@ -163,17 +162,16 @@ export function StaffConsole() {
                 setReason(event.target.value)
               }}
               placeholder="Gate volunteer, orientation week"
-              autoComplete="off"
             />
           </OpsField>
-          <OpsButton type="submit" variant="primary" icon="check" disabled={!ready || grant.pending}>
+          <OpsButton type="submit" disabled={!ready || grant.pending} icon="check">
             {grant.pending ? 'Granting…' : 'Grant access'}
           </OpsButton>
         </form>
         {grantBanner !== null ? <ErrorNote className="mt-4" error={grantBanner} /> : null}
       </Panel>
 
-      <Panel title="Team" hint="Volunteers and admins with access" icon="people" flush>
+      <Panel title="Team & Volunteers" hint="Volunteers, faculty, and administrators with access" icon="people" flush>
         {staff.loading ? (
           <div className="p-5">
             <Skeleton rows={5} />
@@ -185,8 +183,8 @@ export function StaffConsole() {
             </div>
           ) : null
         ) : staff.data.length === 0 ? (
-          <EmptyState icon="id" title="No staff yet">
-            Grant the first volunteer or admin above and they appear here.
+          <EmptyState icon="headset" title="No team members yet">
+            Grant the first volunteer, teacher, or admin above and they appear here.
           </EmptyState>
         ) : (
           <>
